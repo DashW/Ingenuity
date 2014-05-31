@@ -1,0 +1,5 @@
+<!-- Ingenuity Project Configuration File -->
+<config>
+	<project>ShaderSandbox</project>
+	<language>Lua</language>
+</config>

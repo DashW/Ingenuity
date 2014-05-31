@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>a511b95b-aa36-4d80-a4ff-61a9200bd09b</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>e7e6c732-5c23-4a64-97bf-2b40365bb620</UniqueIdentifier>
+    </Filter>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\MirrorDemo\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MirrorDemoMetro_TemporaryKey.pfx" />
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\MirrorDemo\Resources\brick1.dds" />
+    <Image Include="..\MirrorDemo\Resources\brick2.dds" />
+    <Image Include="..\MirrorDemo\Resources\checkboard.dds" />
+    <Image Include="..\MirrorDemo\Resources\ice.dds" />
+  </ItemGroup>
+</Project>

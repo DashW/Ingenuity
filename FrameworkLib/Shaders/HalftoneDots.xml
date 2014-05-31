@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="HalftoneDots" type="texture">
+
+  <params>
+    <param index="0" displayName="Dots Texture" type="tex3D" />
+    <param index="1" displayName="Dot Size" type="float" default="0.02" min="0.0" max="1.0" />
+  </params>
+
+  <directx9 shader="HalftoneDots">
+
+    <paramMapping index="0" name="param0" />
+    <paramMapping index="1" name="param1" />
+    
+  </directx9>
+
+  <directx11 shader="HalftoneDotsPixPosTex">
+
+    <paramMapping index="0" textureIndex="1" />
+    <paramMapping index="1" bufferIndex="1" bufferOffset="0" />
+    
+  </directx11>
+
+  <opengl4>
+    
+  </opengl4>
+  
+</shader>

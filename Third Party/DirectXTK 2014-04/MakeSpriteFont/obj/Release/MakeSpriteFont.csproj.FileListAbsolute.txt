@@ -1,0 +1,5 @@
+C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\DirectXTK 2014-04\MakeSpriteFont\bin\Release\MakeSpriteFont.exe
+C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\DirectXTK 2014-04\MakeSpriteFont\bin\Release\MakeSpriteFont.pdb
+C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\DirectXTK 2014-04\MakeSpriteFont\obj\Release\MakeSpriteFont.csprojResolveAssemblyReference.cache
+C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\DirectXTK 2014-04\MakeSpriteFont\obj\Release\MakeSpriteFont.exe
+C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\DirectXTK 2014-04\MakeSpriteFont\obj\Release\MakeSpriteFont.pdb

@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>c33a26d1-102d-4420-841d-be456e5ab1b7</UniqueIdentifier>
+    </Filter>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\HeightmapDemo\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\HeightmapDemo\hmheight.raw">
+      <Filter>Assets</Filter>
+    </None>
+    <None Include="HeightDemoMetro_TemporaryKey.pfx" />
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\HeightmapDemo\dirt.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="..\HeightmapDemo\grass.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="..\HeightmapDemo\hmblend.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="..\HeightmapDemo\stone.dds">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

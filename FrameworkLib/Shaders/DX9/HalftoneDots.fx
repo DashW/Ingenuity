@@ -1,0 +1,65 @@
+#line 1 "C:\\Users\\Richard\\SkyDrive\\Documents\\Gaming Projects\\FrameworkLib\\HalftoneDots.cgfx"
+uniform extern texture tex;
+uniform extern float texWidth;
+uniform extern float texHeight;
+
+uniform extern texture param0; 
+uniform extern float param1;   
+
+sampler2D textureSampler : register(s0) = sampler_state
+{
+	Texture = <tex>;
+	MinFilter = NONE;
+	MagFilter = NONE;
+	MipFilter = NONE;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+sampler3D dotsTexSampler : register(s1) = sampler_state
+{
+	Texture = <param0>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	MipFilter = Linear;
+	AddressU = Wrap;
+	AddressV = Wrap;
+	AddressW = Clamp;
+}; 
+
+struct VertexOut
+{
+	float4 Position : POSITION; 
+	float2 TexCoord : TEXCOORD0;
+};
+
+VertexOut vtxPosTex(float3 inputPosition : POSITION, float2 inputTexCoord : TEXCOORD0)
+{
+	VertexOut vout = (VertexOut) 0;
+	vout.Position = float4(
+		(inputPosition.x * 2.0f) - (1.0f) - (1.0f / texWidth),  
+		(inputPosition.y * 2.0f) - (1.0f) + (1.0f / texHeight), 
+		inputPosition.z, 1.0f); 
+	vout.TexCoord = inputTexCoord;
+	return vout;
+}
+
+float4 pixPosTex(VertexOut vtx) : COLOR
+{
+	float4 sourceColor = tex2D(textureSampler, vtx.TexCoord); 
+    float luminance = dot(float3(.2,.7,.1),sourceColor.xyz);
+	float aspect = texWidth / texHeight;
+	float dotsSize = param1;
+    float3 lx = float3((vtx.TexCoord.x * aspect) / dotsSize, vtx.TexCoord.y / dotsSize, luminance * 0.7f);
+    float4 dotColor = tex3D(dotsTexSampler,lx);
+    return float4(dotColor.xyz,1.0);
+}
+ 
+technique posTex
+{
+    pass P0
+    {   
+        vertexShader = compile vs_2_0 vtxPosTex();
+        pixelShader  = compile ps_2_0 pixPosTex();
+    }
+}

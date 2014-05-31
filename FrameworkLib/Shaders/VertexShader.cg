@@ -1,0 +1,71 @@
+#if VS_5_0
+uniform cbPerObject
+{
+	float4x4 worldViewProjection; 
+	float4x4 world;
+	float4x4 worldInverseTranspose;
+	float4 materialColor;
+} : BUFFER[0];
+#endif
+
+#if VS_2_0
+uniform extern float4x4 worldViewProjection;
+uniform extern float4x4 world;
+uniform extern float4x4 worldInverseTranspose;
+uniform extern float4 materialColor;
+#endif
+
+struct VertexOutPosCol
+{
+	float4 PosH  : POSITION;
+    float4 Color : COLOR;
+};
+
+struct VertexOutPosNor
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+};
+
+struct VertexOutPosNorTex
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+	float2 TexCoord : TEXCOORD2;
+};
+
+VertexOutPosCol posCol( float3 pos : POSITION, float4 Color : COLOR )
+{
+	VertexOutPosCol vout;
+	vout.PosH = mul(float4(pos, 1.0f), worldViewProjection);
+    vout.Color = Color;
+    
+    return vout;
+}
+
+VertexOutPosNor posNor( float3 inputPos : POSITION, float3 inputNormal : NORMAL, float2 inputTexCoord : TEXCOORD0 )
+{
+	VertexOutPosNor vout;
+	vout.WorldPos = mul(float4(inputPos, 1.0f), world).xyz;
+	vout.ProjPos = mul(float4(inputPos, 1.0f), worldViewProjection);
+	vout.Normal = mul(float4(inputNormal, 0.0f), worldInverseTranspose).xyz;
+    vout.Color = materialColor;
+    
+    return vout;
+}
+
+VertexOutPosNorTex posNorTex( float3 inputPos : POSITION, float3 inputNormal : NORMAL, float2 inputTexCoord : TEXCOORD0 )
+{
+	VertexOutPosNorTex vout;
+	vout.WorldPos = mul(float4(inputPos, 1.0f), world).xyz;
+	vout.ProjPos = mul(float4(inputPos, 1.0f), worldViewProjection);
+	vout.Normal = mul(float4(inputNormal, 0.0f), worldInverseTranspose).xyz;
+    vout.Color = materialColor;
+	vout.TexCoord = inputTexCoord;
+    
+    return vout;
+}

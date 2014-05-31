@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<PropertyPageSchema Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+
+		<AvailableItemName Include="CGFile">
+			<Targets>CGCompileDecideEntry</Targets>
+		</AvailableItemName>
+	</ItemGroup>
+
+	<!-- 
+	The XamlTaskFactory creates a generic command-line build task.
+	The command is specified using the CommandLineTemplate parameter,
+	and additional parameters are generated from the Rules of the
+	provided VSUI XML file.
+	-->
+	<UsingTask
+		TaskName="CGCompiler"
+		TaskFactory="XamlTaskFactory"
+		AssemblyName="Microsoft.Build.Tasks.v4.0">
+		<Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+	</UsingTask> 
+
+	<Target Name="CGCompileDecideEntry">
+		<Message Importance="High" Text="Compiling CG File: %(CGFile.Identity)" />
+		
+		<CallTarget Condition="'%(CGFile.EntryPoints)' == ''" Targets="CGCompileNoEntry"/>
+		<CallTarget Condition="'%(CGFile.EntryPoints)' != ''" Targets="CGCompileWithEntry"/>
+	</Target>
+
+	<Target
+		Name="CGCompileNoEntry"
+		Inputs="%(CGFile.FullPath)"
+		Outputs="$(IntDir)%(CGFile.Filename).fx">
+
+		<Message Text="Compiling without entry point" />
+
+		<Message Text="Preprocess Only: %(CGFile.PreprocessOnly)" />
+		<Message Text="Strict: %(CGFile.Strict)" />
+		<Message Text="In File: %(CGFile.FullPath)" />
+		<Message Text="Out File: $(IntDir)%(CGFile.Filename).fx" />
+
+		<CGCompiler
+			Inputs="%(CGFile.FullPath)"
+			Strict="%(CGFile.Strict)"
+			PreprocessOnly="%(CGFile.PreprocessOnly)"
+			EntryPoints="%(CGFile.EntryPoints)"
+			Defines="%(CGFile.Defines)"
+			CommandLineTemplate="&quot;$(CG_BIN_PATH)\cgc.exe&quot; [AllOptions] -o &quot;$(IntDir)%(CGFile.Filename).fx&quot; [Inputs]" />
+			
+		<Exec Command="&quot;$(DXSDK_DIR)Utilities\bin\x86\fxc.exe&quot; /nologo /Zi /T fx_2_0 /Fo &quot;$(OutDir)%(CGFile.Filename).cso&quot; &quot;$(IntDir)%(CGFile.Filename).fx&quot;" />
+	
+		<Message Importance="High" Text="Shader compiled: %(CGFile.Filename)" />
+	</Target>  
+
+	<Target
+		Name="PrepareEntryPoints"
+		BeforeTargets="CGCompileWithEntry">
+
+		<Message Text="Separating Entry Points: %(CGFile.EntryPoints)" />
+
+		<!-- Expand the semicolon-separated EntryPoints list -->
+		<CreateItem Include="%(CGFile.EntryPoints)">
+			<Output TaskParameter="Include" ItemName="EntryPoint"/>
+		</CreateItem>
+	</Target>
+
+	<Target
+		Name="CGCompileWithEntry"
+		Inputs="%(CGFile.FullPath)"
+		Outputs="$(IntDir)%(EntryPoint.Identity).fx">
+
+		<PropertyGroup>
+			<_FullPath>%(CGFile.FullPath)</_FullPath>
+			<_Strict>%(CGFile.Strict)</_Strict>
+			<_PreprocessOnly>%(CGFile.PreprocessOnly)</_PreprocessOnly>
+			<_Defines>%(CGFile.Defines)</_Defines>
+		</PropertyGroup>
+		
+		<Message Text="Compiling with entry point: %(EntryPoint.Identity)" />  
+		
+		<Message Text="Preprocess Only: $(_PreprocessOnly)" />
+		<Message Text="Strict: $(_Strict)" />
+		<Message Text="In File: $(_FullPath)" />
+		<Message Text="Out File: $(IntDir)%(EntryPoint.Identity).fx" />
+		
+		<CGCompiler
+			Inputs="$(_FullPath)"
+			Strict="$(_Strict)"
+			PreprocessOnly="$(_PreprocessOnly)"
+			Defines="$(_Defines)"
+			EntryPoints="%(EntryPoint.Identity)"
+			CommandLineTemplate="&quot;$(CG_BIN_PATH)\cgc.exe&quot; [AllOptions] -o &quot;$(IntDir)%(EntryPoint.Identity).fx&quot; [Inputs]" />
+		
+		<Exec Command="&quot;$(DXSDK_DIR)Utilities\bin\x86\fxc.exe&quot; /nologo /Zi /T fx_2_0 /Fo &quot;$(OutDir)%(EntryPoint.Identity).cso&quot; &quot;$(IntDir)%(EntryPoint.Identity).fx&quot;" />
+		
+		<Message Importance="High" Text="Shader compiled: %(EntryPoint.Identity)" />
+	</Target>
+ </Project>

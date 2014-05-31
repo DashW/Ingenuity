@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="EyeAdaptation" type="texture">
+
+  <params>
+    <param index="0" displayName="Previous Adaptation" type="tex2D" />
+    <param index="1" displayName="Frame Time" type="float" />
+    <param index="2" displayName="Adaptation Speed" type="float" default="0.02" min="0.0" max="1.0" />
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11 shader="EyeAdaptationPixPosTex">
+    <paramMapping index="0" textureIndex="1" />
+    <paramMapping index="1" bufferIndex="10" bufferOffset="0" />
+    <paramMapping index="2" bufferIndex="10" bufferOffset="1" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>
+

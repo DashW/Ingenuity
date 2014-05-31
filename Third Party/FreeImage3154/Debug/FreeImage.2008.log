@@ -1,0 +1,20 @@
+﻿Build started 31/05/2014 10:14:38.
+     1>Project "C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\FreeImage.2008.vcxproj" on node 2 (Build target(s)).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppBuild.targets(1193,5): warning MSB8012: TargetPath(C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\.\Debug\FreeImage.dll) does not match the Linker's OutputFile property value (C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\Debug\FreeImaged.dll). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppBuild.targets(1195,5): warning MSB8012: TargetName(FreeImage) does not match the Linker's OutputFile property value (FreeImaged). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+     1>Link:
+         FreeImage.2008.vcxproj -> C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\.\Debug\FreeImage.dll
+       PostBuildEvent:
+         copy Debug\FreeImaged.dll DistDLL
+         copy Debug\FreeImaged.lib DistDLL
+         copy Source\FreeImage.h DistDLL
+         
+         :VCEnd
+                 1 file(s) copied.
+                 1 file(s) copied.
+                 1 file(s) copied.
+     1>Done Building Project "C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\FreeImage.2008.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.19

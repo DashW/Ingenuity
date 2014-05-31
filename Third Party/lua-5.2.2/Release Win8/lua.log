@@ -1,0 +1,81 @@
+﻿Build started 23/02/2014 07:34:52.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\lua-5.2.2\lua.vcxproj" on node 2 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D LUA_WIN_8 /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release Win8\\" /Fd"Release Win8\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt src\lapi.c src\lauxlib.c src\lbaselib.c src\lbitlib.c src\lcode.c src\lcorolib.c src\lctype.c src\ldblib.c src\ldebug.c src\ldo.c src\ldump.c src\lfunc.c src\lgc.c src\linit.c src\liolib.c src\llex.c src\lmathlib.c src\lmem.c src\loadlib.c src\lobject.c src\lopcodes.c src\loslib.c src\lparser.c src\lstate.c src\lstring.c src\lstrlib.c src\ltable.c src\ltablib.c src\ltm.c src\lua.c src\luac.c src\lundump.c src\lvm.c src\lzio.c
+         lapi.c
+         lauxlib.c
+         lbaselib.c
+         lbitlib.c
+         lcode.c
+         lcorolib.c
+         lctype.c
+         ldblib.c
+         ldebug.c
+         ldo.c
+         ldump.c
+         lfunc.c
+         lgc.c
+         linit.c
+         liolib.c
+         llex.c
+         lmathlib.c
+         lmem.c
+         loadlib.c
+         lobject.c
+         Compiling...
+         lopcodes.c
+         loslib.c
+         lparser.c
+         lstate.c
+         lstring.c
+         lstrlib.c
+         ltable.c
+         ltablib.c
+         ltm.c
+         lua.c
+         luac.c
+         lundump.c
+         lvm.c
+         lzio.c
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\lua-5.2.2\Release Win8\lua.lib" /NOLOGO /LTCG "Release Win8\lapi.obj"
+         "Release Win8\lauxlib.obj"
+         "Release Win8\lbaselib.obj"
+         "Release Win8\lbitlib.obj"
+         "Release Win8\lcode.obj"
+         "Release Win8\lcorolib.obj"
+         "Release Win8\lctype.obj"
+         "Release Win8\ldblib.obj"
+         "Release Win8\ldebug.obj"
+         "Release Win8\ldo.obj"
+         "Release Win8\ldump.obj"
+         "Release Win8\lfunc.obj"
+         "Release Win8\lgc.obj"
+         "Release Win8\linit.obj"
+         "Release Win8\liolib.obj"
+         "Release Win8\llex.obj"
+         "Release Win8\lmathlib.obj"
+         "Release Win8\lmem.obj"
+         "Release Win8\loadlib.obj"
+         "Release Win8\lobject.obj"
+         "Release Win8\lopcodes.obj"
+         "Release Win8\loslib.obj"
+         "Release Win8\lparser.obj"
+         "Release Win8\lstate.obj"
+         "Release Win8\lstring.obj"
+         "Release Win8\lstrlib.obj"
+         "Release Win8\ltable.obj"
+         "Release Win8\ltablib.obj"
+         "Release Win8\ltm.obj"
+         "Release Win8\lua.obj"
+         "Release Win8\luac.obj"
+         "Release Win8\lundump.obj"
+         "Release Win8\lvm.obj"
+         "Release Win8\lzio.obj"
+     1>lua.obj : warning LNK4006: _main already defined in luac.obj; second definition ignored
+         lua.vcxproj -> C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\lua-5.2.2\Release Win8\lua.lib
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\lua-5.2.2\lua.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.00

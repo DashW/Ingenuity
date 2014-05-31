@@ -1,0 +1,3 @@
+﻿  xmltest.cpp
+xmltest.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
+  tinyXmlTestSTL.vcxproj -> C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinyxml_2_6_2\DebugtinyXmlTestSTL\tinyXmlTestSTL.exe

@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SceneDemoMetro_TemporaryKey.pfx" />
+    <None Include="SceneDemo\vase.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="SceneDemo\vase.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="SceneDemo\OBJ_HeavyThrownObject_Vase_01_D.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{61b46356-9647-4ffe-85c7-7b60cc1dd27c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{5c18f4a9-4c48-4d34-b7f6-971190049a37}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\SceneDemo\Main.cpp" />
+  </ItemGroup>
+</Project>

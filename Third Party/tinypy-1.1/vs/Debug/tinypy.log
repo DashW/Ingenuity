@@ -1,0 +1,42 @@
+﻿Build started 04/12/2012 23:26:36.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\tinypy.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         tinypy.vcxproj -> C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\..\tinypy\vm.exe
+       PostBuildEvent:
+         cd ..\tinypy
+         echo Deleting Bytecode...
+         if exist bc.c del bc.c
+         echo Running Basic Tests...
+         python tests.py -win
+         echo Compiling Tests...
+         python py2bc.py tokenize.py tokenize.tpc
+         python py2bc.py parse.py parse.tpc
+         python py2bc.py encode.py encode.tpc
+         python py2bc.py py2bc.py py2bc.tpc
+         python py2bc.py tests.py tests.tpc
+         echo Running Compiled Tests...
+         vm.exe tests.tpc -win
+         echo Building Bytecode...
+         python buildbc.py
+         :VCEnd
+         Deleting Bytecode...
+         Running Basic Tests...
+           File "tests.py", line 4
+             fifty = 50oj
+                        ^
+         SyntaxError: invalid syntax
+         Compiling Tests...
+         Running Compiled Tests...
+         
+         File "tests.py", line 4, in ?
+           	fifty = 50oj
+         
+         Exception:
+         tp_get: KeyError: oj
+         
+         Building Bytecode...
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\tinypy.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.90

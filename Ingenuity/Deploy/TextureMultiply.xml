@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="TextureMultiply" type="texture">
+
+  <params>
+    <param index="0" displayName="Multiplier R" type="float" default="1"/>
+    <param index="1" displayName="Multiplier G" type="float" default="1"/>
+    <param index="2" displayName="Multiplier B" type="float" default="1"/>
+    <param index="3" displayName="Multiplier A" type="float" default="1"/>
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11 shader="TextureMulPixPosTex">
+    <paramMapping index="0" bufferIndex="10" bufferOffset="0" />
+    <paramMapping index="1" bufferIndex="10" bufferOffset="1" />
+    <paramMapping index="2" bufferIndex="10" bufferOffset="2" />
+    <paramMapping index="3" bufferIndex="10" bufferOffset="3" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>
+

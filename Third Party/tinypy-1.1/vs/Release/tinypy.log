@@ -1,0 +1,48 @@
+﻿Build started 04/12/2012 23:00:55.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\tinypy.vcxproj" on node 2 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /nologo /W1 /WX- /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt ..\tinypy\vmmain.c
+         vmmain.c
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"..\tinypy\vm.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:"..\tinypy\vm.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"..\tinypy\vm.lib" /MACHINE:X86 /SAFESEH Release\vmmain.obj
+         Generating code
+         Finished generating code
+         tinypy.vcxproj -> C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\..\tinypy\vm.exe
+       PostBuildEvent:
+         cd ..\tinypy
+         echo Deleting Bytecode...
+         if exist bc.c del bc.c
+         echo Running Basic Tests...
+         python tests.py -win
+         echo Compiling Tests...
+         python py2bc.py tokenize.py tokenize.tpc
+         python py2bc.py parse.py parse.tpc
+         python py2bc.py encode.py encode.tpc
+         python py2bc.py py2bc.py py2bc.tpc
+         python py2bc.py tests.py tests.tpc
+         echo Running Compiled Tests...
+         vm.exe tests.tpc -win
+         echo Building Bytecode...
+         python buildbc.py
+         :VCEnd
+         Deleting Bytecode...
+         Running Basic Tests...
+           File "tests.py", line 4
+             fifty = 50oj
+                        ^
+         SyntaxError: invalid syntax
+         Compiling Tests...
+         Running Compiled Tests...
+         
+         File "tests.py", line 4, in ?
+           	fifty = 50oj
+         
+         Exception:
+         tp_get: KeyError: oj
+         
+         Building Bytecode...
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\tinypy-1.1\vs\tinypy.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.56

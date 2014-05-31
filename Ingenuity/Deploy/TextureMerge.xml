@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="TextureMerge" type="texture">
+
+  <params>
+    <param index="0" displayName="Sample Weighting" type="float" />
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11 shader="TextureMergePixPosTex">
+    <paramMapping index="0" shader="pixel" bufferIndex="10" bufferOffset="0" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>
+

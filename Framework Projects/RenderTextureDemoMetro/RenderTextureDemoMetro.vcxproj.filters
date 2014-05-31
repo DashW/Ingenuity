@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RenderTextureDemo\vase.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\face.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\face_nmap.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\floor.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\floor_nmap.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\HalftoneDots16x16.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\LoadingRect.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\OBJ_HeavyThrownObject_Vase_01_D.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\OBJ_HeavyThrownObject_Vase_01_D.tga">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\oildrum.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\oildrum.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\oildrum_col.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\oildrum_nor.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\Paramedic_Bag.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\Paramedic_Bag.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\Paramedic_Bag_D.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\Paramedic_Bag_N.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\PixTest.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\PixTest.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\PixTest.gif">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\PixTest.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\PixTest.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\skull3.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\TestHouse.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="RenderTextureDemo\vase.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{f40d876a-b274-4f7d-aaab-68151d26220a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{1488f519-a2ec-4c58-aea8-a7e5dc137326}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\RenderTextureDemo\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\RenderTextureDemo\SpriteLoadingBar.h" />
+  </ItemGroup>
+</Project>

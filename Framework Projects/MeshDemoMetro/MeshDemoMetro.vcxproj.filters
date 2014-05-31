@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>c33a26d1-102d-4420-841d-be456e5ab1b7</UniqueIdentifier>
+    </Filter>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{32390214-5498-4a05-b528-bf8bf34b1269}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="..\MeshDemo\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="..\MeshDemo\SpriteLoadingBar.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MeshDemoMetro_TemporaryKey.pfx" />
+    <None Include="MeshDemo\Paramedic_Bag.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\Paramedic_Bag_N.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\floor.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\floor_nmap.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\grassCubeMap.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\LoadingRect.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\Paramedic_Bag.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\Paramedic_Bag_D.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\face_nmap.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="MeshDemo\face.jpg">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+</Project>

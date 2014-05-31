@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Image Include="Assets\Logo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PropsDemo\castle.mtl">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\castle.x">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\castlehm257.raw">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree0.x">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree1.x">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree2.x">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree3.x">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\whitetex.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\blend_castle.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\brick1.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\castle.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\castleroof.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\darkbrick.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\dirLightTex.fx">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\dirt.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grass.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grass.fx">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassCubeMap.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin0.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin0sm.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin1.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin2.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin3.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\grassfin4.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\lightstone.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\LoadingRect.png">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\marble.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\PhongDirLtTex.fx">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\rock.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\skull3.obj">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\stone.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\stone1.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\stonefloor.bmp">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\Terrain.fx">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree0_bark.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree0_leaf.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree1_bark.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree1_leaf.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree2_bark.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree2_leaf.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree3_bark.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\tree3_leaf.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\Water.fx">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\wave0.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="PropsDemo\wave1.dds">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{61b46356-9647-4ffe-85c7-7b60cc1dd27c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{5c18f4a9-4c48-4d34-b7f6-971190049a37}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\PropsDemo\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\PropsDemo\SpriteLoadingBar.h" />
+  </ItemGroup>
+</Project>

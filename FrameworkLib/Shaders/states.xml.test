@@ -1,0 +1,14 @@
+
+<ScreenTransitionDecorator id="state_example">
+	<ScreenPopupDecorator glyph="popup">
+		<ScreenGeneric>
+			<Item id="header" glyph="popup_header">
+				<IBTextStatic string="lng_popup_header" isExplicit="false" />
+			</Item>
+			<Item id="item_0" glyph="0">
+				<IBObject object="button" />
+				<IBSelectable transition="next" />
+			</Item>
+		</ScreenGeneric>
+	</ScreenPopupDecorator>
+</ScreenTransitionDecorator>

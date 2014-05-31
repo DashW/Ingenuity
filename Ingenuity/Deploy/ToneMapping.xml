@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="ToneMapping" type="texture">
+
+  <params>
+    <param index="0" displayName="Eye Adaptation" type="tex2D" />
+    <param index="1" displayName="Key Value" type="float" default="0.18" min="0.0" max="1.0" />
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11 shader="ToneMappingPixPosTex">
+    <paramMapping index="0" textureIndex="1" />
+    <paramMapping index="1" bufferIndex="10" bufferOffset="0" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>
+

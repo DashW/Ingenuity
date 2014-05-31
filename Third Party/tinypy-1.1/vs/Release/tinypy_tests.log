@@ -1,0 +1,15 @@
+﻿Build started 03/12/2012 23:54:58.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\tinypy_tests.vcxproj" on node 2 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /nologo /W1 /WX- /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt ..\tinypy\tpmain.c
+         tpmain.c
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"..\tinypy\tinypy.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:"..\tinypy\tinypy.pdb" /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"..\tinypy\tinypy.lib" /MACHINE:X86 /SAFESEH Release\tpmain.obj
+         Generating code
+         Finished generating code
+         tinypy_tests.vcxproj -> C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\..\tinypy\tinypy.exe
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\tinypy_tests.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.63

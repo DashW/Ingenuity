@@ -1,0 +1,179 @@
+#if VS_5_0
+struct {
+	float4x4 worldViewProjection; 
+	float4x4 world;
+	float4x4 worldInverseTranspose;
+	float4 materialColor;
+	float yStart;
+	float progress;
+	float2 __filler;
+} cbModel : BUFFER[0];
+#define cbModel(x) cbModel.x
+#else
+uniform extern float4x4 worldViewProjection;
+uniform extern float4x4 world;
+uniform extern float4x4 worldInverseTranspose;
+uniform extern float4 materialColor;
+
+uniform extern float param3; // Y Start
+uniform extern float param4; // Y Progress
+#define cbModel(x) x
+#endif
+
+#if PS_5_0
+struct {
+	float3 lightPosition;
+	float specularPower;
+	float4 lightColor;
+	float3 cameraPosition;
+	float ambient;
+	float3 spotDirection;
+	float spotPower;
+} cbScreen : BUFFER[0];
+#define cbScreen(x) cbScreen.x
+#else
+uniform extern float3 lightPosition;
+uniform extern float specularPower;
+uniform extern float4 lightColor;
+uniform extern float3 cameraPosition;
+uniform extern float ambient;
+uniform extern float3 spotDirection;
+uniform extern float spotPower;
+#define cbScreen(x) x
+
+uniform extern texture2D tex;
+uniform extern texture2D param0; // tex1
+uniform extern texture2D param1; // tex2
+uniform extern texture2D param2; // tex3
+#endif
+
+sampler2D blendSampler : register(s0) = sampler_state
+{
+	Texture = <tex>;
+	MinFilter = Anisotropic;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+sampler2D texSampler1 : register(s1) = sampler_state
+{
+	Texture = <param0>;
+	MinFilter = Anisotropic;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+sampler2D texSampler2 : register(s2) = sampler_state
+{
+	Texture = <param1>;
+	MinFilter = Anisotropic;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+sampler2D texSampler3 : register(s3) = sampler_state
+{
+	Texture = <param2>;
+	MinFilter = Anisotropic;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+struct VertexOutPosNorTex
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+	float2 BlendCoord : TEXCOORD2;
+	float2 TexCoord : TEXCOORD3;
+};
+
+struct PixelOut 
+{
+  float4 color : COLOR;
+};
+
+VertexOutPosNorTex vtxPosNorTex( float3 inputPos : POSITION, float3 inputNormal : NORMAL, float2 inputTexCoord : TEXCOORD0 )
+{
+	VertexOutPosNorTex vout;
+	inputPos.y = (inputPos.y * cbModel(param4)) + (cbModel(param3) * (1.0f - cbModel(param4)));
+	inputNormal = (inputNormal * cbModel(param4)) + (float3(0.0f,1.0f,0.0f) * (1.0f - cbModel(param4)));
+	vout.WorldPos = mul(float4(inputPos, 1.0f), cbModel(world)).xyz;
+	vout.ProjPos = mul(float4(inputPos, 1.0f), cbModel(worldViewProjection));
+	vout.Normal = mul(float4(inputNormal, 0.0f), cbModel(worldInverseTranspose)).xyz;
+    vout.Color = cbModel(materialColor);
+	vout.BlendCoord = inputTexCoord;
+	vout.TexCoord = inputTexCoord * 16.0f;
+    return vout;
+}
+
+float4 diffuse(float3 normalizedNormal, float3 worldPos, float3 lightDirection, float4 color)
+{
+	float4 diffuseMagnitude = max(dot(lightDirection, normalizedNormal),cbScreen(ambient));
+	float4 diffuseColor = color * cbScreen(lightColor);
+	return float4((diffuseMagnitude * diffuseColor).rgb, color.a);
+}
+
+float4 spot(float3 lightDirection, float4 color)
+{
+	float spotFactor = pow(max(dot(normalize(-cbScreen(spotDirection)), lightDirection), 0.001f), cbScreen(spotPower));
+	return float4(color.rgb * spotFactor,color.a);
+}
+
+PixelOut pixPosNorTex(VertexOutPosNorTex vtx)
+{
+	PixelOut output;
+	float3 lightDirection = normalize(cbScreen(lightPosition) - vtx.WorldPos);
+	float3 normalizedNormal = normalize(vtx.Normal);
+
+	// Layer maps are tiled
+    float4 c0 = tex2D(texSampler1, vtx.TexCoord);
+    float4 c1 = tex2D(texSampler2, vtx.TexCoord);
+    float4 c2 = tex2D(texSampler3, vtx.TexCoord);
+    
+    // Blendmap is not tiled.
+    float3 B = tex2D(blendSampler, vtx.BlendCoord).rgb;
+
+	// Find the inverse of all the blend weights so that we can
+	// scale the total color to the range [0, 1].
+    float totalInverse = 1.0f / (B.r + B.g + B.b);
+    
+    // Scale the colors by each layer by its corresponding weight
+    // stored in the blendmap.  
+    c0 *= B.r * totalInverse;
+    c1 *= B.g * totalInverse;
+    c2 *= B.b * totalInverse;
+
+	output.color = (c0 + c1 + c2);
+
+	output.color = diffuse(normalizedNormal,vtx.WorldPos,lightDirection,output.color);
+	output.color = spot(lightDirection,output.color);
+	return output;
+}
+
+
+#ifndef VS_5_0
+
+technique posNorTex
+{
+	pass p0
+	{
+		VertexShader = compile vs_2_0 vtxPosNorTex();
+		PixelShader = compile ps_2_0 pixPosNorTex();
+	}
+}
+
+#endif

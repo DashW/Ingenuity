@@ -1,0 +1,74 @@
+#if VS_5_0
+uniform cbPerObject
+{
+	float4x4 worldViewProjection; 
+	float4x4 world;
+	float4x4 worldInverseTranspose;
+	float4 materialColor;
+} : BUFFER[0];
+#else
+uniform extern float4x4 worldViewProjection;
+uniform extern float4x4 world;
+uniform extern float4x4 worldInverseTranspose;
+uniform extern float4 materialColor;
+#endif
+
+uniform extern float3 lightPosition;
+uniform extern float4 lightColor;
+uniform extern float param0; // Ripple Distance
+uniform extern float param1; // Ripple Length
+uniform extern float param2; // Ripple Dropoff
+
+struct VertexOutPosNor
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+};
+
+struct PixelOut 
+{
+  float4 color : COLOR;
+};
+
+VertexOutPosNor vtxPosNor( float3 inputPos : POSITION, float3 inputNormal : NORMAL, float2 inputTexCoord : TEXCOORD0 )
+{
+	VertexOutPosNor vout;
+	vout.WorldPos = mul(float4(inputPos, 1.0f), world).xyz;
+	vout.ProjPos = mul(float4(inputPos, 1.0f), worldViewProjection);
+	vout.Normal = mul(float4(inputNormal, 0.0f), worldInverseTranspose).xyz;
+    vout.Color = materialColor;
+    
+    return vout;
+}
+
+PixelOut pixPosNor(VertexOutPosNor vtx)
+{
+	PixelOut output;
+	float lightDistance = distance(lightPosition,vtx.WorldPos);
+	float3 normalizedNormal = normalize(vtx.Normal);
+	
+	float d1 = lightDistance - param0;
+	float d2 = d1 * (1.0f / param1);
+	float d3 = 1.0f - pow(d2,2.0f);
+	float d4 = clamp(d3,0.0f,1.0f);
+	float d5 = d4 * (1.0f - (lightDistance / param2));
+	float brightness = clamp(d5,0.0f,1.0f);
+
+	output.color = float4(lightColor.rgb * brightness,1.0f);
+	return output;
+}
+
+#ifndef VS_5_0
+
+technique posNor
+{
+	pass p0
+	{
+		VertexShader = compile vs_2_0 vtxPosNor();
+		PixelShader = compile ps_2_0 pixPosNor();
+	}
+}
+
+#endif

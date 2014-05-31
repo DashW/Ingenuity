@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Tinypy">
+      <UniqueIdentifier>{d772978d-2b68-4cea-ace2-069fe7183140}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="TinypyWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\bc.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\builtins.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\dict.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\gc.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\list.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\misc.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\mymain.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\ops.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\string.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\tp.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\tpmain.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\vm.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="Tinypy\vmmain.c">
+      <Filter>Tinypy</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PythonInterpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptCallbacks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IngenuityHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Tinypy\tp.h">
+      <Filter>Tinypy</Filter>
+    </ClInclude>
+    <ClInclude Include="TinypyWrapper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptConsole.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PythonInterpreter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptCallbacks.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IngenuityHelper.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

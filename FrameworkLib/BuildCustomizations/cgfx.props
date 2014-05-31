@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup>
+    <!--<CGCompiler>
+      <NoLogo>true</NoLogo>
+      <OutputDirectory>$(OutDir)</OutputDirectory>
+      <CommandLineTemplate>"$(CG_BIN_PATH)\cgc.exe" -E -o -DPS_2_0 -strict "[Inputs].fx" "[Inputs]"</CommandLineTemplate>
+      <Outputs>%(OutputDirectory)\%(Inputs).fx</Outputs>
+      <ExecutionDescription>Compiling CG Shaders...</ExecutionDescription>
+    </CGCompiler>-->
+    <!--<CGCompiler>
+      <NoLogo>true</NoLogo>
+      <CommandLineTemplate>"$(CG_BIN_PATH)\cgc.exe" [AllOptions] -o "[Outputs].fx" "[Inputs]"</CommandLineTemplate>
+      <ExecutionDescription>Compiling licenses...</ExecutionDescription>
+    </CGCompiler>	-->
+  </ItemDefinitionGroup>
+</Project>

@@ -1,0 +1,104 @@
+#if PS_5_0
+uniform cbPerScreen
+{
+	float3 lightPosition;
+	float specularPower;
+	float4 lightColor;
+	float3 cameraPosition;
+	float ambient;
+	float3 spotDirection;
+	float spotPower;
+} : BUFFER[0];
+#endif
+
+#if PS_2_0
+uniform extern float3 lightPosition;
+uniform extern float specularPower;
+uniform extern float4 lightColor;
+uniform extern float3 cameraPosition;
+uniform extern float spotPower;
+uniform extern float3 spotDirection;
+#endif
+
+struct VertexOutPosCol
+{
+	float4 PosH  : POSITION;
+    float4 Color : COLOR;
+};
+
+struct VertexOutPosNor
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+};
+
+struct VertexOutPosNorTex
+{
+	float3 WorldPos : TEXCOORD0;
+	float4 ProjPos  : POSITION;
+	float3 Normal : TEXCOORD1;
+    float4 Color : COLOR;
+	float2 TexCoord : TEXCOORD2;
+};
+
+struct PixelOut 
+{
+  float4 color : COLOR;
+};
+
+PixelOut posCol(VertexOutPosCol vtx)
+{
+	PixelOut output;
+	output.color = vtx.Color;
+	return output;
+}
+
+float4 diffuse(float3 normal, float3 worldPos, float3 lightDirection, float4 color)
+{
+	float3 normalizedNormal = normalize(normal);
+	float4 diffuseMagnitude = max(dot(lightDirection, normalizedNormal),ambient);
+	float4 diffuseColor = color * lightColor;
+	return float4((diffuseMagnitude * diffuseColor).rgb, color.a);
+}
+
+float4 specular(float3 normal, float3 worldPos, float3 lightDirection)
+{
+	float3 cameraVector = normalize(cameraPosition - worldPos);
+	float3 specularReflection = normalize(reflect(-lightDirection,normal));
+	float specularMagnitude = max(dot(cameraVector,specularReflection),0.0f);
+	float specularPoweredMagnitude = pow(specularMagnitude,specularPower);
+	return specularPoweredMagnitude * lightColor;
+}
+
+PixelOut posNor(VertexOutPosNor vtx)
+{
+	PixelOut output;
+	float3 lightDirection = normalize(lightPosition - vtx.WorldPos);
+	float spotFactor = pow(max(dot(-spotDirection, lightDirection), 0.001f), spotPower);
+	output.color = float4(
+		(diffuse(vtx.Normal,vtx.WorldPos,lightDirection,vtx.Color) + 
+		specular(vtx.Normal,vtx.WorldPos,lightDirection)).rgb * 
+		spotFactor,vtx.Color.a);
+	return output;
+}
+
+sampler2D textureSampler : register(s0) = sampler_state
+{
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+PixelOut posNorTex(VertexOutPosNorTex vtx)
+{
+	PixelOut output;
+	vtx.Color    = tex2D( textureSampler, vtx.TexCoord );
+	float3 lightDirection = normalize(lightPosition - vtx.WorldPos);
+	float spotFactor = pow(max(dot(-spotDirection, lightDirection), 0.001f), spotPower);
+	output.color = float4(
+		(diffuse(vtx.Normal,vtx.WorldPos,lightDirection,vtx.Color) + 
+		specular(vtx.Normal,vtx.WorldPos,lightDirection)).rgb * 
+		spotFactor,vtx.Color.a);
+	return output;
+}

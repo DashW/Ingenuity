@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="SkyShader" type="model">
+
+  <params>
+  </params>
+
+  <directx9 shader="Sky">
+    <technique name="pos" vertexType="Pos"/>
+  </directx9>
+
+  <directx11>
+    <technique vertexShader="SkyShaderVtxPos" pixelShader="SkyShaderPixPos" vertexType="Pos" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="PathShader" type="model">
+
+  <params>
+    <param index="0" displayName="Gradient Alpha"   type="float" default="0.0" min="0.0" max="1.0" />
+    <param index="1" displayName="Gradient Start X" type="float" default="0.0" min="0.0" max="1.0" />
+    <param index="2" displayName="Gradient Start Y" type="float" default="0.0" min="0.0" max="1.0" />
+    <param index="3" displayName="Gradient End X"   type="float" default="1.0" min="0.0" max="1.0" />
+    <param index="4" displayName="Gradient End Y"   type="float" default="0.0" min="0.0" max="1.0" />
+    <param index="5" displayName="Gradient Texture" type="tex2D" />
+  </params>
+
+  <directx9 shader="PathShader">
+    <paramMapping index="0" name="param0" />
+    <paramMapping index="1" name="param1" />
+    <paramMapping index="2" name="param2" />
+    <paramMapping index="3" name="param3" />
+    <paramMapping index="4" name="param4" />
+    <paramMapping index="5" name="param5" />
+
+    <technique name="pos" vertexType="Pos" />
+    <technique name="posTex" vertexType="PosTex" />
+    <technique name="posPosCol" vertexType="Pos" instanceType="PosCol" />
+  </directx9>
+
+  <directx11>
+    <technique vertexShader="PathShaderVtxPosTex" pixelShader="PathShaderPixPosTex" vertexType="PosTex">
+      <paramMapping index="0" shader="pixel" bufferIndex="1" bufferOffset="0" />
+      <paramMapping index="1" shader="pixel" bufferIndex="1" bufferOffset="1" />
+      <paramMapping index="2" shader="pixel" bufferIndex="1" bufferOffset="2" />
+      <paramMapping index="3" shader="pixel" bufferIndex="1" bufferOffset="3" />
+      <paramMapping index="4" shader="pixel" bufferIndex="1" bufferOffset="4" />
+      <paramMapping index="5" shader="pixel" textureIndex="3" />
+    </technique>
+    
+    <technique vertexShader="PathShaderVtxPosPosCol" pixelShader="PathShaderPixPosPosCol" vertexType="Pos" instanceType="PosCol" >
+      <!-- dgsl="false" -->
+      <paramMapping index="0" shader="pixel" bufferIndex="1" bufferOffset="0" />
+      <paramMapping index="1" shader="pixel" bufferIndex="1" bufferOffset="1" />
+      <paramMapping index="2" shader="pixel" bufferIndex="1" bufferOffset="2" />
+      <paramMapping index="3" shader="pixel" bufferIndex="1" bufferOffset="3" />
+      <paramMapping index="4" shader="pixel" bufferIndex="1" bufferOffset="4" />
+      <paramMapping index="5" shader="pixel" textureIndex="3" />
+    </technique>
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+  
+</shader>

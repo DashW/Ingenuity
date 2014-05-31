@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="MatcapShader" type="model">
+
+  <params>
+    <param index="0" displayName="MatCap"  type="tex2D" />
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11>
+    <technique vertexShader="MatcapShaderVtxPosNor" pixelShader="MatcapShaderPixPosNor" vertexType="PosNor" >
+      <paramMapping index="0" shader="pixel" textureIndex="3" />
+    </technique>
+    <technique vertexShader="MatcapShaderVtxPosNorTex" pixelShader="MatcapShaderPixPosNor" vertexType="PosNorTex" >
+      <paramMapping index="0" shader="pixel" textureIndex="3" />
+    </technique>
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>

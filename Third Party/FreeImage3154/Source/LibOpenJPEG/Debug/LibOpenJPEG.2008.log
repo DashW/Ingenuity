@@ -1,0 +1,60 @@
+﻿Build started 31/05/2014 10:15:03.
+     1>Project "C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\Source\LibOpenJPEG\LibOpenJPEG.2008.vcxproj" on node 4 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _LIB /D OPJ_STATIC /D _CRT_SECURE_NO_DEPRECATE /D _VC80_UPGRADE=0x0710 /D _MBCS /GF /Gm- /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug/" /Fd".\Debug/vc120.pdb" /Gd /TC /analyze- /errorReport:prompt bio.c cidx_manager.c cio.c dwt.c event.c image.c j2k.c j2k_lib.c jp2.c jpt.c mct.c mqc.c openjpeg.c phix_manager.c pi.c ppix_manager.c raw.c t1.c t2.c tcd.c tgt.c thix_manager.c tpix_manager.c
+         bio.c
+         cidx_manager.c
+         cio.c
+         dwt.c
+         event.c
+         image.c
+         j2k.c
+         j2k_lib.c
+         jp2.c
+         jpt.c
+         mct.c
+         mqc.c
+         openjpeg.c
+         phix_manager.c
+         pi.c
+         ppix_manager.c
+         raw.c
+         t1.c
+         t2.c
+         tcd.c
+         Generating Code...
+         Compiling...
+         tgt.c
+         thix_manager.c
+         tpix_manager.c
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:".\Debug\LibOpenJPEG.lib" /NOLOGO .\Debug/bio.obj
+         .\Debug/cidx_manager.obj
+         .\Debug/cio.obj
+         .\Debug/dwt.obj
+         .\Debug/event.obj
+         .\Debug/image.obj
+         .\Debug/j2k.obj
+         .\Debug/j2k_lib.obj
+         .\Debug/jp2.obj
+         .\Debug/jpt.obj
+         .\Debug/mct.obj
+         .\Debug/mqc.obj
+         .\Debug/openjpeg.obj
+         .\Debug/phix_manager.obj
+         .\Debug/pi.obj
+         .\Debug/ppix_manager.obj
+         .\Debug/raw.obj
+         .\Debug/t1.obj
+         .\Debug/t2.obj
+         .\Debug/tcd.obj
+         .\Debug/tgt.obj
+         .\Debug/thix_manager.obj
+         .\Debug/tpix_manager.obj
+         LibOpenJPEG.2008.vcxproj -> C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\Source\LibOpenJPEG\.\Debug\LibOpenJPEG.lib
+     1>Done Building Project "C:\Users\Richard\Documents\IngenuityWorkspace\Third Party\FreeImage3154\Source\LibOpenJPEG\LibOpenJPEG.2008.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.30

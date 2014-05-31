@@ -1,0 +1,22 @@
+
+-	type: ScreenTransitionDecorator
+	id: state_example
+	child:
+		type: ScreenPopupDecorator
+		glyph: popup
+		child:
+			type: ScreenGeneric
+			items: 
+			-	id: header
+				glyph: popup_header
+				behaviours:
+				-	type: IBTextStatic
+					string: lng_popup_header
+					isExplicit: false
+			-	id: item_0
+				glyph: 0
+				behaviours:
+				-	type: IBObject
+					object: button
+				-	type: IBSelectable
+					transition: next

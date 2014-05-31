@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="BrightPassFilter" type="texture">
+
+  <params>
+    <param index="0" displayName="Threshold" type="float" default="5.0"  />
+    <param index="1" displayName="Maximum"   type="float" default="10.0" />
+  </params>
+
+  <directx9>
+  </directx9>
+
+  <directx11 shader="BrightPassFilterPixPosTex">
+    <paramMapping index="0" shader="pixel" bufferIndex="10" bufferOffset="0" />
+    <paramMapping index="1" shader="pixel" bufferIndex="10" bufferOffset="1" />
+  </directx11>
+
+  <opengl4>
+  </opengl4>
+
+</shader>
+

@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>4cc5760c-c238-421c-98d1-baec307740f2</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>e309a47a-bbcf-456b-91ea-13a15fa3ad8d</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Content">
+      <UniqueIdentifier>86ad8352-12cf-4edb-b8e5-8ab838282c1d</UniqueIdentifier>
+    </Filter>
+    <Image Include="Assets\SmallLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Ingenuity Win8_TemporaryKey.pfx" />
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\Arial.spritefont">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\ArialB.spritefont">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\ArialI.spritefont">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\Courier New.spritefont">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\Courier NewB.spritefont">
+      <Filter>Content</Filter>
+    </None>
+    <None Include="..\Third Party\DirectXTK 2014-04\StandardFonts\Courier NewI.spritefont">
+      <Filter>Content</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Ingenuity\Main.cpp" />
+    <ClCompile Include="..\Ingenuity\ScriptCallbacks.cpp" />
+    <ClCompile Include="..\Ingenuity\ScriptConsole.cpp" />
+    <ClCompile Include="..\Ingenuity\IngenuityHelper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Ingenuity\ScriptCallbacks.h" />
+    <ClInclude Include="..\Ingenuity\ScriptConsole.h" />
+    <ClInclude Include="..\Ingenuity\IngenuityHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\Logo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square70x70Logo.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-100.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+</Project>

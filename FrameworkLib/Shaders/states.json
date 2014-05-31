@@ -1,0 +1,34 @@
+[
+	{
+		"type" : "StateTransitionDecorator",
+		"id" : "state_example",
+		"children" : 
+		[
+			{
+				"type" : "ScreenPopupDecorator",
+				"screen" : "Popup",
+				"children" : 
+				[
+					{
+						"type" : "ScreenGeneric",
+						"items" : 
+						[
+							{
+								"name" : "header",
+								"glyph" : "popup_header"
+								"behaviours" :
+								[
+									{
+										"type" : "IBTextStatic",
+										"string" : "lng_popup_header",
+										"isExplicit" : false
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+]

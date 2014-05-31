@@ -1,0 +1,42 @@
+﻿Build started 02/01/2014 15:58:14.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\LuaJIT-2.0.2\LuaJIT-2.0.2.vcxproj" on node 2 (Build target(s)).
+     1>Build:
+         cd src
+         msvcbuild.bat static
+         minilua.c
+         buildvm.c
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1175): error C2039: 'J' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1176): error C2039: 'J' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1177): error C2039: 'J' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1638): error C2039: 'hotcount' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1722): error C2039: 'hotcount' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1740): error C2039: 'hotcount' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1748): error C2039: 'J' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+     1>c:\users\richard\skydrive\documents\gaming projects\third party\luajit-2.0.2\src\host\buildvm_arch.h(1765): error C2039: 'hotcount' : is not a member of 'GG_State'
+                 .\lj_dispatch.h(70) : see declaration of 'GG_State'
+         buildvm_asm.c
+         buildvm_fold.c
+         buildvm_lib.c
+         buildvm_peobj.c
+         Generating Code...
+         
+         *******************************************************
+         *** Build FAILED -- Please check the error messages ***
+         *******************************************************
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.MakeFile.Targets(38,5): error MSB3073: The command "cd src
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.MakeFile.Targets(38,5): error MSB3073: msvcbuild.bat static" exited with code -1.
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\Third Party\LuaJIT-2.0.2\LuaJIT-2.0.2.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:01.93

@@ -1,0 +1,166 @@
+#if VS_5_0
+uniform cbPerObject
+{
+	float4x4 worldViewProjection; 
+	float4x4 world;
+	float4x4 worldInverseTranspose;
+	float4 materialColor;
+} : BUFFER[0];
+#else
+uniform extern float4x4 worldViewProjection;
+uniform extern float4x4 world;
+uniform extern float4x4 worldInverseTranspose;
+uniform extern float4 materialColor;
+#endif
+
+#if PS_5_0
+uniform cbPerScreen
+{
+	float3 lightPosition;
+	float specularPower;
+	float4 lightColor;
+	float3 cameraPosition;
+	float ambient;
+	float3 spotDirection;
+	float spotPower;
+	float cubeMapAlpha;
+	float3 filler;
+} : BUFFER[0];
+#else
+uniform extern float3 lightPosition;
+uniform extern float specularPower;
+uniform extern float4 lightColor;
+uniform extern float3 cameraPosition;
+uniform extern float ambient;
+uniform extern float attenuation;
+uniform extern float3 spotDirection;
+uniform extern float spotPower;
+uniform extern float cubeMapAlpha;
+
+uniform extern texture2D tex;
+uniform extern texture2D normalMap;
+uniform extern texture cubeMap;
+
+uniform extern float	 param0; // gradient opacity
+uniform extern float     param1; // gradient x1
+uniform extern float	 param2; // gradient y1
+uniform extern float     param3; // gradient x2
+uniform extern float     param4; // gradient y2
+uniform extern texture2D param5; // gradient texture
+#endif
+
+struct VertexOutPos
+{
+	float4 Pos : POSITION;
+	float2 Pos2D : TEXCOORD0;
+};
+
+struct VertexOutPosTex
+{
+	float4 Pos : POSITION;
+	float2 Pos2D : TEXCOORD0;
+	float2 Tex : TEXCOORD1;
+};
+
+struct PixelOut 
+{
+	float4 Color : COLOR;
+};
+
+VertexOutPos vtxPos( float3 pos : POSITION0 )
+{
+	VertexOutPos vtx;
+	vtx.Pos = mul(float4(pos.x,-pos.y,pos.z,1.0f),worldViewProjection);
+	//vtx.Pos = float4(
+	//	((vtx.Pos.x * 2.0f) / param0) - (1.0f) - (1.0f / param0),  // 0.5px offset
+	//	-(((vtx.Pos.y * 2.0f) / param1) - (1.0f) + (1.0f / param1)),  // 0.5px offset
+	//	vtx.Pos.z, 1.0f);
+	vtx.Pos2D = float2( pos.x, pos.y );
+	return vtx;
+}
+
+VertexOutPosTex vtxPosTex( float3 pos : POSITION0, float2 tex : TEXCOORD0 )
+{
+	VertexOutPosTex vtx;
+	vtx.Pos = mul(float4(pos.x,-pos.y,pos.z,1.0f),worldViewProjection);
+	//vtx.Pos = float4(
+	//	((vtx.Pos.x * 2.0f) / param0) - (1.0f) - (1.0f / param0),  // 0.5px offset
+	//	-(((vtx.Pos.y * 2.0f) / param1) - (1.0f) + (1.0f / param1)),  // 0.5px offset
+	//	vtx.Pos.z, 1.0f);
+	vtx.Pos2D = float2( pos.x, pos.y );
+	vtx.Tex = float2( tex.x, 1.0f - tex.y );
+	return vtx;
+}
+
+sampler2D gradientSampler : register(s1) = sampler_state
+{
+	Texture = <param5>;
+	MinFilter = LINEAR;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Clamp;
+	AddressV = Wrap;
+};
+
+PixelOut pixPos( VertexOutPos vtx )
+{
+	PixelOut pix;
+	float4 multipliedColor = float4(
+		materialColor.r * materialColor.a,
+		materialColor.g * materialColor.a,
+		materialColor.b * materialColor.a,
+		materialColor.a
+	);
+	
+	static float x1 = param1; static float y1 = param2; static float x2 = param3; static float y2 = param4;
+	static float    gradAngle    = atan2( y2-y1, x2-x1 );
+	static float2x2 gradRotation = float2x2(cos(gradAngle), -sin(gradAngle), sin(gradAngle), cos(gradAngle));
+	static float    gradScale    = length(float2(x2-x1,y2-y1));
+
+	float2 translatedPoint = vtx.Pos2D - float2( x1, y1 );
+	float2 rotatedPoint    = mul(translatedPoint, gradRotation);
+	float2 scaledPoint     = rotatedPoint / gradScale;
+//	float  pointAngle      = atan2( translatedPoint.y, translatedPoint.x );
+//	float  pointDistance   = translatedPoint.length() / (radius at that angle);
+	float4 gradColor       = tex2D( gradientSampler, scaledPoint );
+
+	pix.Color = (multipliedColor * (1.0f-param0)) + (gradColor * param0);
+	return pix;
+}
+
+sampler2D textureSampler : register(s0) = sampler_state
+{
+	Texture = <tex>;
+	MinFilter = Anisotropic;
+	MagFilter = LINEAR;
+	MipFilter = LINEAR;
+	MaxAnisotropy = 8;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+PixelOut pixPosTex( VertexOutPosTex vtx )
+{
+	PixelOut pix;
+	pix.Color = tex2D( textureSampler, vtx.Tex );
+	return pix;
+}
+
+technique pos
+{
+	pass p0
+	{
+		VertexShader = compile vs_2_0 vtxPos();
+		PixelShader = compile ps_2_0 pixPos();
+	}
+}
+
+technique posTex
+{
+	pass p0
+	{
+		VertexShader = compile vs_2_0 vtxPosTex();
+		PixelShader = compile ps_2_0 pixPosTex();
+	}
+}

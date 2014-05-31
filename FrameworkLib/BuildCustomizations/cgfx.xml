@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <Rule
+    Name="CGCompiler"
+    PageTemplate="tool"
+    DisplayName="Nvidia CG Compiler"
+    Order="200">
+	
+    <Rule.DataSource>
+      <DataSource
+        Persistence="ProjectFile"
+        ItemType="CGFile" />
+    </Rule.DataSource>
+	
+    <Rule.Categories>
+      <Category
+        Name="General">
+        <Category.DisplayName>
+          <sys:String>General</sys:String>
+        </Category.DisplayName>
+      </Category>
+      <Category
+        Name="Command Line"
+        Subtype="CommandLine">
+        <Category.DisplayName>
+          <sys:String>Command Line</sys:String>
+        </Category.DisplayName>
+      </Category>
+    </Rule.Categories>	
+	
+    <StringListProperty
+      Name="Inputs"
+      Category="Command Line"
+      IsRequired="true"
+      Switch=" ">
+     <StringListProperty.DataSource>
+       <DataSource
+          Persistence="ProjectFile"
+          ItemType="CGFile"
+          SourceType="Item" />
+     </StringListProperty.DataSource>
+    </StringListProperty>	
+	
+    <BoolProperty
+      Name="Strict"
+      HelpUrl="http://http.developer.nvidia.com/Cg/cgc.html#Language_options"
+      DisplayName="Strict Typechecking"
+      Description="Flags questionable constructs as warnings. (-strict)"
+      Switch="-strict" />	
+	  
+    <BoolProperty
+      Name="PreprocessOnly"
+      HelpUrl="http://http.developer.nvidia.com/Cg/cgc.html#Preprocessor_Options"
+      DisplayName="Preprocess Only"
+      Description="Don't compile, just prepocess the input. (-E)"
+      Switch="-E" />		  
+	  
+    <StringListProperty
+      Name="EntryPoints"
+      HelpUrl="http://http.developer.nvidia.com/Cg/cgc.html#Basic_options"
+      DisplayName="Entry Points"
+      Description="Sets the entry function for the shader to compile. Defaults to main. (-entry [name])"
+      Switch="-entry " />	  
+	  
+    <StringListProperty
+      Name="Defines"
+      HelpUrl="http://http.developer.nvidia.com/Cg/cgc.html#Preprocessor_Options"
+      DisplayName="Defines"
+      Description="Sets preprocessor macros. If VALUE is not specified it defaults to 1. (-DMACRO[=VALUE])"
+      Switch="-D" />
+	  
+    <StringProperty
+      Subtype="AdditionalOptions"
+      Name="AdditionalOptions"
+      Category="Command Line">
+      <StringProperty.DisplayName>
+        <sys:String>Additional Options</sys:String>
+      </StringProperty.DisplayName>
+      <StringProperty.Description>
+        <sys:String>Additional Options</sys:String>
+      </StringProperty.Description>
+    </StringProperty>	  
+	
+  </Rule>  
+  <ItemType Name="CGFile" DisplayName="Nvidia CG Shader" />
+  <ContentType Name="CGContent" ItemType="CGFile" DisplayName="Nvidia CG Content Display" />
+  <FileExtension Name="*.cgfx" ContentType="CGContent" />
+  <FileExtension Name="*.cg" ContentType="CGContent" />
+</ProjectSchemaDefinitions>

@@ -1,0 +1,47 @@
+uniform extern float4x4 worldViewProjection;
+uniform extern texture cubeMap;
+uniform extern float3 cameraPos;
+
+sampler CubeSampler = sampler_state
+{
+    Texture   = <cubeMap>;
+    MinFilter = LINEAR; 
+    MagFilter = LINEAR;
+    MipFilter = LINEAR;
+    AddressU  = WRAP;
+    AddressV  = WRAP;
+};
+
+
+void SkyVS(float3 posL : POSITION0, 
+           out float4 oPosH : POSITION0, 
+           out float3 oCubeTex : TEXCOORD0)
+{
+	// Set z = w so that z/w = 1 (i.e., skydome always on far plane).
+    oPosH = mul(float4(posL, 1.0f), worldViewProjection).xyww; 
+    
+    // Use skymesh vertex position, in local space, as index into cubemap. 
+    oCubeTex = posL;
+}
+
+float4 SkyPS(float3 cubeTex : TEXCOORD0) : COLOR
+{
+	// pixelpos - camerapos? maybe do this in the vertex shader?
+    return texCUBE(CubeSampler, cubeTex);
+}
+
+technique pos
+{
+    pass P
+    {
+        vertexShader = compile vs_2_0 SkyVS();
+        pixelShader  = compile ps_2_0 SkyPS();
+		CullMode = None;
+		//ZFunc = Always; // Always write sky to depth buffer
+		//StencilEnable = true;
+		//StencilFunc   = Always;
+		//StencilPass   = Replace;
+		//StencilRef    = 0; // clear to zero
+    }
+}
+

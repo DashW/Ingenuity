@@ -1,0 +1,21 @@
+﻿Build started 04/12/2012 01:56:21.
+     1>Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\tinypy.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\..\build\vm.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\..\build\vm.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\..\build\vm.lib" /MACHINE:X86 Debug\builtins.obj
+         Debug\dict.obj
+         Debug\gc.obj
+         Debug\list.obj
+         Debug\misc.obj
+         Debug\ops.obj
+         Debug\string.obj
+         Debug\tp.obj
+         Debug\vm.obj
+         Debug\vmmain.obj
+     1>vm.obj : error LNK2005: _tp_None already defined in list.obj
+     1>vm.obj : error LNK2019: unresolved external symbol _tp_compiler referenced in function _tp_init
+     1>C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\..\build\vm.exe : fatal error LNK1120: 1 unresolved externals
+     1>Done Building Project "C:\Users\Richard\SkyDrive\Documents\Gaming Projects\ThirdParty\tinypy-1.1\vs\tinypy.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.19

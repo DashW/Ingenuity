@@ -1,0 +1,508 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{e888c6c9-5489-42d4-9f0c-e9b9287e806c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Documentation">
+      <UniqueIdentifier>{e8e05703-cc00-4d91-ab63-4286bee69ce6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{6c223f81-e700-4652-975f-599ce57bca5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\DX11">
+      <UniqueIdentifier>{f6ba5862-e366-4b3c-a7bd-66fbe66c7862}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\DX9">
+      <UniqueIdentifier>{2cea992c-bb5f-40c9-9878-7cbd8ef35de7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Gpu">
+      <UniqueIdentifier>{409c4cbd-fb2b-475b-9f0e-f7f96bb276a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Parsers">
+      <UniqueIdentifier>{6310958a-9d4e-4500-9a0f-f495c7906a98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Audio">
+      <UniqueIdentifier>{ece5b79f-278f-4dfb-accf-d8e59f093e04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application\Win32">
+      <UniqueIdentifier>{e487947d-ae98-41e0-b566-b31364b2909d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{cf195a6d-e34e-49cc-810c-6b6eed33dc7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\DX9">
+      <UniqueIdentifier>{357e4ac1-bd94-4474-b2ff-a76722fded30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\DX11">
+      <UniqueIdentifier>{b69080d4-cf7b-49c1-8ed6-e438177cedfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scripting">
+      <UniqueIdentifier>{a1a0063c-0794-43c0-8a3f-dcb731dc08f6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="RealtimeApp.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Api.h">
+      <Filter>Graphics\DX11</Filter>
+    </ClInclude>
+    <ClInclude Include=".\DX9Api.h">
+      <Filter>Graphics\DX9</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuStructs.h">
+      <Filter>Graphics\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuApi.h">
+      <Filter>Graphics\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuScene.h">
+      <Filter>Graphics\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="HeightParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="MtlParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="WavefrontLoader.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="DX9Shaders.h">
+      <Filter>Graphics\DX9</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuShaders.h">
+      <Filter>Graphics\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Shaders.h">
+      <Filter>Graphics\DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="StepMgr.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="DX9Surfaces.h">
+      <Filter>Graphics\DX9</Filter>
+    </ClInclude>
+    <ClInclude Include="SvgParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml2.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="GeoBuilder.h" />
+    <ClInclude Include="GeoStructs.h" />
+    <ClInclude Include="GpuVertices.h">
+      <Filter>Graphics\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="XAudio2Api.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyAudioApi.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioApi.h">
+      <Filter>Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundFileReader.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32Window.h">
+      <Filter>Application\Win32</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32AppController.h">
+      <Filter>Application\Win32</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageApi.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeImageApi.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetMgr.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Surfaces.h">
+      <Filter>Graphics\DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderParser.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="WICImageApi.h">
+      <Filter>Parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32FileApi.h">
+      <Filter>Application\Win32</Filter>
+    </ClInclude>
+    <ClInclude Include="FilesApi.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="LuaInterpreter.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptInterpreter.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptLogger.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptParam.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="IsoSurface.h" />
+    <ClInclude Include="InputState.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Samplers.h">
+      <Filter>Graphics\DX11</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11ShaderLoader.h">
+      <Filter>Graphics\DX11</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="DX11Api.cpp">
+      <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX9Api.cpp">
+      <Filter>Graphics\DX9</Filter>
+    </ClCompile>
+    <ClCompile Include="HeightParser.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="MtlParser.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjParser.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="WavefrontLoader.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="DX9Surfaces.cpp">
+      <Filter>Graphics\DX9</Filter>
+    </ClCompile>
+    <ClCompile Include="SvgParser.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml2.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="DX9Shaders.cpp">
+      <Filter>Graphics\DX9</Filter>
+    </ClCompile>
+    <ClCompile Include="GeoBuilder.cpp" />
+    <ClCompile Include="XAudio2Api.cpp">
+      <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundFileReader.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32AppController.cpp">
+      <Filter>Application\Win32</Filter>
+    </ClCompile>
+    <ClCompile Include=".\Win32Window.cpp">
+      <Filter>Application\Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="FreeImageApi.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetMgr.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11Shaders.cpp">
+      <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11Surfaces.cpp">
+      <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderParser.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="WICImageApi.cpp">
+      <Filter>Parsers</Filter>
+    </ClCompile>
+    <ClCompile Include="Debug.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32FileApi.cpp">
+      <Filter>Application\Win32</Filter>
+    </ClCompile>
+    <ClCompile Include="StepMgr.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="LuaInterpreter.cpp">
+      <Filter>Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptLogger.cpp">
+      <Filter>Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="IsoSurface.cpp" />
+    <ClCompile Include="InputState.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11Samplers.cpp">
+      <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="DX11ShaderLoader.cpp">
+      <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt">
+      <Filter>Documentation</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosCol.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosCol.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MultiTextureAnimYVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MultiTexturePixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MultiTextureVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureCopyPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureCopyVtxPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\HalftoneDotsPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\HalftoneDotsVtxPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTexPos.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorPos.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPosPosCol.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderPixPosPosCol.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\WaterShaderVtxPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\WaterShaderPixPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPos.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\SkyShaderPixPos.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\SkyShaderVtxPos.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MatcapShaderPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MatcapShaderVtxPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MatcapShaderVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ProjectorPixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ProjectorVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\DownSamplePixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\LogLuminancePixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BrightPassFilterPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\EyeAdaptationPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ToneMappingPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BlurShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\GaussianPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureMergePixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BloomShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureMulPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\BaseShader.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\BaseShaderAdd.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\BlurAndDark.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\BoxBlur.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\ColorVignette.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\Common.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\Darken.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\HalftoneDots.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\MultiTexture.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\MultiTextureAnimY.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\PathShader.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\RippleLight.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\Sky.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\TextureAdd.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\TextureCopy.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX9\WaterShader.fx">
+      <Filter>Shaders\DX9</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\DX11\TextureShader.inl">
+      <Filter>Shaders\DX11</Filter>
+    </None>
+    <None Include="Shaders\DX11\ModelShader.inl">
+      <Filter>Shaders\DX11</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="BaseShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="HalftoneDots.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="MatcapShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="MultiTextureAnimY.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="PathShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="SkyShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="TextureCopy.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="WaterShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ProjectorShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="DownSample.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="LogLuminance.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="EyeAdaptation.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ToneMapping.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BrightPassFilter.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="Gaussian.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BlurShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="TextureMerge.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BloomShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="TextureMultiply.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+  </ItemGroup>
+</Project>
