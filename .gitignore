@@ -1,0 +1,29 @@
+*.sdf
+*.suo
+*.user
+
+Framework Projects/**/Debug/
+Framework Projects/**/Debug DX9/
+Framework Projects/**/Debug DX11/
+Framework Projects/**/Release/
+Framework Projects/**/Release DX9/
+Framework Projects/**/Release DX11/
+
+FrameworkLib/Debug/
+FrameworkLib/Debug DX9/
+FrameworkLib/Debug DX11/
+FrameworkLib/Release/
+FrameworkLib/Release DX9/
+FrameworkLib/Release DX11/
+
+Ingenuity/Debug/
+Ingenuity/Debug DX9/
+Ingenuity/Debug DX11/
+Ingenuity/Release/
+Ingenuity/Release DX9/
+Ingenuity/Release DX11/
+
+Ingenuity Win8/Debug/
+Ingenuity Win8/Release/
+
+Third Party/DirectXTK 2014-04/Bin/
