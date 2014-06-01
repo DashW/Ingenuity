@@ -1,6 +1,5 @@
 *.sdf
 *.suo
-*.user
 
 Framework Projects/**/Debug/
 Framework Projects/**/Debug DX9/
@@ -23,7 +22,14 @@ Ingenuity/Release/
 Ingenuity/Release DX9/
 Ingenuity/Release DX11/
 
+Ingenuity/Deploy/
+!Ingenuity/Deploy/Common
+!Ingenuity/Deploy/Projects
+!Ingenuity/Deploy/config.xml
+
 Ingenuity Win8/Debug/
 Ingenuity Win8/Release/
 
 Third Party/DirectXTK 2014-04/Bin/
+Third Party/glm-0.9.4.1/Debug/
+Third Party/glm-0.9.4.1/Release/
