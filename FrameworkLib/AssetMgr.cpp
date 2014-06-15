@@ -14,7 +14,7 @@ namespace Ingenuity {
 
 std::wstring AssetMgr::FullPath(Files::Directory * directory, const wchar_t * subPath)
 {
-	return directory->GetPath() + subPath;
+	return directory ? directory->GetPath() + subPath : subPath;
 }
 
 AssetMgr::AssetMgr(Files::Api * files, Gpu::Api * gpu, Image::Api * imaging, StepMgr * steppables, Audio::Api * audio) :

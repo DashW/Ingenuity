@@ -105,8 +105,9 @@ public:
 	virtual void AddDeviceListener(IDeviceListener * listener) = 0;
 	virtual void RemoveDeviceListener(IDeviceListener * listener) = 0;
 
-	//virtual void BeginTimestamp() = 0;
-	//virtual Timestamp EndTimestamp() = 0;
+	virtual void BeginTimestamp(const std::wstring name) = 0;
+	virtual void EndTimestamp(const std::wstring name) = 0;
+	virtual TimestampData GetTimestampData(const std::wstring name) = 0;
 
 	virtual float MeasureGpuText(Font * font, const wchar_t * text) = 0;
 	virtual void SetClearColor(float r, float g, float b, float a) = 0;

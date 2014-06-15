@@ -18,16 +18,15 @@ cbuffer C2: register(b11)
 
 //static float2 g_avSampleOffsets[MAX_SAMPLES] = (float2[MAX_SAMPLES]) g_packedAvSampleOffsets;
 
+static int numSamplesInt = int(numSamples);
+
 float4 main(VertexOut vtx) : SV_TARGET
 {
 	float4 vSample = 0.0f;
 	float4 vColor = 0.0f;
-
 	float2 vSamplePosition;
 
-	const int numSamplesInt = int(numSamples);
-
-	// Sample from eight points along the bloom line
+	[unroll(16)]
 	for(int iSample = 0; iSample < numSamplesInt; iSample++)
 	{
 		vSamplePosition = vtx.TexCoord + g_avSampleOffsets[iSample].xy;

@@ -2,6 +2,7 @@
 #include "Win32AppController.h"
 #include "Win32Window.h"
 #include "Win32FileApi.h"
+#include "Win32PlatformApi.h"
 #include "FreeImageApi.h"
 #include "InputState.h"
 #include "WICImageApi.h"
@@ -71,6 +72,7 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 	window->onUnmaximize = window->onExitSizeMove;
 
 	app->files = new Win32::FileApi(window);
+	app->platform = new Win32::PlatformApi();
 
 	app->steppables = new StepMgr();
 
@@ -128,6 +130,7 @@ Win32::AppController::~AppController()
 	delete app->steppables;
 	delete app->assets;
 	if(app->audio) delete app->audio;
+	delete app->platform;
 	delete app->files;
 	delete app->gpu;
 	delete app;

@@ -14,7 +14,7 @@ cbuffer C10: register(b10)
 
 float4 main(VertexOut vtx) : SV_TARGET
 {
-	float4 texSample = tex.Sample(texSampler, vtx.TexCoord);
+	float4 texSample = tex.SampleLevel(texSampler, vtx.TexCoord, 0);
 
 	texSample.rgb /= (1.0f - texSample.rgb);
 

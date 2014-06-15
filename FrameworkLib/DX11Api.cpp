@@ -27,6 +27,8 @@ using namespace DirectX;
 
 namespace Ingenuity {
 
+float secsPerCnt;
+
 #if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
 DX11::Api::Api(Files::Api * files, HWND handle) :
 #else
@@ -49,7 +51,8 @@ DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
 	texShaderLayout(0),
 	texVertexShader(0),
 	texVertexShaderRequested(false),
-	files(files)
+	files(files),
+	currFrame(0)
 {
 	UINT creationFlags = 0;
 
@@ -169,8 +172,15 @@ DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
 	//	OutputDebugString(L"Failed to load TextureCopy shader!!\n");
 	//}
 
-	LocalMesh * quad = GeoBuilder().BuildRect(0.0f,0.0f,1.0f,1.0f,true);
-	texShaderQuad = static_cast<DX11::Mesh*>(quad->GpuOnly(this));
+	//LocalMesh * quad = GeoBuilder().BuildRect(0.0f, 0.0f, 1.0f, 1.0f, true);
+	//texShaderQuad = static_cast<DX11::Mesh*>(quad->GpuOnly(this));
+
+	VertexBuffer<Vertex_PosTex> triVertices(3);
+	triVertices.Set(0, Vertex_PosTex(0.0f, 0.0f, 0.0f, 0.0f, 1.0f));
+	triVertices.Set(1, Vertex_PosTex(2.0f, 0.0f, 0.0f, 2.0f, 1.0f));
+	triVertices.Set(2, Vertex_PosTex(0.0f, 2.0f, 0.0f, 0.0f,-1.0f));
+	unsigned triIndices[3] = { 0, 1, 2 };
+	texShaderQuad = static_cast<DX11::Mesh*>(CreateGpuMesh(3, triVertices.GetData(), 1, triIndices, VertexType_PosTex));
 
 	commonStates = new CommonStates(direct3Ddevice);
 
@@ -180,6 +190,10 @@ DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
 	stencilClipSurface = new DX11::StencilClipSurface(direct3Ddevice,direct3Dcontext);
 
 	//initialised = true;
+
+	__int64 cntsPerSec = 0;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&cntsPerSec);
+	secsPerCnt = 1.0f / (float)cntsPerSec;
 }
 
 DX11::Api::~Api()
@@ -322,10 +336,63 @@ void DX11::Api::BeginScene()
 	direct2Dtarget->BeginDraw();
 #endif
 
-	spriteBatch->Begin(SpriteSortMode_Texture,commonStates->NonPremultiplied());
+	spriteBatch->Begin(SpriteSortMode_BackToFront,commonStates->NonPremultiplied());
 }
 void DX11::Api::EndScene()
 {
+	profileTimes.clear();
+
+	currFrame = (currFrame + 1) % QUERY_LATENCY;    
+
+	XMMATRIX transform = XMMatrixTranslation(25.0f, 100.0f, 0.0f);
+
+	float queryTime = 0.0f;
+
+	// Iterate over all of the profiles
+	ProfileMap::iterator iter;
+	for(iter = profiles.begin(); iter != profiles.end(); iter++)
+	{
+		ProfileData& profile = (*iter).second;
+		if(profile.queryFinished == FALSE)
+			continue;
+
+		profile.queryFinished = FALSE;
+
+		if(profile.disjointQuery[currFrame] == NULL)
+			continue;
+
+		__int64 startTimeStamp = 0;
+		QueryPerformanceCounter((LARGE_INTEGER*)&startTimeStamp);
+
+		// Get the query data
+		UINT64 startTime = 0;
+		while(direct3Dcontext->GetData(profile.timestampStartQuery[currFrame], &startTime, sizeof(startTime), 0) != 0);
+
+		UINT64 endTime = 0;
+		while(direct3Dcontext->GetData(profile.timestampEndQuery[currFrame], &endTime, sizeof(endTime), 0) != 0);
+
+		D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
+		while(direct3Dcontext->GetData(profile.disjointQuery[currFrame], &disjointData, sizeof(disjointData), 0) != 0);
+
+		__int64 curTimeStamp = 0;
+		QueryPerformanceCounter((LARGE_INTEGER*)&curTimeStamp);
+
+		queryTime += secsPerCnt * float(curTimeStamp - startTimeStamp);
+
+		float time = 0.0f;
+		if(disjointData.Disjoint == FALSE)
+		{
+			UINT64 delta = endTime - startTime;
+			float frequency = static_cast<float>(disjointData.Frequency);
+			time = (delta / frequency);
+		}
+
+		profile.drawCalls = 0;
+		profile.stateChanges = 0;
+
+		profileTimes[iter->first] = time;
+	}
+
 	spriteBatch->End();
 
 #ifdef USE_DIRECT2D
@@ -399,11 +466,17 @@ void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface)
 	{
 		spriteBatch->End();
 		dx11surface->End();
-		spriteBatch->Begin(SpriteSortMode_BackToFront,commonStates->NonPremultiplied());
+		spriteBatch->Begin(SpriteSortMode_BackToFront, commonStates->NonPremultiplied());
 	}
 
 	//direct3Dcontext->OMSetDepthStencilState(0,0);
 	//direct3Dcontext->RSSetState(0);
+
+	ProfileList::iterator profileIt = activeProfiles.begin();
+	for(; profileIt != activeProfiles.end(); profileIt++)
+	{
+		(*profileIt)->drawCalls++;
+	}
 }
 
 void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, bool center, Gpu::DrawSurface * surface) 
@@ -454,6 +527,12 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 	//direct3Dcontext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
 	//direct3Dcontext->OMSetDepthStencilState(0,0);
 	//direct3Dcontext->RSSetState(0);
+
+	ProfileList::iterator profileIt = activeProfiles.begin();
+	for(; profileIt != activeProfiles.end(); profileIt++)
+	{
+		(*profileIt)->drawCalls++;
+	}
 }
 
 void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, 
@@ -571,6 +650,12 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 		}
 	}
 	if(dx11surface) dx11surface->End();
+
+	ProfileList::iterator profileIt = activeProfiles.begin();
+	for(; profileIt != activeProfiles.end(); profileIt++)
+	{
+		(*profileIt)->drawCalls++;
+	}
 }
 
 void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, Gpu::DrawSurface * dest)
@@ -602,8 +687,7 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 		effect ? &effect->samplerParams : 0, 
 		false);
 
-	if(dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencil 
-		|| dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencilClip) return;
+	if(dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencil) return;
 	DX11::TextureSurface * destSurface = static_cast<DX11::TextureSurface*>(dest);
 	//if(destSurface->texture->GetWidth() != dx11tex->GetWidth() 
 	//	|| destSurface->texture->GetWidth() != dx11tex->GetWidth()) return;
@@ -611,6 +695,12 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 	destSurface->Begin();
 	direct3Dcontext->DrawIndexed(texShaderQuad->numTriangles * 3, 0, 0);
 	destSurface->End();
+
+	ProfileList::iterator profileIt = activeProfiles.begin();
+	for(; profileIt != activeProfiles.end(); profileIt++)
+	{
+		(*profileIt)->drawCalls++;
+	}
 }
 
 Gpu::Font * DX11::Api::CreateGpuFont(int height, LPCWSTR facename, Gpu::FontStyle style) 
@@ -884,6 +974,68 @@ Gpu::DrawSurface * DX11::Api::CreateScreenDrawSurface(float widthFactor, float h
 	DX11::TextureSurface * surface = new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, true, widthFactor, heightFactor);
 	deviceListeners.push_back(surface);
 	return surface;
+}
+
+void DX11::Api::BeginTimestamp(const std::wstring name)
+{
+	ProfileData& profileData = profiles[name];
+	_ASSERT(profileData.queryStarted == FALSE);
+	_ASSERT(profileData.queryFinished == FALSE);
+
+	if(profileData.disjointQuery[currFrame] == NULL)
+	{
+		// Create the queries
+		D3D11_QUERY_DESC desc;
+		desc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+		desc.MiscFlags = 0;
+		direct3Ddevice->CreateQuery(&desc, &profileData.disjointQuery[currFrame]);
+
+		desc.Query = D3D11_QUERY_TIMESTAMP;
+		direct3Ddevice->CreateQuery(&desc, &profileData.timestampStartQuery[currFrame]);
+		direct3Ddevice->CreateQuery(&desc, &profileData.timestampEndQuery[currFrame]);
+	}
+
+	// Start a disjoint query first
+	direct3Dcontext->Begin(profileData.disjointQuery[currFrame]);
+
+	// Insert the start timestamp    
+	direct3Dcontext->End(profileData.timestampStartQuery[currFrame]);
+
+	profileData.queryStarted = TRUE;
+
+	activeProfiles.push_front(&profileData);
+}
+
+void DX11::Api::EndTimestamp(const std::wstring name)
+{
+	ProfileData& profileData = profiles[name];
+	_ASSERT(profileData.queryStarted == TRUE);
+	_ASSERT(profileData.queryFinished == FALSE);
+
+	// Insert the end timestamp    
+	direct3Dcontext->End(profileData.timestampEndQuery[currFrame]);
+
+	// End the disjoint query
+	direct3Dcontext->End(profileData.disjointQuery[currFrame]);
+
+	profileData.queryStarted = FALSE;
+	profileData.queryFinished = TRUE;
+
+	activeProfiles.remove(&profileData);
+}
+
+Gpu::TimestampData DX11::Api::GetTimestampData(const std::wstring name)
+{
+	ProfileData& profileData = profiles[name];
+	_ASSERT(profileData.queryStarted == FALSE);
+	//_ASSERT(profileData.queryFinished == TRUE);
+
+	Gpu::TimestampData timestampData;
+	timestampData.data[Gpu::TimestampData::Time] = profileTimes.find(name) != profileTimes.end() ? profileTimes[name] : 0.0f;
+	timestampData.data[Gpu::TimestampData::DrawCalls] = float(profileData.drawCalls);
+	timestampData.data[Gpu::TimestampData::StateChanges] = float(profileData.stateChanges);
+
+	return timestampData;
 }
 
 void DX11::Api::SetClearColor(float r, float g, float b, float a)

@@ -50,6 +50,7 @@ public:
 	virtual ScriptParam CreateMap() override;
 	virtual void SetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) override;
 	virtual bool GetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) override;
+	virtual unsigned GetMapLength(ScriptParam mapref) override;
 
 	static int Callback(lua_State *);
 };

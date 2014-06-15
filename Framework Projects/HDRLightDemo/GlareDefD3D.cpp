@@ -12,7 +12,7 @@
 // Static star library information
 static STARDEF s_aLibStarDef[NUM_BASESTARLIBTYPES] =
 {
-    //  star name               lines   passes  length  attn    rotate          bRotate
+    //  star name          lines   passes  length  attn    rotate    bRotate
     {   L"Disable",        0,      0,      0.0f,   0.0f,   00.0f,    false,  },  // STLT_DISABLE
 
     {   L"Cross",          4,      3,      1.0f,   0.85f,  0.0f,     true,   },  // STLT_CROSS
@@ -26,8 +26,8 @@ static int                      s_nLibStarDefs = sizeof( s_aLibStarDef ) / sizeo
 // Static glare library information
 static GLAREDEF s_aLibGlareDef[NUM_GLARELIBTYPES] =
 {
-    //  glare name                              glare   bloom   ghost   distort star    star type
-    //  rotate          C.A     current after   ai lum
+    //  glare name                         glare   bloom   ghost   distort star    star type
+    //  rotate    C.A     current after   ai lum
     {   L"Disable",                        0.0f,   0.0f,   0.0f,   0.01f,  0.0f,   STLT_DISABLE,
         0.0f,     0.5f,   0.00f,  0.00f,  0.0f,  },   // GLT_DISABLE
 

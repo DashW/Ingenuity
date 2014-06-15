@@ -170,6 +170,12 @@
     <ClInclude Include="DX11ShaderLoader.h">
       <Filter>Graphics\DX11</Filter>
     </ClInclude>
+    <ClInclude Include="PlatformApi.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32PlatformApi.h">
+      <Filter>Application\Win32</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -258,6 +264,9 @@
     </ClCompile>
     <ClCompile Include="DX11ShaderLoader.cpp">
       <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32PlatformApi.cpp">
+      <Filter>Application\Win32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

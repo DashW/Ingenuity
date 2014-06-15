@@ -212,6 +212,45 @@ class Api : public Gpu::Api
 
 	std::list<Gpu::IDeviceListener*> deviceListeners;
 
+	static const unsigned QUERY_LATENCY = 5;
+	struct ProfileData
+	{
+		ID3D11Query * disjointQuery[QUERY_LATENCY];
+		ID3D11Query * timestampStartQuery[QUERY_LATENCY];
+		ID3D11Query * timestampEndQuery[QUERY_LATENCY];
+		bool queryStarted;
+		bool queryFinished;
+		unsigned drawCalls;
+		unsigned stateChanges;
+
+		ProfileData() : queryStarted(false), queryFinished(false), drawCalls(0), stateChanges(0)
+		{
+			for(unsigned i = 0; i < QUERY_LATENCY; ++i)
+			{
+				disjointQuery[i] = 0;
+				timestampStartQuery[i] = 0;
+				timestampEndQuery[i] = 0;
+			}
+		}
+		~ProfileData()
+		{
+			for(unsigned i = 0; i < QUERY_LATENCY; ++i)
+			{
+				if(disjointQuery[i]) disjointQuery[i]->Release();
+				if(timestampStartQuery[i]) timestampStartQuery[i]->Release();
+				if(timestampEndQuery[i]) timestampEndQuery[i]->Release();
+			}
+		}
+	};
+
+	typedef std::map<std::wstring, ProfileData> ProfileMap;
+	typedef std::list<ProfileData*> ProfileList;
+	ProfileMap profiles;
+	ProfileList activeProfiles;
+	UINT64 currFrame;
+
+	std::map<std::wstring, float> profileTimes;
+
 	SamplerMgr * samplerMgr;
 
 public:
@@ -255,6 +294,10 @@ public:
 
 	virtual void AddDeviceListener(Gpu::IDeviceListener * listener) override { if(listener) deviceListeners.push_back(listener); }
 	virtual void RemoveDeviceListener(Gpu::IDeviceListener * listener) override { if(listener) deviceListeners.remove(listener); }
+
+	virtual void BeginTimestamp(const std::wstring name) override;
+	virtual void EndTimestamp(const std::wstring name) override;
+	virtual Gpu::TimestampData GetTimestampData(const std::wstring name) override;
 
 	virtual float MeasureGpuText(Gpu::Font * font, const wchar_t * text) override;
 

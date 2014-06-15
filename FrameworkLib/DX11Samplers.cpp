@@ -34,24 +34,39 @@ void DX11::SamplerMgr::UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam
 {
 	if(samplerKey == UINT_MAX) samplerKey = 0;
 
+	unsigned value = param.value;
+	unsigned upper = 0;
+	unsigned lower = 0;
+
 	switch(param.key)
 	{
 	case Gpu::SamplerParam::AddressU:
-		samplerKey += param.value * ADDRESS_U;
+		upper = ADDRESS_V;
+		lower = ADDRESS_U;
 		break;
 	case Gpu::SamplerParam::AddressV:
-		samplerKey += param.value * ADDRESS_V;
+		upper = ADDRESS_W;
+		lower = ADDRESS_V;
 		break;
 	case Gpu::SamplerParam::AddressW:
-		samplerKey += param.value * ADDRESS_W;
+		upper = FILTER_MD;
+		lower = ADDRESS_W;
 		break;
 	case Gpu::SamplerParam::Filter:
-		samplerKey += param.value * FILTER_MD;
+		upper = MAX_ANISO;
+		lower = FILTER_MD;
 		break;
 	case Gpu::SamplerParam::Anisotropy:
-		samplerKey += param.value * MAX_ANISO;
+		upper = 16;
+		lower = MAX_ANISO;
 		break;
 	}
+
+	// Clear the bits
+	samplerKey &= ~GetBitmask(upper, lower);
+
+	// Set the new value
+	samplerKey |= value << lower;
 }
 
 void DX11::SamplerMgr::ApplySamplerParams(
@@ -115,19 +130,19 @@ void DX11::SamplerMgr::ApplySamplerParams(
 			samDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 			samDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
-			unsigned addressU = (samplerKey % ADDRESS_V) / ADDRESS_U;
+			unsigned addressU = (samplerKey & GetBitmask(ADDRESS_V, ADDRESS_U)) >> ADDRESS_U;
 			samDesc.AddressU = GPU_TEXTURE_MODES_TO_DX11_TEXTURE_MODES[addressU];
 
-			unsigned addressV = (samplerKey % ADDRESS_W) / ADDRESS_V;
+			unsigned addressV = (samplerKey & GetBitmask(ADDRESS_W, ADDRESS_V)) >> ADDRESS_V;
 			samDesc.AddressV = GPU_TEXTURE_MODES_TO_DX11_TEXTURE_MODES[addressV];
 
-			unsigned addressW = (samplerKey % FILTER_MD) / ADDRESS_W;
+			unsigned addressW = (samplerKey & GetBitmask(FILTER_MD, ADDRESS_W)) >> ADDRESS_W;
 			samDesc.AddressW = GPU_TEXTURE_MODES_TO_DX11_TEXTURE_MODES[addressW];
 
-			unsigned filterMode = (samplerKey % MAX_ANISO) / FILTER_MD;
+			unsigned filterMode = (samplerKey & GetBitmask(MAX_ANISO, FILTER_MD)) >> FILTER_MD;
 			samDesc.Filter = GPU_FILTER_MODES_TO_DX11_FILTERS[filterMode];
 
-			unsigned anisotropy = samplerKey / MAX_ANISO;
+			unsigned anisotropy = (samplerKey & GetBitmask(16, MAX_ANISO)) >> MAX_ANISO;
 			samDesc.MaxAnisotropy = anisotropy;
 
 			if(SUCCEEDED(direct3Ddevice->CreateSamplerState(&samDesc, &samplerState)))

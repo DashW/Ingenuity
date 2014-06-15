@@ -23,6 +23,7 @@ struct ScriptPtrType
 		GpuScene,
 		GpuShader,
 
+		FloatArray,
 		HeightParser,
 		ImageBuffer,
 		AudioItem
@@ -174,6 +175,10 @@ struct ScriptParam
 	bool CheckPointer(ScriptPtrType::Value ptrType) const
 	{
 		return type == POINTER && pvalue->type == ptrType;
+	}
+	bool IsNumber() const
+	{
+		return type == INT || type == FLOAT || type == DOUBLE;
 	}
 };
 

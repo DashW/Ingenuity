@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "WinRTAppController.h"
 #include "WinRTFileApi.h"
+#include "WinRTPlatformApi.h"
 #include "DX11Api.h"
 #include "InputState.h"
 #include "XAudio2Api.h"
@@ -28,6 +29,7 @@ WinRT::AppController::AppController()
 void WinRT::AppController::Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ appView)
 {
 	app->files = new WinRT::FileApi();
+	app->platform = new WinRT::PlatformApi();
 
 #ifdef USE_XAUDIO2_AUDIOAPI
 	app->audio = new XAudio2::Api();
@@ -167,6 +169,7 @@ void WinRT::AppController::Uninitialize()
 		if(app->imaging) delete app->imaging;
 		if(app->steppables) delete app->steppables;
 		if(app->audio) delete app->audio;
+		if(app->platform) delete app->platform;
 		if(app->files) delete app->files;
 		if(app->gpu) delete app->gpu;
 		delete app;

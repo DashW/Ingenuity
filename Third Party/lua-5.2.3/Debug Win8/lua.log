@@ -1,0 +1,47 @@
+﻿Build started 12/06/2014 19:26:01.
+     1>Project "C:\Users\Richard\Documents\IngenuityGitHub\Third Party\lua-5.2.3\lua.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D LUA_WIN_8 /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug Win8\\" /Fd"Debug Win8\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt src\loslib.c
+         loslib.c
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"C:\Users\Richard\Documents\IngenuityGitHub\Third Party\lua-5.2.3\Debug Win8\lua.lib" /NOLOGO "Debug Win8\lapi.obj"
+         "Debug Win8\lauxlib.obj"
+         "Debug Win8\lbaselib.obj"
+         "Debug Win8\lbitlib.obj"
+         "Debug Win8\lcode.obj"
+         "Debug Win8\lcorolib.obj"
+         "Debug Win8\lctype.obj"
+         "Debug Win8\ldblib.obj"
+         "Debug Win8\ldebug.obj"
+         "Debug Win8\ldo.obj"
+         "Debug Win8\ldump.obj"
+         "Debug Win8\lfunc.obj"
+         "Debug Win8\lgc.obj"
+         "Debug Win8\linit.obj"
+         "Debug Win8\liolib.obj"
+         "Debug Win8\llex.obj"
+         "Debug Win8\lmathlib.obj"
+         "Debug Win8\lmem.obj"
+         "Debug Win8\loadlib.obj"
+         "Debug Win8\lobject.obj"
+         "Debug Win8\lopcodes.obj"
+         "Debug Win8\loslib.obj"
+         "Debug Win8\lparser.obj"
+         "Debug Win8\lstate.obj"
+         "Debug Win8\lstring.obj"
+         "Debug Win8\lstrlib.obj"
+         "Debug Win8\ltable.obj"
+         "Debug Win8\ltablib.obj"
+         "Debug Win8\ltm.obj"
+         "Debug Win8\lua.obj"
+         "Debug Win8\luac.obj"
+         "Debug Win8\lundump.obj"
+         "Debug Win8\lvm.obj"
+         "Debug Win8\lzio.obj"
+     1>lua.obj : warning LNK4006: _main already defined in luac.obj; second definition ignored
+         lua.vcxproj -> C:\Users\Richard\Documents\IngenuityGitHub\Third Party\lua-5.2.3\Debug Win8\lua.lib
+     1>Done Building Project "C:\Users\Richard\Documents\IngenuityGitHub\Third Party\lua-5.2.3\lua.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.20

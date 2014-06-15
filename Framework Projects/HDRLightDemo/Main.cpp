@@ -6,6 +6,7 @@
 #include <GpuApi.h>
 #include <InputState.h>
 #include <math.h>
+#include <sstream>
 
 #include "GlareDefD3D.h"
 
@@ -254,18 +255,18 @@ public:
 
 		toneMappingTarget = gpu->CreateScreenDrawSurface(1.0f, 1.0f, Gpu::DrawSurface::Format_4x16float);
 
-		brightPassTarget = gpu->CreateScreenDrawSurface(0.5f, 0.5f, Gpu::DrawSurface::Format_4x16float);
-		blurTarget = gpu->CreateScreenDrawSurface(0.5f, 0.5f, Gpu::DrawSurface::Format_4x16float);
+		brightPassTarget = gpu->CreateScreenDrawSurface(1.0f/2.0f, 1.0f/2.0f, Gpu::DrawSurface::Format_4x16float);
+		blurTarget = gpu->CreateScreenDrawSurface(1.0f/2.0f, 1.0f/2.0f, Gpu::DrawSurface::Format_4x16float);
 
 		for(unsigned i = 0; i < NUM_STAR_SURFACES; ++i)
 		{
-			starSurfaces[i] = gpu->CreateScreenDrawSurface(0.5f, 0.5f, Gpu::DrawSurface::Format_4x16float);
+			starSurfaces[i] = gpu->CreateScreenDrawSurface(1.0f/4.0f, 1.0f/4.0f, Gpu::DrawSurface::Format_4x16float);
 		}
 
-		bloomSource = gpu->CreateScreenDrawSurface(0.25f, 0.25f, Gpu::DrawSurface::Format_4x16float);
-		bloomSourceBlurred = gpu->CreateScreenDrawSurface(0.25f, 0.25f, Gpu::DrawSurface::Format_4x16float);
-		bloomTempTarget = gpu->CreateScreenDrawSurface(0.25f, 0.25f, Gpu::DrawSurface::Format_4x16float);
-		bloomTarget = gpu->CreateScreenDrawSurface(0.25f, 0.25f, Gpu::DrawSurface::Format_4x16float);
+		bloomSource = gpu->CreateScreenDrawSurface(1.0f / 8.0f, 1.0f / 8.0f, Gpu::DrawSurface::Format_4x16float);
+		bloomSourceBlurred = gpu->CreateScreenDrawSurface(1.0f / 8.0f, 1.0f / 8.0f, Gpu::DrawSurface::Format_4x16float);
+		bloomTempTarget = gpu->CreateScreenDrawSurface(1.0f / 8.0f, 1.0f / 8.0f, Gpu::DrawSurface::Format_4x16float);
+		bloomTarget = gpu->CreateScreenDrawSurface(1.0f / 8.0f, 1.0f / 8.0f, Gpu::DrawSurface::Format_4x16float);
 
 		glareDef.Initialize(GLT_FILTER_CROSSSCREEN);
 
@@ -284,6 +285,8 @@ public:
 		delete painting1.mesh;
 		delete lights[0];
 		delete lights[1];
+
+		delete debugFont;
 
 		delete surface1;
 		delete surface2;
@@ -388,7 +391,7 @@ public:
 		float tu = 1.0f / texSize;
 
 		// Fill the center texel
-		float weight = 3.0f * GaussianDistribution(0, 0, 2.0f);
+		float weight = 2.0f * GaussianDistribution(0, 0, 3.0f);
 		sampleOffsets[0] = glm::vec4(0.0f);
 		sampleWeights[0] = glm::vec4(weight, weight, weight, 1.0f);
 
@@ -396,7 +399,7 @@ public:
 		for(i = 1; i < 8; i++)
 		{
 			// Get the Gaussian intensity for this offset
-			weight = 3.0f * GaussianDistribution((float)i, 0, 2.0f);
+			weight = 2.0f * GaussianDistribution((float)i, 0, 3.0f);
 			sampleOffsets[i] = glm::vec4(i * tu);
 			sampleWeights[i] = glm::vec4(weight, weight, weight, 1.0f);
 		}
@@ -407,6 +410,16 @@ public:
 			sampleWeights[i] = sampleWeights[i - 7];
 			sampleOffsets[i] = -sampleOffsets[i - 7];
 		}
+	}
+
+	void DrawTimestamp(const wchar_t * name, float y)
+	{
+		Gpu::TimestampData data = gpu->GetTimestampData(name);
+		std::wstringstream stream;
+		stream << name << L": ";
+		stream << unsigned(data.data[Gpu::TimestampData::DrawCalls]) << " calls, ";
+		stream << data.data[Gpu::TimestampData::Time] << "ms";
+		gpu->DrawGpuText(debugFont, stream.str().c_str(), 0.0f, y, false);
 	}
 
 	virtual void Draw() override
@@ -420,7 +433,11 @@ public:
 
 		gpu->SetBlendMode(Gpu::BlendMode_Alpha);
 
+#pragma region Scene
+
 		// Draw Scene to HDR render target
+
+		gpu->BeginTimestamp(L"scene");
 
 		gpu->DrawGpuModel(&wall1, &camera, (Gpu::Light**)lights, 2, surface1);
 		gpu->DrawGpuModel(&wall2, &camera, (Gpu::Light**)lights, 2, surface1);
@@ -437,7 +454,15 @@ public:
 		gpu->DrawGpuModel(&sphere, &camera, 0, 0, surface1);
 		gpu->DrawGpuModel(&sphere2, &camera, 0, 0, surface1);
 
+		gpu->EndTimestamp(L"scene");
+
+#pragma endregion // Draw Scene to HDR render target
+
+#pragma region Tonemapping
+
 		// 1. Measure Luminance.
+
+		gpu->BeginTimestamp(L"tonemapping");
 
 		if(downSampleEffect && logLuminanceEffect)
 		{
@@ -481,7 +506,15 @@ public:
 			gpu->DrawGpuSurface(surface1, toneMappingEffect, toneMappingTarget);
 		}
 
+		gpu->EndTimestamp(L"tonemapping");
+
+#pragma endregion // Perform Tone Mapping
+
+#pragma region Bright Pass
+
 		// 4. Down Sample
+
+		gpu->BeginTimestamp(L"brightpass");
 
 		if(downSampleEffect)
 		{
@@ -506,7 +539,15 @@ public:
 			gpu->DrawGpuSurface(brightPassTarget, blurEffect, blurTarget);
 		}
 
+		gpu->EndTimestamp(L"brightpass");
+
+#pragma endregion // Perform Bright Pass Filtering
+
+#pragma region Star
+
 		// 7. Star.
+
+		gpu->BeginTimestamp(L"star");
 
 		if(bloomEffect && multiplyEffect)
 		{
@@ -608,16 +649,14 @@ public:
 					// This is the remaining piece of the puzzle - 
 					// to set the sample offsets and weights to the effect!
 
-					Gpu::FloatArray gpuSampleOffsets((float**)&avSampleOffsets, 16 * 4);
-					Gpu::FloatArray gpuSampleWeights((float**)&avSampleWeights, 16 * 4);
+					Gpu::FloatArray gpuSampleOffsets((float*)&avSampleOffsets, 16 * 4);
+					Gpu::FloatArray gpuSampleWeights((float*)&avSampleWeights, 16 * 4);
 
 					bloomEffect->SetParam(0, &gpuSampleOffsets);
 					bloomEffect->SetParam(1, &gpuSampleWeights);
 					bloomEffect->SetParam(2, 8.0f);
-
-					//g_pEffect->SetTechnique("Star");
-					//g_pEffect->SetValue("g_avSampleOffsets", avSampleOffsets, sizeof(avSampleOffsets));
-					//g_pEffect->SetVectorArray("g_avSampleWeights", avSampleWeights, nSamples);
+					//bloomEffect->SetSamplerParam(Gpu::SamplerParam::Filter, Gpu::SamplerParam::FilterPoint);
+					//bloomEffect->SetSamplerParam(Gpu::SamplerParam::Anisotropy, 0);
 
 					gpu->DrawGpuSurface(pTexSource, bloomEffect, pSurfDest);
 
@@ -657,7 +696,15 @@ public:
 			}
 		}
 
+		gpu->EndTimestamp(L"star");
+
+#pragma endregion // Generate Star Effect
+
+#pragma region Bloom
+
 		// 8. Bloom.
+
+		gpu->BeginTimestamp(L"bloom");
 
 		if(downSampleEffect && bloomEffect)
 		{
@@ -676,8 +723,8 @@ public:
 				glm::vec4 sampleOffsets[16];
 				glm::vec4 sampleWeights[16];
 
-				Gpu::FloatArray gpuSampleOffsets((float**)&sampleOffsets, 16 * 4);
-				Gpu::FloatArray gpuSampleWeights((float**)&sampleWeights, 16 * 4);
+				Gpu::FloatArray gpuSampleOffsets((float*)&sampleOffsets, 16 * 4);
+				Gpu::FloatArray gpuSampleWeights((float*)&sampleWeights, 16 * 4);
 
 				bloomEffect->SetParam(0, &gpuSampleOffsets);
 				bloomEffect->SetParam(1, &gpuSampleWeights);
@@ -705,6 +752,10 @@ public:
 			}
 		}
 
+		gpu->EndTimestamp(L"bloom");
+
+#pragma endregion // Generate Bloom Effect
+
 		// Now to plop the star and bloom textures onto the tone map target.
 		// Texture copy with an additive blend??? Need to apply a multiplier first!
 		// bloomtex = 1.0f
@@ -722,9 +773,9 @@ public:
 
 			gpu->DrawGpuSurface(bloomTarget, multiplyEffect, toneMappingTarget);
 
-			multiplyEffect->SetParam(0, 0.5f);
-			multiplyEffect->SetParam(1, 0.5f);
-			multiplyEffect->SetParam(2, 0.5f);
+			multiplyEffect->SetParam(0, 1.0f);
+			multiplyEffect->SetParam(1, 1.0f);
+			multiplyEffect->SetParam(2, 1.0f);
 			multiplyEffect->SetParam(3, 1.0f);
 
 			gpu->DrawGpuSurface(starSurfaces[0], multiplyEffect, toneMappingTarget);
@@ -732,11 +783,18 @@ public:
 
 		surfaceSprite.texture = toneMappingTarget->GetTexture(); // FIXME!!
 		surfaceSprite.position.x = 0.0f;
+		surfaceSprite.position.z = 1.0f;
 		surfaceSprite.scale.x = 1.0f;
 		surfaceSprite.scale.y = 1.0f;
 		gpu->DrawGpuSprite(&surfaceSprite);
 
 		gpu->DrawGpuText(debugFont, frameTimeText, 0.0f, 0.0f, false);
+		
+		DrawTimestamp(L"scene", 40);
+		DrawTimestamp(L"tonemapping", 80);
+		DrawTimestamp(L"brightpass", 120);
+		DrawTimestamp(L"star", 160);
+		DrawTimestamp(L"bloom", 200);
 	}
 };
 

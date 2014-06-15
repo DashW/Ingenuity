@@ -19,7 +19,7 @@ float4 main(VertexOut vtx) : SV_TARGET
 
 	// The user's adapted luminance level is simulated by closing the gap between
 	// adapted luminance and current luminance.
-	float newAdaptation = adaptedLum + (currentLum - adaptedLum) * (1.0f - pow(abs(1.0f - adaptionSpeed), 100.0f * deltaTime));
+	float newAdaptation = adaptedLum + ((currentLum - adaptedLum) * (1.0f - pow(abs(1.0f - adaptionSpeed), 100.0f * deltaTime)));
 
 	return float4(newAdaptation, newAdaptation, newAdaptation, 1.0f);
 }

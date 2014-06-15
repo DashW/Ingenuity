@@ -194,7 +194,7 @@ function Begin()
 	
 	state = STATE_LOADING_ASSETS;
 	
-	sphere = CreateSphere();
+	sphere = CreateModel("PosNor", CreateSphere());
 	SetMeshColor(sphere,0,0,0,1,0.5);
 	SetModelPosition(sphere,0,0.35,0);
 	SetModelScale(sphere,2);
@@ -222,7 +222,7 @@ function ShaderLoaded()
 			print("APPLYING MODEL SHADER!");
 			SetMeshEffect(model,0,modelEffect);
 		end
-		if shaderFileNames[pendingShader] == "MatcapShader.xml" then
+		if shaderFileNames[pendingShader] == "MatcapShader.xml" and matcapTex then
 			SetEffectParam(modelEffect,0,matcapTex);
 		end
 	end
@@ -523,11 +523,11 @@ function Draw()
 		DrawComplexModel(model,camera,light,screenSurface1);
 	end
 	
+	-- DrawComplexModel(sphere,camera,0,screenSurface1);
+	
 	if screenEffect then
 		ShadeSurface(screenSurface1,screenEffect,screenSurface2);
 	end
-	
-	-- DrawComplexModel(sphere,camera);
 	
 	if uiVisible then
 		DrawUI();

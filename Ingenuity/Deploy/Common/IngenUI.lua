@@ -330,7 +330,7 @@ function CreateUISquare(posX, posY, width, height, tex)
 		};
 		vtxType = "Pos";
 	end
-	return CreateModel(vtxType,vtx,4,idx,6);
+	return CreateModel(vtxType,vtx,idx);
 end
 
 function CreateUI()

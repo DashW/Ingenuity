@@ -5,7 +5,7 @@
 namespace Ingenuity {
 
 DX11::TextureSurface::TextureSurface(DX11::Api * gpu, ID3D11Device * device, ID3D11DeviceContext * context,
-	Format format, bool screenRelative, float width, float height) :
+	Format format, bool screenRelative, float width, float height, bool mips) :
 	DX11::DrawSurface(device, context),
 	gpu(gpu),
 	renderTargetView(0),
@@ -13,9 +13,10 @@ DX11::TextureSurface::TextureSurface(DX11::Api * gpu, ID3D11Device * device, ID3
 	depthStencilView(0),
 	texture(0),
 	format(format),
-	screenRelative(screenRelative),
 	widthFactor(width),
-	heightFactor(height)
+	heightFactor(height),
+	screenRelative(screenRelative),
+	generateMips(mips)
 {
 	viewport = CD3D11_VIEWPORT(0.0f, 0.0f, width, height);
 
@@ -73,14 +74,15 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 
 	DXGI_FORMAT dxgiFormat = SURFACE_FORMAT_TO_DXGI_FORMAT[format];
 
+	unsigned mipLevels = generateMips ? min(width, height) / 4 : 1;
+
 	ID3D11Texture2D * texture2D = 0;
 	CD3D11_TEXTURE2D_DESC textureDesc(
 		dxgiFormat,
 		width,
 		height,
 		1,
-		0, // MIP LEVELS - *MUST NEVER* BE GREATER THAN log2(width) OR log2(height) - OTHERWISE MYSTERIOUS CRASHES!!!
-		// AS IT TURNS OUT, THIS MIGHT NOT BE THE CAUSE OF THE MYSTERIOUS CRASHES. uuurgh.
+		mipLevels, // MIP LEVELS - *MUST NEVER* BE GREATER THAN log2(width) OR log2(height)
 		D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 	device->CreateTexture2D(&textureDesc, 0, &texture2D);
 
@@ -88,15 +90,15 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 	CD3D11_SHADER_RESOURCE_VIEW_DESC shaderViewDesc(
 		texture2D,
 		D3D11_SRV_DIMENSION_TEXTURE2D,
-		textureDesc.Format,
+		dxgiFormat,
 		0,
-		1);
+		mipLevels);
 	device->CreateShaderResourceView(texture2D, &shaderViewDesc, &shaderView);
 
 	CD3D11_RENDER_TARGET_VIEW_DESC renderViewDesc(
 		texture2D,
 		D3D11_RTV_DIMENSION_TEXTURE2D,
-		textureDesc.Format);
+		dxgiFormat);
 	device->CreateRenderTargetView(texture2D, &renderViewDesc, &renderTargetView);
 
 	texture = new DX11::Texture(texture2D, shaderView, textureDesc);

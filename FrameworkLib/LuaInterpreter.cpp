@@ -385,6 +385,29 @@ bool LuaInterpreter::GetMapNext(ScriptParam mapref, ScriptParam & key, ScriptPar
 	}
 }
 
+unsigned LuaInterpreter::GetMapLength(ScriptParam mapref)
+{
+	if(mapref.type != ScriptParam::MAPREF) return 0;
+
+	int mapIndex = int(mapref.nvalue);
+	sprintf_s(tempTableName, "%s%d", luaTempTablePrefix, mapIndex);
+
+	lua_getglobal(state, tempTableName);
+	if(lua_type(state, -1) != LUA_TTABLE)
+	{
+		return 0;
+	}
+
+#if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
+	// Remove when the LuaJIT api is updated to Lua 5.2
+	unsigned length = lua_objlen(state, -1);
+#else
+	unsigned length = luaL_len(state, -1);
+#endif
+	lua_pop(state, 1);
+	return length;
+}
+
 int LuaInterpreter::Callback(lua_State * state)
 {
 	int methodIndex = (int)lua_tonumber(state, lua_upvalueindex(1));

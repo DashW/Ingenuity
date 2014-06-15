@@ -11,13 +11,17 @@ class ScriptCallbacks
 {
 	ScriptCallbacks();
 
-	static std::wstring subPathString;
+	static std::wstring projectDirPath;
 
 	static Files::Directory * GetDirectory(Files::Api * files, const char * name);
 	static void LoadAsset(AssetMgr * assets, AssetBatch & batch, const char * directory, const char * file, const char * type, const char * name);
+	//static ScriptParam VertexBufferToMap(ScriptInterpreter * interpreter, IVertexBuffer * vertexBuffer);
+	//static ScriptParam IndexBufferToMap(ScriptInterpreter * interpreter, unsigned * indexBuffer, unsigned numTriangles);
+	static ScriptParam VertexBufferToFloats(ScriptInterpreter * interpreter, IVertexBuffer * vertexBuffer);
+	static ScriptParam IndexBufferToFloats(ScriptInterpreter * interpreter, unsigned * indexBuffer, unsigned numTriangles);
 
 public:
-	static void SetSubDirectory(const wchar_t * subPath) { subPathString = subPath ? subPath : L""; }
+	static void SetSubDirectory(const wchar_t * subPath) { projectDirPath = subPath ? subPath : L""; }
 
 	static void RegisterWith(ScriptInterpreter * interpreter)
 	{
@@ -25,7 +29,7 @@ public:
 		interpreter->RegisterCallback("DrawSprite", &ScriptCallbacks::DrawSprite,
 			"(texture,x,y[,scale=1]) Draws a texture at the given screen location");
 		interpreter->RegisterCallback("CreateModel", &ScriptCallbacks::CreateModel,
-			"(type,vertices,count,indices,count) Creates a model with the given vertex/index data");
+			"(type,vertices,indices) Creates a model with the given vertex/index data");
 		interpreter->RegisterCallback("DrawComplexModel", &ScriptCallbacks::DrawModel,
 			"(model,camera[,lights,surface]) Draws a model with the given camera [and list of lights]");
 		interpreter->RegisterCallback("GetFont", &ScriptCallbacks::GetFont,
@@ -38,10 +42,14 @@ public:
 			"(name) Creates an effect with the given shader");
 		interpreter->RegisterCallback("SetClearColor", &ScriptCallbacks::SetClearColor,
 			"(r,g,b[,a]) Sets the background color to which the screen should be cleared");
+		interpreter->RegisterCallback("SetBlendMode", &ScriptCallbacks::SetBlendMode,
+			"(mode) Sets the given blend mode to the GPU ('alpha','additive','none')");
 		interpreter->RegisterCallback("SetWireframe", &ScriptCallbacks::SetWireframe,
 			"(wireframe) Sets whether the GPU should draw all 3D models in wireframe mode");
 		interpreter->RegisterCallback("SetMultisampling", &ScriptCallbacks::SetMultisampling,
 			"(level) Sets the level of multisampling to be used when drawing to the backbuffer, 0-16");
+		interpreter->RegisterCallback("SetAnisotropy", &ScriptCallbacks::SetAnisotropy,
+			"(level) Sets the level of anisotropic filtering for the default texture sampler");
 		interpreter->RegisterCallback("GetScreenSize", &ScriptCallbacks::GetScreenSize,
 			"() returns the width and height of the screen, in pixels");
 
@@ -66,8 +74,14 @@ public:
 			"(light,x,y,z) Sets the direction of a light (directional and spot only)");
 		interpreter->RegisterCallback("SetLightAttenuation", &ScriptCallbacks::SetLightAttenuation,
 			"(light,atten) Sets the attenuation value of a light (point and spot only)");
+
+		interpreter->RegisterCallback("CreateGrid", &ScriptCallbacks::CreateGrid,
+			"(width,depth,cols,rows[,texX,texY,texW,texH]) Returns vertex and index buffers for a plane");
+		interpreter->RegisterCallback("CreateCube", &ScriptCallbacks::CreateCube,
+			"() Returns vertex and index buffers for a standard 1x1x1 cube at (0,0,0)");
 		interpreter->RegisterCallback("CreateSphere", &ScriptCallbacks::CreateSphere,
-			"(texture,tangent) Creates a sphere");
+			"(texture,tangent) Returns vertex and index buffers for a sphere");
+
 		interpreter->RegisterCallback("SetModelPosition", &ScriptCallbacks::SetModelPosition,
 			"(model,x,y,z) Sets the world position of a model");
 		interpreter->RegisterCallback("SetModelRotation", &ScriptCallbacks::SetModelRotation,
@@ -88,6 +102,8 @@ public:
 			"(model,meshnum,r,g,b[,a]) Sets the color of a specific mesh in a complex model");
 		interpreter->RegisterCallback("SetMeshSpecular", &ScriptCallbacks::SetMeshSpecular,
 			"(model,meshnum,specular) Sets the specular power of a mesh in a complex model");
+		interpreter->RegisterCallback("SetMeshFactors", &ScriptCallbacks::SetMeshFactors,
+			"(model,meshnum,diffuse,specular) Sets multipliers for the diffuse/specular lighting components");
 		interpreter->RegisterCallback("GetMeshBounds", &ScriptCallbacks::GetMeshBounds,
 			"(model,meshnum) Returns the x,y,z origin and radius of the mesh's bounding sphere");
 		interpreter->RegisterCallback("GetNumMeshes", &ScriptCallbacks::GetNumMeshes,
@@ -101,6 +117,15 @@ public:
 
 		interpreter->RegisterCallback("SetEffectParam", &ScriptCallbacks::SetEffectParam,
 			"(effect,paramnum,value) Sets the value of an effect parameter");
+		interpreter->RegisterCallback("SetSamplerParam", &ScriptCallbacks::SetSamplerParam,
+			"(effect,paramnum,key,value) Sets a sampler parameter for a given effect parameter");
+		interpreter->RegisterCallback("CreateFloatArray", &ScriptCallbacks::CreateFloatArray,
+			"(length) Creates a shader parameter float array of the given length");
+		interpreter->RegisterCallback("SetFloatArray", &ScriptCallbacks::SetFloatArray,
+			"(floatArray,index,value[,value...]) Sets the given value[s] to the given index of the array");
+		interpreter->RegisterCallback("GetFloatArray", &ScriptCallbacks::GetFloatArray,
+			"(floatArray,index[,numValues]) Gets one [or more] values from the given index of the array");
+
 		interpreter->RegisterCallback("CreateSurface", &ScriptCallbacks::CreateSurface,
 			"([width,height]) Creates a draw surface of the given dimensions, or fullscreen");
 		interpreter->RegisterCallback("ShadeSurface", &ScriptCallbacks::ShadeSurface,
@@ -138,6 +163,8 @@ public:
 		// INPUT
 		interpreter->RegisterCallback("GetMousePosition", &ScriptCallbacks::GetMousePosition,
 			"() Returns the absolute X and Y positions of the mouse within the window");
+		interpreter->RegisterCallback("GetMouseDelta", &ScriptCallbacks::GetMouseDelta,
+			"() Returns the relative X and Y movements of the mouse within the window this frame");
 		interpreter->RegisterCallback("GetMouseLeft", &ScriptCallbacks::GetMouseLeft,
 			"() Returns current press state, pressed this frame, and released this frame");
 		interpreter->RegisterCallback("GetMouseRight", &ScriptCallbacks::GetMouseRight,
@@ -188,6 +215,14 @@ public:
 			"(sound[,loop]) Plays the given sound file once [or on repeat if 'loop' is true]");
 		interpreter->RegisterCallback("GetAmplitude", &ScriptCallbacks::GetAmplitude,
 			"([sound]) Returns the global amplitude [or, if provided, the amplitude of the given sound]");
+
+		// PROFILING
+		interpreter->RegisterCallback("BeginTimestamp", &ScriptCallbacks::BeginTimestamp,
+			"(name,cpu,gpu) Begins a GPU and/or CPU profiling timestamp with the given name");
+		interpreter->RegisterCallback("EndTimestamp", &ScriptCallbacks::EndTimestamp,
+			"(name,cpu,gpu) Ends the GPU and/or CPU profiling timestamp with the given name");
+		interpreter->RegisterCallback("GetTimestampData", &ScriptCallbacks::GetTimestampData,
+			"(name,cpu[,metric]) Returns the given timestamp's time [or its 'drawcalls','polys' or 'statechanges']");
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -201,6 +236,8 @@ public:
 	static void SetCameraTarget(ScriptInterpreter*);
 	static void SetCameraClipFovOrHeight(ScriptInterpreter*);
 
+	static void CreateGrid(ScriptInterpreter*);
+	static void CreateCube(ScriptInterpreter*);
 	static void CreateSphere(ScriptInterpreter*);
 
 	static void SetModelPosition(ScriptInterpreter*);
@@ -224,12 +261,17 @@ public:
 	static void SetMeshCubeMap(ScriptInterpreter*);
 	static void SetMeshColor(ScriptInterpreter*);
 	static void SetMeshSpecular(ScriptInterpreter*);
+	static void SetMeshFactors(ScriptInterpreter*);
 	static void GetMeshBounds(ScriptInterpreter*);
 	static void GetNumMeshes(ScriptInterpreter*);
 
 	static void CreateEffect(ScriptInterpreter*);
 	static void SetMeshEffect(ScriptInterpreter*);
 	static void SetEffectParam(ScriptInterpreter*);
+	static void SetSamplerParam(ScriptInterpreter*);
+	static void CreateFloatArray(ScriptInterpreter*);
+	static void SetFloatArray(ScriptInterpreter*);
+	static void GetFloatArray(ScriptInterpreter*);
 
 	static void CreateSurface(ScriptInterpreter*);
 	static void ShadeSurface(ScriptInterpreter*);
@@ -253,9 +295,11 @@ public:
 	static void SetBlendMode(ScriptInterpreter*);
 	static void SetWireframe(ScriptInterpreter*);
 	static void SetMultisampling(ScriptInterpreter*);
+	static void SetAnisotropy(ScriptInterpreter*);
 
 	static void GetScreenSize(ScriptInterpreter*);
 	static void GetMousePosition(ScriptInterpreter*);
+	static void GetMouseDelta(ScriptInterpreter*);
 	static void GetMouseLeft(ScriptInterpreter*);
 	static void GetMouseRight(ScriptInterpreter*);
 	static void GetKeyState(ScriptInterpreter*);
@@ -279,6 +323,10 @@ public:
 
 	static void PlaySound(ScriptInterpreter*);
 	static void GetAmplitude(ScriptInterpreter*);
+
+	static void BeginTimestamp(ScriptInterpreter*);
+	static void EndTimestamp(ScriptInterpreter*);
+	static void GetTimestampData(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity
@@ -290,7 +338,7 @@ public:
 	}
 
 #define POP_NUMPARAM(NUM,NAME) ScriptParam NAME = interpreter->PopParam();\
-	if(NAME.type != ScriptParam::FLOAT && NAME.type != ScriptParam::DOUBLE && NAME.type != ScriptParam::INT && NAME.type != ScriptParam::BOOL) {\
+	if(!NAME.IsNumber() && NAME.type != ScriptParam::BOOL) {\
 	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a number");\
 	return; }
 

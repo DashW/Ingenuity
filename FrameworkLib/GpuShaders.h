@@ -11,10 +11,10 @@ namespace Gpu {
 
 struct FloatArray
 {
-	float ** floats;
+	float * floats;
 	unsigned numFloats;
 
-	FloatArray(float ** floats, unsigned numFloats) :
+	FloatArray(float * floats, unsigned numFloats) :
 		floats(floats), numFloats(numFloats) {}
 };
 
@@ -105,7 +105,9 @@ struct SamplerParam
 		// Split here???
 
 		Filter,
-		Anisotropy
+		Anisotropy,
+
+		KeyMAX
 	}
 	key;
 
@@ -213,6 +215,14 @@ struct Effect
 
 	void SetSamplerParam(SamplerParam::ParamKey key, unsigned value, unsigned paramIndex = SamplerParam::DEFAULT_SAMPLER)
 	{
+		for(unsigned i = 0; i < samplerParams.size(); ++i)
+		{
+			if(samplerParams[i].key == key && samplerParams[i].paramIndex == paramIndex)
+			{
+				samplerParams[i].value = value;
+				return;
+			}
+		}
 		samplerParams.emplace_back(paramIndex, key, value);
 	}
 };

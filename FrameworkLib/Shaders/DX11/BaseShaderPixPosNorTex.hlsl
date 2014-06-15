@@ -35,7 +35,7 @@ PixelOut main(in VertexOutPosNorTex _vtx)
 		resultColor = specular(lightDirection, lightColorAttens[i], _specularPower, normalizedNormal, cameraVector, resultColor, lightDistance);
 		resultColor = spot(lightDirection, lightSpotDirPowers[i].xyz, lightSpotDirPowers[i].w, resultColor);
 
-		output.color += (inputColor * float4(resultColor.rgb /*/ (lightDistance * lightDistance)*/ , 0.0f));
+		output.color += (inputColor * float4(resultColor.rgb / (lightDistance * lightDistance) , 0.0f));
 	}
 
 	// This needs to be (1-sourcebrightness) * (cubemapbrightness)

@@ -30,12 +30,13 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 	ID3D11DepthStencilView * depthStencilView;
 	D3D11_VIEWPORT viewport;
 	Format format;
-	bool screenRelative;
 	float widthFactor;
 	float heightFactor;
+	bool screenRelative;
+	bool generateMips;
 
 	TextureSurface(DX11::Api * gpu, ID3D11Device * device, ID3D11DeviceContext * context,
-		Format format, bool screenRelative, float width, float height);
+		Format format, bool screenRelative, float width, float height, bool mips = false);
 	virtual ~TextureSurface();
 
 	virtual void Begin() override;

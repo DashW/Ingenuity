@@ -7,6 +7,7 @@ namespace Ingenuity {
 class AssetMgr;
 class InputState;
 class StepMgr;
+class PlatformApi;
 
 namespace Audio {
 class Api;
@@ -28,6 +29,7 @@ public:
 	Files::Api * files;
 	Gpu::Api   * gpu;
 	Image::Api * imaging;
+	PlatformApi * platform;
 
 	AssetMgr   * assets;
 	InputState * input;
@@ -42,6 +44,7 @@ public:
 		files(0),
 		gpu(0),
 		imaging(0),
+		platform(0),
 		assets(0),
 		input(0),
 		steppables(0),

@@ -1,0 +1,189 @@
+--- liolib.c	Thu Mar 21 14:57:27 2013
++++ liolib.c	Thu Jan 02 17:05:37 2014
+@@ -58,11 +58,10 @@
+ #define lua_popen(L,c,m)	((void)L, fflush(NULL), popen(c,m))
+ #define lua_pclose(L,file)	((void)L, pclose(file))
+ 
+-#elif defined(LUA_WIN)		/* }{ */
+-
++#elif defined(LUA_WIN) && !defined(LUA_WIN_8)		/* }{ */
++	
+ #define lua_popen(L,c,m)		((void)L, _popen(c,m))
+ #define lua_pclose(L,file)		((void)L, _pclose(file))
+-
+ 
+ #else				/* }{ */
+ 
+--- lmathlib.c	Thu Mar 07 19:21:32 2013
++++ lmathlib.c	Thu Jan 02 18:08:45 2014
+@@ -272,8 +272,8 @@
+   luaL_newlib(L, mathlib);
+   lua_pushnumber(L, PI);
+   lua_setfield(L, -2, "pi");
+-  lua_pushnumber(L, HUGE_VAL);
+-  lua_setfield(L, -2, "huge");
++  //lua_pushnumber(L, HUGE_VAL);
++  //lua_setfield(L, -2, "huge");
+   return 1;
+ }
+ 
+--- loadlib.c	Wed May 30 13:33:44 2012
++++ loadlib.c	Thu Jan 02 18:12:06 2014
+@@ -702,10 +702,12 @@
+   lua_setfield(L, -3, "loaders");  /* put it in field `loaders' */
+ #endif
+   lua_setfield(L, -2, "searchers");  /* put it in field 'searchers' */
++#if !defined(LUA_WIN_8)
+   /* set field 'path' */
+   setpath(L, "path", LUA_PATHVERSION, LUA_PATH, LUA_PATH_DEFAULT);
+   /* set field 'cpath' */
+   setpath(L, "cpath", LUA_CPATHVERSION, LUA_CPATH, LUA_CPATH_DEFAULT);
++#endif
+   /* store config information */
+   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
+                      LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
+--- loslib.c	Fri Oct 19 16:54:02 2012
++++ loslib.c	Thu Jan 02 17:20:53 2014
+@@ -78,6 +78,10 @@
+ 
+ 
+ static int os_execute (lua_State *L) {
++#if defined(LUA_WIN_8)
++	lua_pushnil(L); // Not supported in Windows 8
++	return 1;
++#else
+   const char *cmd = luaL_optstring(L, 1, NULL);
+   int stat = system(cmd);
+   if (cmd != NULL)
+@@ -86,6 +90,7 @@
+     lua_pushboolean(L, stat);  /* true if there is a shell */
+     return 1;
+   }
++#endif
+ }
+ 
+ 
+@@ -114,7 +119,11 @@
+ 
+ 
+ static int os_getenv (lua_State *L) {
++#if defined(LUA_WIN_8)
++	lua_pushnil(L); // Not supported in Windows 8
++#else
+   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
++#endif
+   return 1;
+ }
+ 
+--- lapi.c	Sat Mar 16 22:10:18 2013
++++ lapi.c	Sat Mar 16 22:10:18 2013
+--- lapi.h	Fri Nov 27 16:37:59 2009
++++ lapi.h	Fri Nov 27 16:37:59 2009
+--- lauxlib.c	Thu Mar 21 14:54:57 2013
++++ lauxlib.c	Thu Mar 21 14:54:57 2013
+--- lauxlib.h	Tue Nov 29 16:55:08 2011
++++ lauxlib.h	Tue Nov 29 16:55:08 2011
+--- lbaselib.c	Thu Feb 21 14:44:53 2013
++++ lbaselib.c	Thu Feb 21 14:44:53 2013
+--- lbitlib.c	Tue Mar 19 14:19:12 2013
++++ lbitlib.c	Tue Mar 19 14:19:12 2013
+--- lcode.c	Thu Aug 16 18:34:28 2012
++++ lcode.c	Thu Aug 16 18:34:28 2012
+--- lcode.h	Tue Aug 30 17:26:41 2011
++++ lcode.h	Tue Aug 30 17:26:41 2011
+--- lcorolib.c	Thu Feb 21 14:44:53 2013
++++ lcorolib.c	Thu Feb 21 14:44:53 2013
+--- lctype.c	Mon Oct 03 17:19:23 2011
++++ lctype.c	Mon Oct 03 17:19:23 2011
+--- lctype.h	Fri Jul 15 13:50:29 2011
++++ lctype.h	Fri Jul 15 13:50:29 2011
+--- ldblib.c	Thu Jan 19 21:14:44 2012
++++ ldblib.c	Thu Jan 19 21:14:44 2012
+--- ldebug.c	Thu Aug 16 18:34:28 2012
++++ ldebug.c	Thu Aug 16 18:34:28 2012
+--- ldebug.h	Fri Oct 07 21:45:19 2011
++++ ldebug.h	Fri Oct 07 21:45:19 2011
+--- ldo.c	Mon Oct 01 15:05:04 2012
++++ ldo.c	Mon Oct 01 15:05:04 2012
+--- ldo.h	Tue Nov 29 16:55:08 2011
++++ ldo.h	Tue Nov 29 16:55:08 2011
+--- ldump.c	Tue Jan 24 00:02:10 2012
++++ ldump.c	Tue Jan 24 00:02:10 2012
+--- lfunc.c	Wed Oct 03 13:36:46 2012
++++ lfunc.c	Wed Oct 03 13:36:46 2012
+--- lfunc.h	Tue May 08 14:53:33 2012
++++ lfunc.h	Tue May 08 14:53:33 2012
+--- lgc.c	Sat Mar 16 22:10:18 2013
++++ lgc.c	Sat Mar 16 22:10:18 2013
+--- lgc.h	Tue Sep 11 13:53:08 2012
++++ lgc.h	Tue Sep 11 13:53:08 2012
+--- linit.c	Fri Apr 08 20:17:36 2011
++++ linit.c	Fri Apr 08 20:17:36 2011
+--- llex.c	Sat Mar 16 22:10:18 2013
++++ llex.c	Sat Mar 16 22:10:18 2013
+--- llex.h	Wed Nov 30 13:43:51 2011
++++ llex.h	Wed Nov 30 13:43:51 2011
+--- llimits.h	Wed Feb 20 15:08:56 2013
++++ llimits.h	Wed Feb 20 15:08:56 2013
+--- lmem.c	Wed May 23 16:41:53 2012
++++ lmem.c	Wed May 23 16:41:53 2012
+--- lmem.h	Wed Feb 20 15:08:21 2013
++++ lmem.h	Wed Feb 20 15:08:21 2013
+--- lobject.c	Wed Feb 20 15:08:56 2013
++++ lobject.c	Wed Feb 20 15:08:56 2013
+--- lobject.h	Tue Sep 11 19:21:44 2012
++++ lobject.h	Tue Sep 11 19:21:44 2012
+--- lopcodes.c	Mon May 14 14:34:18 2012
++++ lopcodes.c	Mon May 14 14:34:18 2012
+--- lopcodes.h	Fri Jul 15 13:50:29 2011
++++ lopcodes.h	Fri Jul 15 13:50:29 2011
+--- lparser.c	Wed Feb 06 14:37:39 2013
++++ lparser.c	Wed Feb 06 14:37:39 2013
+--- lparser.h	Tue May 08 14:53:33 2012
++++ lparser.h	Tue May 08 14:53:33 2012
+--- lstate.c	Tue Oct 02 18:40:53 2012
++++ lstate.c	Tue Oct 02 18:40:53 2012
+--- lstate.h	Mon Jul 02 14:37:04 2012
++++ lstate.h	Mon Jul 02 14:37:04 2012
+--- lstring.c	Tue Jan 08 14:50:10 2013
++++ lstring.c	Tue Jan 08 14:50:10 2013
+--- lstring.h	Wed Feb 01 22:57:15 2012
++++ lstring.h	Wed Feb 01 22:57:15 2012
+--- lstrlib.c	Tue Aug 14 19:12:34 2012
++++ lstrlib.c	Tue Aug 14 19:12:34 2012
+--- ltable.c	Tue Sep 11 20:37:16 2012
++++ ltable.c	Tue Sep 11 20:37:16 2012
+--- ltable.h	Wed Aug 17 21:26:47 2011
++++ ltable.h	Wed Aug 17 21:26:47 2011
+--- ltablib.c	Thu Mar 07 19:17:24 2013
++++ ltablib.c	Thu Mar 07 19:17:24 2013
+--- ltm.c	Thu Jun 02 20:31:40 2011
++++ ltm.c	Thu Jun 02 20:31:40 2011
+--- ltm.h	Mon Feb 28 18:32:10 2011
++++ ltm.h	Mon Feb 28 18:32:10 2011
+--- lua.c	Sat Sep 29 21:07:06 2012
++++ lua.c	Sat Sep 29 21:07:06 2012
+--- lua.h	Fri Mar 15 14:04:22 2013
++++ lua.h	Fri Mar 15 14:04:22 2013
+--- lua.hpp	Thu Dec 23 01:53:04 2004
++++ lua.hpp	Thu Dec 23 01:53:04 2004
+--- luac.c	Tue Nov 29 18:46:33 2011
++++ luac.c	Tue Nov 29 18:46:33 2011
+--- luaconf.h	Sat Mar 16 22:10:18 2013
++++ luaconf.h	Sat Mar 16 22:10:18 2013
+--- lualib.h	Thu Dec 08 13:11:37 2011
++++ lualib.h	Thu Dec 08 13:11:37 2011
+--- lundump.c	Tue May 08 14:53:33 2012
++++ lundump.c	Tue May 08 14:53:33 2012
+--- lundump.h	Tue May 08 14:53:33 2012
++++ lundump.h	Tue May 08 14:53:33 2012
+--- lvm.c	Sat Mar 16 22:10:18 2013
++++ lvm.c	Sat Mar 16 22:10:18 2013
+--- lvm.h	Tue Jan 08 15:06:55 2013
++++ lvm.h	Tue Jan 08 15:06:55 2013
+--- lzio.c	Mon May 14 14:34:18 2012
++++ lzio.c	Mon May 14 14:34:18 2012
+--- lzio.h	Fri Jul 15 13:48:03 2011
++++ lzio.h	Fri Jul 15 13:48:03 2011
+--- Makefile	Thu Dec 27 11:51:43 2012
++++ Makefile	Thu Dec 27 11:51:43 2012

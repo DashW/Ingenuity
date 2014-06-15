@@ -255,9 +255,19 @@ protected:
 	InstanceBuffer(InstanceType type) : type(type) {}
 };
 
-struct Timestamp
+struct TimestampData
 {
-	virtual ~Timestamp() {}
+	enum Type
+	{
+		Time,
+		DrawCalls,
+		Polys,
+		StateChanges,
+		Overhead,
+		Other
+	};
+
+	std::map<Type, float> data;
 };
 
 //struct Blob

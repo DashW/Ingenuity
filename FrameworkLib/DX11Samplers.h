@@ -10,6 +10,11 @@
 
 #include <map>
 
+static inline unsigned GetBitmask(unsigned upperBit, unsigned lowerBit)
+{
+	return upperBit > lowerBit ? (((1 << (upperBit - lowerBit)) - 1) << lowerBit) : 0;
+}
+
 namespace Ingenuity {
 namespace DX11 {
 
@@ -22,11 +27,11 @@ class SamplerMgr
 
 	ID3D11Device * direct3Ddevice;
 
-	static const unsigned ADDRESS_U = 1;
-	static const unsigned ADDRESS_V = ADDRESS_U * Gpu::SamplerParam::AddressModeMAX;
-	static const unsigned ADDRESS_W = ADDRESS_V * Gpu::SamplerParam::AddressModeMAX;
-	static const unsigned FILTER_MD = ADDRESS_W * Gpu::SamplerParam::AddressModeMAX;
-	static const unsigned MAX_ANISO = FILTER_MD * Gpu::SamplerParam::FilterModeMAX;
+	static const unsigned ADDRESS_U = 0;
+	static const unsigned ADDRESS_V = ADDRESS_U + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
+	static const unsigned ADDRESS_W = ADDRESS_V + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
+	static const unsigned FILTER_MD = ADDRESS_W + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
+	static const unsigned MAX_ANISO = FILTER_MD + ((Gpu::SamplerParam::FilterModeMAX + 1) / 2);
 
 	void UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam & param);
 

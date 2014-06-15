@@ -146,8 +146,9 @@ public:
 	virtual void RegisterModule(ScriptModule & module) = 0;
 
 	virtual ScriptParam CreateMap() = 0;
-	virtual void SetMapNext(ScriptParam mapRef, ScriptParam & key, ScriptParam & value) = 0;
+	virtual void SetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) = 0;
 	virtual bool GetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) = 0;
+	virtual unsigned GetMapLength(ScriptParam mapref) = 0;
 
 	void incDependencies() { dependencies++; }
 	void decDependencies() { dependencies--; }

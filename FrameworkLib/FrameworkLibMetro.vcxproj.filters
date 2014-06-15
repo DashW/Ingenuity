@@ -31,6 +31,12 @@
     <Filter Include="Scripting">
       <UniqueIdentifier>{22aca121-8747-4f57-a4d2-59e419ef4f39}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\DX11\Vertex">
+      <UniqueIdentifier>{22691774-e36b-4a89-8d10-6364e4f28e0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\DX11\Pixel">
+      <UniqueIdentifier>{a4cae0af-e370-4809-96f9-f86fe4111fab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -103,6 +109,9 @@
     </ClCompile>
     <ClCompile Include="DX11ShaderLoader.cpp">
       <Filter>Graphics\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="WinRTPlatformApi.cpp">
+      <Filter>Application\WinRT</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -215,100 +224,130 @@
     <ClInclude Include="DX11ShaderLoader.h">
       <Filter>Graphics\DX11</Filter>
     </ClInclude>
+    <ClInclude Include="PlatformApi.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="WinRTPlatformApi.h">
+      <Filter>Application\WinRT</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\DX11\WaterShaderVtxPosNorTanTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosCol.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosNorTanTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosCol.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorPos.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTanTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorTexPos.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BloomShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BlurShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BrightPassFilterPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\DownSamplePixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\EyeAdaptationPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\HalftoneDotsPixPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\HalftoneDotsVtxPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\MultiTextureAnimYVtxPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\MultiTexturePixPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\MultiTextureVtxPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\TextureCopyPixPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\TextureCopyVtxPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\WaterShaderPixPosNorTanTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\SkyShaderPixPos.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\SkyShaderVtxPos.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\PathShaderPixPosPosCol.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\PathShaderVtxPosPosCol.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\PathShaderVtxPos.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\MatcapShaderPixPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\MatcapShaderVtxPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\PathShaderPixPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\PathShaderVtxPosTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\MatcapShaderVtxPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Vertex</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\DX11\ProjectorVtxPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+    <FxCompile Include="Shaders\DX11\MultiTextureAnimYVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MultiTextureVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\LogLuminancePixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MatcapShaderPixPosNor.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\MultiTexturePixPosNorTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderPixPosPosCol.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ProjectorPixPosNorTex.hlsl">
-      <Filter>Shaders\DX11</Filter>
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\SkyShaderPixPos.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPos.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPosPosCol.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\PathShaderVtxPosTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ProjectorVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\SkyShaderVtxPos.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureCopyVtxPosTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\WaterShaderVtxPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11\Vertex</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureCopyPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TextureMulPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ToneMappingPixPosTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\WaterShaderPixPosNorTanTex.hlsl">
+      <Filter>Shaders\DX11\Pixel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -347,6 +386,30 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="ProjectorShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BloomShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BlurShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BrightPassFilter.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="DownSample.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="EyeAdaptation.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="LogLuminance.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ToneMapping.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="TextureMultiply.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>
