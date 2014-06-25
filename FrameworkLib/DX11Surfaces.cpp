@@ -69,6 +69,7 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 	{
 		DXGI_FORMAT_R8G8B8A8_UNORM,
 		DXGI_FORMAT_R16G16B16A16_FLOAT,
+		DXGI_FORMAT_R11G11B10_FLOAT,
 		DXGI_FORMAT_R16_FLOAT
 	};
 
@@ -108,7 +109,7 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 		width,
 		height,
 		1,
-		0,
+		1,
 		D3D11_BIND_DEPTH_STENCIL);
 	device->CreateTexture2D(&depthStencilTextureDesc, 0, &depthStencilTexture);
 

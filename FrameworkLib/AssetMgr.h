@@ -28,9 +28,9 @@ enum AssetType
 	ModelAsset,
 	WavefrontModelAsset,
 	RawHeightMapAsset,
-	SvgModelAsset,
+	SvgAsset,
 	ImageAsset,
-	AudioAsset
+	AudioAsset,
 };
 
 struct IAsset

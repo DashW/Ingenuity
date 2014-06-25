@@ -2,8 +2,6 @@
 
 #include "AssetMgr.h"
 
-#include "GpuStructs.h"
-
 #include <vector>
 
 namespace Ingenuity {
@@ -17,6 +15,11 @@ struct FloatArray
 	FloatArray(float * floats, unsigned numFloats) :
 		floats(floats), numFloats(numFloats) {}
 };
+
+struct Texture;
+struct CubeMap;
+struct VolumeTexture;
+struct DrawSurface;
 
 struct ShaderParam
 {

@@ -29,11 +29,11 @@ namespace Ingenuity {
 
 struct OnDestroyResponse : Win32::WindowEventResponse
 {
-	Win32::AppController* owner;
-	OnDestroyResponse(Win32::AppController* creator) { owner = creator; }
+	Win32::AppController * owner;
+	OnDestroyResponse(Win32::AppController * creator) : owner(creator) {}
 	void Respond(WPARAM wparam, LPARAM lparam) override
 	{
-		owner->running = false;
+		owner->windowClosed = true;
 	}
 };
 
@@ -43,10 +43,10 @@ struct OnDestroyResponse : Win32::WindowEventResponse
 struct OnCloseResponse : Win32::WindowEventResponse
 {
 	RealtimeApp * app;
-	OnCloseResponse(RealtimeApp * app) { this->app = app; }
+	OnCloseResponse(RealtimeApp * app) : app(app) {}
 	void Respond(WPARAM wparam, LPARAM lparam) override
 	{
-		//if(app->audio) { delete app->audio; app->audio = 0; }
+		if(app->audio) { app->audio->Stop(); }
 	}
 };
 #endif
@@ -64,6 +64,7 @@ struct OnResizeResponse : Win32::WindowEventResponse
 Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeApp)
 	: app(realtimeApp)
 	, window(new Win32::Window(instance))
+	, windowClosed(false)
 {
 	window->Hide();
 	window->onDestroy = new OnDestroyResponse(this);
@@ -129,7 +130,7 @@ Win32::AppController::~AppController()
 	delete app->imaging;
 	delete app->steppables;
 	delete app->assets;
-	if(app->audio) delete app->audio;
+	if(app->audio) delete app->audio; app->audio = 0;
 	delete app->platform;
 	delete app->files;
 	delete app->gpu;
@@ -154,9 +155,7 @@ void Win32::AppController::Run()
 	QueryPerformanceCounter((LARGE_INTEGER*)&prevTimeStamp);
 	startTimeStamp = prevTimeStamp;
 
-	running = true;
-
-	while(running)
+	while(app->running && !windowClosed)
 	{
 		__int64 curTimeStamp = GetTimeStamp();
 		float dt = (curTimeStamp - prevTimeStamp) * secsPerCnt;
@@ -203,6 +202,8 @@ void Win32::AppController::Run()
 			app->gpu->Present();
 		}
 	}
+	
+	app->audio->Stop();
 
 	app->End();
 }

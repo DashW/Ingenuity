@@ -418,7 +418,7 @@ public:
 		std::wstringstream stream;
 		stream << name << L": ";
 		stream << unsigned(data.data[Gpu::TimestampData::DrawCalls]) << " calls, ";
-		stream << data.data[Gpu::TimestampData::Time] << "ms";
+		stream << (data.data[Gpu::TimestampData::Time] * 1000.0f) << "ms";
 		gpu->DrawGpuText(debugFont, stream.str().c_str(), 0.0f, y, false);
 	}
 

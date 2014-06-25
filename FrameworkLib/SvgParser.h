@@ -23,7 +23,7 @@ struct DrawSurface;
 struct LocalMesh;
 class AssetMgr;
 
-class SvgParser
+class SvgParser : public IAsset
 {
 	struct DescToken
 	{
@@ -112,8 +112,31 @@ class SvgParser
 		{}
 	};
 
+	enum SvgShapeType
+	{
+		ShapeRect,
+		ShapeCircle,
+		ShapePath
+	};
+
+	struct Shape
+	{
+		SvgShapeType type;
+
+		float x, y, w, h;
+		std::vector<Path::Point> pathPoints;
+
+		virtual ~Shape() {}
+		Shape() :
+			x(0.0f),
+			y(0.0f),
+			w(0.0f),
+			h(0.0f) {}
+	};
+
 	struct Graphic : SvgObject
 	{
+		Shape shape;
 		Stylesheet stylesheet;
 		Transform transform;
 		LocalMesh * fill;
@@ -158,6 +181,7 @@ class SvgParser
 	GeoBuilder builder;
 	typedef std::map<std::string, SvgObject*> SvgDefs;
 	SvgDefs definitions;
+	std::vector<Graphic> graphics;
 	std::vector<PendingTexture> pendingTextures;
 	AssetMgr * assets;
 	int assetTicket;
@@ -190,28 +214,36 @@ public:
 
 	void SetPixelGranularity(float granularity);
 
-	Gpu::ComplexModel * ParseSvg(Gpu::Api * gpu, Files::Directory * directory, char * data, unsigned dataSize);
+	void ParseSvg(Files::Directory * directory, char * data, unsigned dataSize);
+	Gpu::ComplexModel * GetModel(Gpu::Api * gpu);
+	Gpu::ComplexModel * GetAnimatedStroke(Gpu::Api * gpu, float animProgress);
 
 	bool IsFinished() { return assetTicket == -1 || assets->IsLoaded(assetTicket); }
+
+	virtual AssetType GetType() override { return SvgAsset; }
+	virtual IAsset * GetAsset() override { return this; }
 };
 
 struct SvgLoader : public SimpleLoader
 {
+	AssetMgr * assets;
 	Gpu::Api * gpu;
-	SvgParser parser;
+	SvgParser * parser;
 
 	SvgLoader(AssetMgr * assets, Gpu::Api * gpu, Files::Directory * directory, const wchar_t * path) :
-		SimpleLoader(assets->GetFileApi(), directory, path, SvgModelAsset), parser(assets), gpu(gpu) {}
+		SimpleLoader(assets->GetFileApi(), directory, path, SvgAsset), assets(assets), gpu(gpu), parser(0) {}
 
 	virtual void Respond() override
 	{
 		if(buffer)
 		{
-			asset = parser.ParseSvg(gpu, directory, buffer, bufferLength);
+			parser = new SvgParser(assets);
+			parser->ParseSvg(directory, buffer, bufferLength);
+			asset = parser;
 		}
 	}
 
-	virtual bool IsAssetReady() override { return complete && parser.IsFinished(); }
+	virtual bool IsAssetReady() override { return complete && parser != 0 && parser->IsFinished(); }
 };
 
 } // namespace Ingenuity

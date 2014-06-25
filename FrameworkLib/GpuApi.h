@@ -165,11 +165,14 @@ struct ComplexModel : public IAsset
 
 	bool wireframe;
 
+	InstanceBuffer * instances;
+
 	ComplexModel(int numModels) :
 		models(0),
 		numModels(numModels),
 		scale(1.0f, 1.0f, 1.0f),
-		wireframe(false)
+		wireframe(false),
+		instances(0)
 	{
 		models = new Model[numModels];
 	}
@@ -205,7 +208,7 @@ struct ComplexModel : public IAsset
 			tempModel.wireframe = wireframe ? true : tempModel.wireframe;
 			tempModel.destructMesh = false;
 
-			gpu->DrawGpuModel(&tempModel, camera, lights, numLights, buffer);
+			gpu->DrawGpuModel(&tempModel, camera, lights, numLights, buffer, instances);
 		}
 	}
 };

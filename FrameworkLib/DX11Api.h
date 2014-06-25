@@ -143,7 +143,7 @@ struct InstanceBuffer : public Gpu::InstanceBuffer
 		CD3D11_BUFFER_DESC bufferDesc(instanceDataSize, D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 		D3D11_SUBRESOURCE_DATA bufferData = { 0 };
 		bufferData.pSysMem = data;
-		device->CreateBuffer(&bufferDesc, &bufferData, &buffer);
+		device->CreateBuffer(&bufferDesc, data ? &bufferData : 0, &buffer);
 	}
 	virtual ~InstanceBuffer()
 	{

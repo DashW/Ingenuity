@@ -143,6 +143,7 @@ undecorated(false),
 visible(false),
 maximized(false),
 destroyed(false),
+fullscreen(false),
 onDestroy(0),
 onResizing(0),
 onMinmize(0),
@@ -175,6 +176,11 @@ onActivate(0)
 	{
 		// FIXME - This function doesn't work, backbuffer size is wrong!
 		AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, false);
+	}
+	else if(fullscreen)
+	{
+		r.right = GetSystemMetrics(SM_CXSCREEN);
+		r.bottom = GetSystemMetrics(SM_CYSCREEN);
 	}
 	handle = CreateWindowEx(
 		WS_EX_COMPOSITED,

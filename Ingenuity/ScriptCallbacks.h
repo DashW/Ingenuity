@@ -60,6 +60,8 @@ public:
 			"(camera,x,y,z) Sets the world position of a camera");
 		interpreter->RegisterCallback("SetCameraTarget", &ScriptCallbacks::SetCameraTarget,
 			"(camera,x,y,z) Sets the world position of the camera's look target");
+		interpreter->RegisterCallback("SetCameraUp", &ScriptCallbacks::SetCameraUp,
+			"(camera,x,y,z) Sets the UP vector of the given camera");
 		interpreter->RegisterCallback("SetCameraClipFov", &ScriptCallbacks::SetCameraClipFovOrHeight,
 			"(camera,nearclip,farclip,fov) Sets the near and far clip panes and fov of a perspective camera");
 		interpreter->RegisterCallback("SetCameraClipHeight", &ScriptCallbacks::SetCameraClipFovOrHeight,
@@ -114,6 +116,8 @@ public:
 			"(heightmap,x,z) Gets the y coordinate for a specific x,z position on a heightmap");
 		interpreter->RegisterCallback("SetHeightmapScale", &ScriptCallbacks::SetHeightmapScale,
 			"(heightmap,x,y,z) Sets a heightmap's scale in each axis. Use before getting model or height values");
+		interpreter->RegisterCallback("GetSVGModel", &ScriptCallbacks::GetSVGModel,
+			"(svg[,stroke,anim]) Gets a model from an SVG parser[, optionally an animated stroke]");
 
 		interpreter->RegisterCallback("SetEffectParam", &ScriptCallbacks::SetEffectParam,
 			"(effect,paramnum,value) Sets the value of an effect parameter");
@@ -139,6 +143,22 @@ public:
 		// (i.e. if we're not careful, a pointer could be deleted more than once!)
 		interpreter->RegisterCallback("GetSurfaceTexture", &ScriptCallbacks::GetSurfaceTexture,
 			"(surface) Gets the texture object from a draw surface");
+
+		interpreter->RegisterCallback("CreateIsoSurface", &ScriptCallbacks::CreateIsoSurface,
+			"(length) Creates a cube IsoSurface with the given side length");
+		interpreter->RegisterCallback("AddIsoSurfaceBall", &ScriptCallbacks::AddIsoSurfaceBall,
+			"(iso,x,y,z,r) Adds a metaball to the IsoSurface with the given position and radius");
+		interpreter->RegisterCallback("AddIsoSurfacePlane", &ScriptCallbacks::AddIsoSurfacePlane,
+			"(iso,x,y,z,nx,ny,nz) Adds a plane to the IsoSurface with the given position and normal");
+		interpreter->RegisterCallback("ClearIsoSurface", &ScriptCallbacks::ClearIsoSurface,
+			"(iso) Clears all meta-objects from the IsoSurface");
+		interpreter->RegisterCallback("GetIsoSurfaceModel", &ScriptCallbacks::GetIsoSurfaceModel,
+			"(iso) Updates and gets the ComplexModel for the IsoSurface");
+
+		interpreter->RegisterCallback("CreateInstanceBuffer", &ScriptCallbacks::CreateInstanceBuffer,
+			"(type,size) Creates an instance buffer of the given type with the given capacity");
+		interpreter->RegisterCallback("UpdateInstanceBuffer", &ScriptCallbacks::UpdateInstanceBuffer,
+			"(ibuf,floats,size) Updates an instance buffer with the given FloatArray");
 
 		// ASSETS
 		interpreter->RegisterCallback("LoadAssets", &ScriptCallbacks::LoadAssets,
@@ -212,9 +232,15 @@ public:
 
 		// AUDIO
 		interpreter->RegisterCallback("PlaySound", &ScriptCallbacks::PlaySound,
-			"(sound[,loop]) Plays the given sound file once [or on repeat if 'loop' is true]");
+			"(sound[,seek,loop]) Plays the given sound file [from the seek time, on repeat if 'loop' is true]");
+		interpreter->RegisterCallback("PauseSound", &ScriptCallbacks::PauseSound,
+			"(sound) Pauses the given sound file");
 		interpreter->RegisterCallback("GetAmplitude", &ScriptCallbacks::GetAmplitude,
 			"([sound]) Returns the global amplitude [or, if provided, the amplitude of the given sound]");
+		interpreter->RegisterCallback("GetSoundDuration", &ScriptCallbacks::GetSoundDuration,
+			"(sound) Returns the duration, in seconds, of the given sound");
+		interpreter->RegisterCallback("GetSoundProgress", &ScriptCallbacks::GetSoundProgress,
+			"(sound) Returns the progress, in seconds, of playback through the given sound");
 
 		// PROFILING
 		interpreter->RegisterCallback("BeginTimestamp", &ScriptCallbacks::BeginTimestamp,
@@ -234,6 +260,7 @@ public:
 	static void CreateCamera(ScriptInterpreter*);
 	static void SetCameraPosition(ScriptInterpreter*);
 	static void SetCameraTarget(ScriptInterpreter*);
+	static void SetCameraUp(ScriptInterpreter*);
 	static void SetCameraClipFovOrHeight(ScriptInterpreter*);
 
 	static void CreateGrid(ScriptInterpreter*);
@@ -291,6 +318,8 @@ public:
 	static void SetHeightmapScale(ScriptInterpreter*);
 	static void GetHeightmapHeight(ScriptInterpreter*);
 	static void GetHeightmapModel(ScriptInterpreter*);
+	static void GetSVGModel(ScriptInterpreter*);
+
 	static void SetClearColor(ScriptInterpreter*);
 	static void SetBlendMode(ScriptInterpreter*);
 	static void SetWireframe(ScriptInterpreter*);
@@ -309,6 +338,11 @@ public:
 	static void CreateRectStroke(ScriptInterpreter*);
 	static void CreateEllipse(ScriptInterpreter*);
 	static void CreateEllipseStroke(ScriptInterpreter*);
+	static void CreateIsoSurface(ScriptInterpreter*);
+	static void AddIsoSurfaceBall(ScriptInterpreter*);
+	static void AddIsoSurfacePlane(ScriptInterpreter*);
+	static void ClearIsoSurface(ScriptInterpreter*);
+	static void GetIsoSurfaceModel(ScriptInterpreter*);
 
 	static void CreateScene(ScriptInterpreter*);
 	static void AddToScene(ScriptInterpreter*);
@@ -322,11 +356,17 @@ public:
 	static void PickFile(ScriptInterpreter*);
 
 	static void PlaySound(ScriptInterpreter*);
+	static void PauseSound(ScriptInterpreter*);
 	static void GetAmplitude(ScriptInterpreter*);
+	static void GetSoundDuration(ScriptInterpreter*);
+	static void GetSoundProgress(ScriptInterpreter*);
 
 	static void BeginTimestamp(ScriptInterpreter*);
 	static void EndTimestamp(ScriptInterpreter*);
 	static void GetTimestampData(ScriptInterpreter*);
+
+	static void CreateInstanceBuffer(ScriptInterpreter*);
+	static void UpdateInstanceBuffer(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity

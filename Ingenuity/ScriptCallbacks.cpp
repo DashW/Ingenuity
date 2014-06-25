@@ -9,6 +9,7 @@
 #include "AudioApi.h"
 #include "IngenuityHelper.h"
 #include "PlatformApi.h"
+#include "IsoSurface.h"
 #include <HeightParser.h>
 #include <sstream>
 #include <vector>
@@ -87,7 +88,7 @@ void ScriptCallbacks::LoadAsset(
 		}
 		if(strcmp(type, "SVGModel") == 0)
 		{
-			assetType = SvgModelAsset;
+			assetType = SvgAsset;
 		}
 		if(strcmp(type, "Shader") == 0)
 		{
@@ -314,6 +315,7 @@ void ScriptCallbacks::DrawSprite(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(2,x);
 	POP_NUMPARAM(3,y);
 	ScriptParam size = interpreter->PopParam();
+	ScriptParam surface = interpreter->PopParam();
 
 	Gpu::Sprite sprite;
 	sprite.position.x = (float) x.nvalue;
@@ -325,7 +327,13 @@ void ScriptCallbacks::DrawSprite(ScriptInterpreter * interpreter)
 		sprite.size = float(size.nvalue);
 	}
 
-	interpreter->GetApp()->gpu->DrawGpuSprite(&sprite);
+	Gpu::DrawSurface * drawSurface = 0;
+	if(surface.CheckPointer(ScriptPtrType::GpuDrawSurface))
+	{
+		drawSurface = static_cast<Gpu::DrawSurface*>(surface.pvalue->ptr);
+	}
+
+	interpreter->GetApp()->gpu->DrawGpuSprite(&sprite, drawSurface);
 }
 
 void ScriptCallbacks::CreateCamera(ScriptInterpreter * interpreter)
@@ -372,6 +380,22 @@ void ScriptCallbacks::SetCameraTarget(ScriptInterpreter * interpreter)
 	gpuCamera->target.x = (float) x.nvalue;
 	gpuCamera->target.y = (float) y.nvalue;
 	gpuCamera->target.z = (float) z.nvalue;
+}
+
+void ScriptCallbacks::SetCameraUp(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, camera, GpuCamera);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+
+	Gpu::Camera * gpuCamera = static_cast<Gpu::Camera*>(camera.pvalue->ptr);
+
+	if(!gpuCamera) return;
+
+	gpuCamera->up.x = (float)x.nvalue;
+	gpuCamera->up.y = (float)y.nvalue;
+	gpuCamera->up.z = (float)z.nvalue;
 }
 
 void ScriptCallbacks::SetCameraClipFovOrHeight(ScriptInterpreter * interpreter)
@@ -429,7 +453,15 @@ void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::CreateCube(ScriptInterpreter * interpreter)
 {
-	LocalMesh * localCube = GeoBuilder().BuildCube();
+	ScriptParam texCoords = interpreter->PopParam();
+
+	bool generateTexCoords = true;
+	if(texCoords.type == ScriptParam::BOOL || texCoords.IsNumber())
+	{
+		generateTexCoords = texCoords.nvalue > 0.0;
+	}
+
+	LocalMesh * localCube = GeoBuilder().BuildCube(generateTexCoords);
 
 	interpreter->PushParam(VertexBufferToFloats(interpreter, localCube->vertexBuffer));
 	interpreter->PushParam(IndexBufferToFloats(interpreter, localCube->indexBuffer, localCube->numTriangles));
@@ -453,12 +485,14 @@ void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 	POP_PTRPARAM(2,camera,GpuCamera);
 	ScriptParam lights = interpreter->PopParam();
 	ScriptParam surface = interpreter->PopParam();
+	ScriptParam instances = interpreter->PopParam();
 
 	Gpu::ComplexModel * gpuModel = (Gpu::ComplexModel*) model.pvalue->ptr;
 	Gpu::Camera * gpuCamera = (Gpu::Camera*) camera.pvalue->ptr;
 	Gpu::Light * gpuLights[5];
 	unsigned numGpuLights = 0;
 	Gpu::DrawSurface * gpuSurface = 0;
+	Gpu::InstanceBuffer * gpuInstances = 0;
 
 	if(lights.type == ScriptParam::MAPREF)
 	{
@@ -480,10 +514,15 @@ void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 	{
 		gpuSurface = static_cast<Gpu::DrawSurface*>(surface.pvalue->ptr);
 	}
+	if(instances.CheckPointer(ScriptPtrType::GpuInstanceBuffer))
+	{
+		gpuInstances = static_cast<Gpu::InstanceBuffer*>(instances.pvalue->ptr);
+	}
 
 	if(gpuModel)
 	{
 		Gpu::Api * gpu = interpreter->GetApp()->gpu;
+		gpuModel->instances = gpuInstances;
 		gpuModel->BeDrawn(gpu, gpuCamera, gpuLights, numGpuLights, gpuSurface);
 	}
 }
@@ -579,6 +618,8 @@ void ScriptCallbacks::DrawText(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(3,x);
 	POP_NUMPARAM(4,y);
 	ScriptParam center = interpreter->PopParam();
+	ScriptParam surface = interpreter->PopParam();
+
 	bool centered = false;
 
 	if(center.type != ScriptParam::NONE) centered = center.nvalue > 0.0;
@@ -588,8 +629,14 @@ void ScriptCallbacks::DrawText(ScriptInterpreter * interpreter)
 	std::string shortText(text.svalue);
 	std::wstring wideText(shortText.begin(),shortText.end());
 
+	Gpu::DrawSurface * drawSurface = 0;
+	if(surface.CheckPointer(ScriptPtrType::GpuDrawSurface))
+	{
+		drawSurface = static_cast<Gpu::DrawSurface*>(surface.pvalue->ptr);
+	}
+
 	Gpu::Api * gpu = interpreter->GetApp()->gpu;
-	gpu->DrawGpuText(gpuFont,wideText.c_str(),(float)x.nvalue,(float)y.nvalue,centered);
+	gpu->DrawGpuText(gpuFont,wideText.c_str(),(float)x.nvalue,(float)y.nvalue,centered,drawSurface);
 }
 
 void ScriptCallbacks::SetFontColor(ScriptInterpreter * interpreter)
@@ -1069,6 +1116,8 @@ void ScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
 	{
 		if(strcmp(format.svalue, "4x16f") == 0)
 			surfaceFormat = Gpu::DrawSurface::Format_4x16float;
+		if(strcmp(format.svalue, "3x10f") == 0)
+			surfaceFormat = Gpu::DrawSurface::Format_3x10float;
 		if(strcmp(format.svalue, "1x16f") == 0)
 			surfaceFormat = Gpu::DrawSurface::Format_1x16float;
 	}
@@ -1337,6 +1386,12 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			{
 				Audio::Item * audioItem = dynamic_cast<Audio::Item*>(asset);
 				interpreter->PushParam(ScriptParam(new NonDeletingPtr(audioItem, ScriptPtrType::AudioItem)));
+				break;
+			}
+			case SvgAsset:
+			{
+				SvgParser * svgParser = dynamic_cast<SvgParser*>(asset);
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(svgParser, ScriptPtrType::SVGParser)));
 				break;
 			}
 		}
@@ -1673,6 +1728,32 @@ void ScriptCallbacks::GetHeightmapModel(ScriptInterpreter * interpreter)
 	}
 }
 
+void ScriptCallbacks::GetSVGModel(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, svg, SVGParser);
+	POP_NUMPARAM(2, stroke);
+	POP_NUMPARAM(3, anim);
+	
+	SvgParser * svgParser = static_cast<SvgParser*>(svg.pvalue->ptr);
+	Gpu::Api * gpu = interpreter->GetApp()->gpu;
+	Gpu::ComplexModel * model = 0;
+	
+	if(stroke.nvalue > 0.0)
+	{
+		model = svgParser->GetAnimatedStroke(gpu, float(anim.nvalue));
+	}
+	else
+	{
+		model = svgParser->GetModel(gpu);
+	}
+
+	interpreter->ClearParams();
+	if(model)
+	{
+		interpreter->PushParam(ScriptParam(model, ScriptPtrType::GpuComplexModel));
+	}
+}
+
 void ScriptCallbacks::SetClearColor(ScriptInterpreter * interpreter)
 {
 	POP_NUMPARAM(1,r);
@@ -1989,6 +2070,75 @@ void ScriptCallbacks::CreateEllipseStroke(ScriptInterpreter * interpreter)
 	delete localMesh;
 }
 
+void ScriptCallbacks::CreateIsoSurface(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, gridSize);
+	ScriptParam threshold = interpreter->PopParam();
+
+	if(gridSize.nvalue < 2.0f)
+		interpreter->ThrowError("Cannot create IsoSurface, grid size is too small!");
+
+	IsoSurface * isoSurface = new IsoSurface(unsigned(gridSize.nvalue), interpreter->GetApp()->gpu);
+	if(threshold.IsNumber()) isoSurface->SetThreshold(float(threshold.nvalue));
+
+	interpreter->ClearParams();
+	interpreter->PushParam(ScriptParam(isoSurface, ScriptPtrType::IsoSurface));
+}
+
+void ScriptCallbacks::AddIsoSurfaceBall(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, iso, IsoSurface);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+	POP_NUMPARAM(5, r);
+
+	IsoSurface * isoSurface = static_cast<IsoSurface*>(iso.pvalue->ptr);
+
+	glm::vec3 startingVector(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+	float radius = float(r.nvalue);
+	isoSurface->AddMetaball(startingVector, radius * radius);
+}
+void ScriptCallbacks::AddIsoSurfacePlane(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, iso, IsoSurface);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+	POP_NUMPARAM(5, nx);
+	POP_NUMPARAM(6, ny);
+	POP_NUMPARAM(7, nz);
+
+	IsoSurface * isoSurface = static_cast<IsoSurface*>(iso.pvalue->ptr);
+
+	glm::vec3 pos(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+	glm::vec3 nor(float(nx.nvalue), float(ny.nvalue), float(nz.nvalue));
+	isoSurface->AddMetaPlane(pos, nor);
+}
+
+void ScriptCallbacks::ClearIsoSurface(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, iso, IsoSurface);
+	IsoSurface * isoSurface = static_cast<IsoSurface*>(iso.pvalue->ptr);
+
+	isoSurface->Clear();
+}
+
+void ScriptCallbacks::GetIsoSurfaceModel(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, iso, IsoSurface);
+	IsoSurface * isoSurface = static_cast<IsoSurface*>(iso.pvalue->ptr);
+
+	isoSurface->UpdateObjects();
+	isoSurface->UpdateMesh(interpreter->GetApp()->gpu);
+
+	Gpu::Mesh * surfaceMesh = isoSurface->GetMesh();
+	Gpu::ComplexModel * complexModel = new Gpu::ComplexModel(1);
+	complexModel->models[0].mesh = surfaceMesh;
+	
+	interpreter->PushParam(ScriptParam(complexModel, ScriptPtrType::GpuComplexModel));
+}
+
 void ScriptCallbacks::CreateScene(ScriptInterpreter * interpreter)
 {
 	ScriptParam type = interpreter->PopParam();
@@ -2158,18 +2308,33 @@ void ScriptCallbacks::PickFile(ScriptInterpreter * interpreter)
 void ScriptCallbacks::PlaySound(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, sound, AudioItem);
+	ScriptParam seek = interpreter->PopParam();
 	ScriptParam loop = interpreter->PopParam();
 	
 	Audio::Item * audioItem = static_cast<Audio::Item*>(sound.pvalue->ptr);
 	bool loopBool = false;
+	float seekTime = 0.0f;
 
-	if(loop.type == ScriptParam::BOOL || loop.type == ScriptParam::INT
-		|| loop.type == ScriptParam::FLOAT || loop.type == ScriptParam::DOUBLE)
+	if(seek.IsNumber())
 	{
-		loopBool = loop.nvalue > 0;
+		seekTime = float(seek.nvalue);
+	}
+	if(loop.type == ScriptParam::BOOL || loop.IsNumber())
+	{
+		loopBool = loop.nvalue > 0.0;
 	}
 
-	interpreter->GetApp()->audio->Play(audioItem, loopBool);
+	interpreter->GetApp()->audio->Play(audioItem, seekTime, loopBool);
+}
+
+void ScriptCallbacks::PauseSound(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sound, AudioItem);
+
+	// Pausing sound globally should not be possible from the script
+
+	Audio::Item * audioItem = static_cast<Audio::Item*>(sound.pvalue->ptr);
+	interpreter->GetApp()->audio->Pause(audioItem);
 }
 
 void ScriptCallbacks::GetAmplitude(ScriptInterpreter * interpreter)
@@ -2186,6 +2351,30 @@ void ScriptCallbacks::GetAmplitude(ScriptInterpreter * interpreter)
 
 	interpreter->ClearParams();
 	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(amplitude)));
+}
+
+void ScriptCallbacks::GetSoundDuration(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sound, AudioItem);
+
+	Audio::Item * item = static_cast<Audio::Item*>(sound.pvalue->ptr);
+
+	float duration = interpreter->GetApp()->audio->GetDuration(item);
+
+	interpreter->ClearParams();
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(duration)));
+}
+
+void ScriptCallbacks::GetSoundProgress(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sound, AudioItem);
+
+	Audio::Item * item = static_cast<Audio::Item*>(sound.pvalue->ptr);
+
+	float progress = interpreter->GetApp()->audio->GetProgress(item);
+
+	interpreter->ClearParams();
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(progress)));
 }
 
 void ScriptCallbacks::BeginTimestamp(ScriptInterpreter * interpreter)
@@ -2250,6 +2439,42 @@ void ScriptCallbacks::GetTimestampData(ScriptInterpreter * interpreter)
 
 	interpreter->ClearParams();
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(time)));
+}
+
+void ScriptCallbacks::CreateInstanceBuffer(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, type, STRING);
+	POP_NUMPARAM(2, size);
+
+	unsigned bufferSize = unsigned(size.nvalue);
+	InstanceType instanceType = InstanceType_Pos;
+
+	if(strcmp(type.svalue, "PosCol") == 0)
+	{
+		instanceType = InstanceType_PosCol;
+	}
+	if(strcmp(type.svalue, "PosSca") == 0)
+	{
+		instanceType = InstanceType_PosSca;
+	}
+	
+	Gpu::InstanceBuffer * buffer = interpreter->GetApp()->gpu->CreateInstanceBuffer(bufferSize, 0, instanceType);
+
+	interpreter->ClearParams();
+	interpreter->PushParam(ScriptParam(buffer, ScriptPtrType::GpuInstanceBuffer));
+}
+
+void ScriptCallbacks::UpdateInstanceBuffer(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, ibuf, GpuInstanceBuffer);
+	POP_PTRPARAM(2, floats, FloatArray);
+	POP_NUMPARAM(3, size);
+
+	Gpu::InstanceBuffer * buffer = static_cast<Gpu::InstanceBuffer*>(ibuf.pvalue->ptr);
+	ScriptFloatArray * floatArray = static_cast<ScriptFloatArray*>(floats.pvalue->ptr);
+	unsigned activeInstances = unsigned(size.nvalue);
+
+	interpreter->GetApp()->gpu->UpdateInstanceBuffer(buffer, activeInstances, floatArray->floats);
 }
 
 } // namespace Ingenuity

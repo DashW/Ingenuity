@@ -24,5 +24,5 @@ SamplerState gradientSampler : TEXUNIT3;
 
 float4 main( VertexOut vtx ) : SV_TARGET
 {
-	return gradientTex.Sample(gradientSampler, vtx.Tex);
+	return tex.Sample(_textureSampler, vtx.Tex);
 }

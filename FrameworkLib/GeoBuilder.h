@@ -131,7 +131,7 @@ class GeoBuilder
 public:
 	virtual ~GeoBuilder() {}
 
-	LocalMesh * BuildCube();
+	LocalMesh * BuildCube(bool texCoords = true);
 	LocalMesh * BuildSkyCube();
 	LocalMesh * BuildCylinder(float radius, float length, unsigned sectors, unsigned stacks, bool texCoords = false);
 	LocalMesh * BuildSphere(float radius, unsigned sectors, unsigned stacks, bool texCoords = false);
@@ -173,7 +173,8 @@ public:
 
 	LocalMesh * BuildPath(Path::Point * points, unsigned numPoints, PathDebugFlag debugFlag = None);
 	LocalMesh * BuildStroke(Path::Point * points, unsigned numPoints, float strokeWidth,
-		StrokeCornerType cornerType = CornerMiter, StrokeCapType capType = CapButt, float miterLimit = 4.0f);
+		StrokeCornerType cornerType = CornerMiter, StrokeCapType capType = CapButt, 
+		float miterLimit = 4.0f, float animProgress = 1.0f);
 
 	LocalMesh * BuildPathPoly2Tri(Path::Point * points, unsigned numPoints);
 };

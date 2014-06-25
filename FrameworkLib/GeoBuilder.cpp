@@ -773,45 +773,93 @@ void GeoBuilder::TriangulateMonotone(Path & path, std::vector<unsigned> & monoto
 	}
 }
 
-LocalMesh * GeoBuilder::BuildCube()
+LocalMesh * GeoBuilder::BuildCube(bool texCoords)
 {
-	VertexBuffer<Vertex_PosNorTex> * vb = new VertexBuffer<Vertex_PosNorTex>(24);
+	IVertexBuffer * ivb = 0;
+	if(texCoords)
+	{
+		VertexBuffer<Vertex_PosNorTex> * vb = new VertexBuffer<Vertex_PosNorTex>(24);
 
-	// Fill in the front face vertex data.
-	vb->Set(0,  Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f));
-	vb->Set(1,  Vertex_PosNorTex(-1.0f,  1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f));
-	vb->Set(2,  Vertex_PosNorTex( 1.0f,  1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f));
-	vb->Set(3,  Vertex_PosNorTex( 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f));
+		// Fill in the front face vertex data.
+		vb->Set(0, Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f));
+		vb->Set(1, Vertex_PosNorTex(-1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f));
+		vb->Set(2, Vertex_PosNorTex(1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f));
+		vb->Set(3, Vertex_PosNorTex(1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f));
 
-	// Fill in the back face vertex data.
-	vb->Set(4,  Vertex_PosNorTex(-1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f));
-	vb->Set(5,  Vertex_PosNorTex( 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f));
-	vb->Set(6,  Vertex_PosNorTex( 1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f));
-	vb->Set(7,  Vertex_PosNorTex(-1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f));
+		// Fill in the back face vertex data.
+		vb->Set(4, Vertex_PosNorTex(-1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f));
+		vb->Set(5, Vertex_PosNorTex(1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f));
+		vb->Set(6, Vertex_PosNorTex(1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f));
+		vb->Set(7, Vertex_PosNorTex(-1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f));
 
-	// Fill in the top face vertex data.
-	vb->Set(8,  Vertex_PosNorTex(-1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f));
-	vb->Set(9,  Vertex_PosNorTex(-1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f));
-	vb->Set(10, Vertex_PosNorTex( 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f));
-	vb->Set(11, Vertex_PosNorTex( 1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f));
+		// Fill in the top face vertex data.
+		vb->Set(8, Vertex_PosNorTex(-1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(9, Vertex_PosNorTex(-1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f));
+		vb->Set(10, Vertex_PosNorTex(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(11, Vertex_PosNorTex(1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f));
 
-	// Fill in the bottom face vertex data.
-	vb->Set(12, Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f));
-	vb->Set(13, Vertex_PosNorTex( 1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f));
-	vb->Set(14, Vertex_PosNorTex( 1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f));
-	vb->Set(15, Vertex_PosNorTex(-1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f));
+		// Fill in the bottom face vertex data.
+		vb->Set(12, Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f));
+		vb->Set(13, Vertex_PosNorTex(1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(14, Vertex_PosNorTex(1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f));
+		vb->Set(15, Vertex_PosNorTex(-1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f));
 
-	// Fill in the left face vertex data.
-	vb->Set(16, Vertex_PosNorTex(-1.0f, -1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f));
-	vb->Set(17, Vertex_PosNorTex(-1.0f,  1.0f,  1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f));
-	vb->Set(18, Vertex_PosNorTex(-1.0f,  1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f));
-	vb->Set(19, Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f));
+		// Fill in the left face vertex data.
+		vb->Set(16, Vertex_PosNorTex(-1.0f, -1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(17, Vertex_PosNorTex(-1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+		vb->Set(18, Vertex_PosNorTex(-1.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(19, Vertex_PosNorTex(-1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f));
 
-	// Fill in the right face vertex data.
-	vb->Set(20, Vertex_PosNorTex(1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f));
-	vb->Set(21, Vertex_PosNorTex(1.0f,  1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f));
-	vb->Set(22, Vertex_PosNorTex(1.0f,  1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f));
-	vb->Set(23, Vertex_PosNorTex(1.0f, -1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f));
+		// Fill in the right face vertex data.
+		vb->Set(20, Vertex_PosNorTex(1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(21, Vertex_PosNorTex(1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+		vb->Set(22, Vertex_PosNorTex(1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(23, Vertex_PosNorTex(1.0f, -1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f));
+
+		ivb = vb;
+	}
+	else
+	{
+		VertexBuffer<Vertex_PosNor> * vb = new VertexBuffer<Vertex_PosNor>(24);
+
+		// Fill in the front face vertex data.
+		vb->Set(0, Vertex_PosNor(-1.0f,-1.0f, -1.0f, 0.0f, 0.0f, -1.0f));
+		vb->Set(1, Vertex_PosNor(-1.0f, 1.0f, -1.0f, 0.0f, 0.0f, -1.0f));
+		vb->Set(2, Vertex_PosNor(1.0f,  1.0f, -1.0f, 0.0f, 0.0f, -1.0f));
+		vb->Set(3, Vertex_PosNor(1.0f, -1.0f, -1.0f, 0.0f, 0.0f, -1.0f));
+
+		// Fill in the back face vertex data.
+		vb->Set(4, Vertex_PosNor(-1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(5, Vertex_PosNor( 1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(6, Vertex_PosNor( 1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+		vb->Set(7, Vertex_PosNor(-1.0f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f));
+
+		// Fill in the top face vertex data.
+		vb->Set(8,  Vertex_PosNor(-1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(9,  Vertex_PosNor(-1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(10, Vertex_PosNor( 1.0f, 1.0f,  1.0f, 0.0f, 1.0f, 0.0f));
+		vb->Set(11, Vertex_PosNor( 1.0f, 1.0f, -1.0f, 0.0f, 1.0f, 0.0f));
+
+		// Fill in the bottom face vertex data.
+		vb->Set(12, Vertex_PosNor(-1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f));
+		vb->Set(13, Vertex_PosNor( 1.0f, -1.0f, -1.0f, 0.0f, -1.0f, 0.0f));
+		vb->Set(14, Vertex_PosNor( 1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f));
+		vb->Set(15, Vertex_PosNor(-1.0f, -1.0f,  1.0f, 0.0f, -1.0f, 0.0f));
+
+		// Fill in the left face vertex data.
+		vb->Set(16, Vertex_PosNor(-1.0f, -1.0f,  1.0f, -1.0f, 0.0f, 0.0f));
+		vb->Set(17, Vertex_PosNor(-1.0f,  1.0f,  1.0f, -1.0f, 0.0f, 0.0f));
+		vb->Set(18, Vertex_PosNor(-1.0f,  1.0f, -1.0f, -1.0f, 0.0f, 0.0f));
+		vb->Set(19, Vertex_PosNor(-1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 0.0f));
+
+		// Fill in the right face vertex data.
+		vb->Set(20, Vertex_PosNor(1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 0.0f));
+		vb->Set(21, Vertex_PosNor(1.0f,  1.0f, -1.0f, 1.0f, 0.0f, 0.0f));
+		vb->Set(22, Vertex_PosNor(1.0f,  1.0f,  1.0f, 1.0f, 0.0f, 0.0f));
+		vb->Set(23, Vertex_PosNor(1.0f, -1.0f,  1.0f, 1.0f, 0.0f, 0.0f));
+
+		ivb = vb;
+	}
 
 	// Write box indices to the index buffer.
 	unsigned * i = new unsigned[36];
@@ -840,7 +888,7 @@ LocalMesh * GeoBuilder::BuildCube()
 	i[30] = 20; i[31] = 21; i[32] = 22;
 	i[33] = 20; i[34] = 22; i[35] = 23;
 
-	return new LocalMesh(vb, i, 36);
+	return new LocalMesh(ivb, i, 36);
 }
 
 LocalMesh * GeoBuilder::BuildSkyCube()
@@ -1533,7 +1581,7 @@ LocalMesh * GeoBuilder::BuildPath(Path::Point * points, unsigned numPoints, GeoB
 }
 
 LocalMesh * GeoBuilder::BuildStroke(Path::Point * points, unsigned numPoints, float width,
-									GeoBuilder::StrokeCornerType cornerType, GeoBuilder::StrokeCapType capType, float miterLimit)
+	GeoBuilder::StrokeCornerType cornerType, GeoBuilder::StrokeCapType capType, float miterLimit, float animProgress)
 {
 	if(numPoints == 0) return 0;
 
@@ -1553,6 +1601,8 @@ LocalMesh * GeoBuilder::BuildStroke(Path::Point * points, unsigned numPoints, fl
 
 	for(unsigned i = 1; i < numPoints - 1; ++i)
 	{
+		if((float(i+1) / float(numPoints)) > animProgress) break;
+
 		double angle = path.Angle(i-1,i,i+1,false);
 		double miterRatio = 1.0f / sin((M_PI - angle) / 2.0f);
 		bool miterToBevel = miterRatio > miterLimit;
@@ -1585,12 +1635,14 @@ LocalMesh * GeoBuilder::BuildStroke(Path::Point * points, unsigned numPoints, fl
 
 	for(unsigned i = 0; i < numPoints; ++i)
 	{
+		if((float(i) / float(numPoints)) > animProgress) break;
+
 		Path::Point & point = path.points[i];
 
 		double lineAngle = path.Angle(i, (i+1 == numPoints ? i : i+1));
 		double prevLineAngle = path.Angle((i == 0 ? numPoints-1 : i-1), i);
 		
-		if(i == 0 || i == numPoints - 1)
+		if(i == 0 || i == numPoints - 1 || (float(i+1) / float(numPoints)) > animProgress)
 		{
 			double shiftAngle = M_PI * 0.5f;
 			if(capType == CapSquare) shiftAngle *= (i==0 ? 1.5f : 0.5f);
@@ -1762,11 +1814,13 @@ LocalMesh * GeoBuilder::BuildStroke(Path::Point * points, unsigned numPoints, fl
 		unsigned endPoint1 = pointAccumulator - 2;
 		unsigned endPoint2 = pointAccumulator - 1;
 
+		unsigned lastPoint = unsigned(float(numPoints - 2) * animProgress) + 1;
+
 		double firstLineAngle = path.Angle(0,1);
-		double lastLineAngle = path.Angle(numPoints - 2, numPoints - 1);
+		double lastLineAngle = path.Angle(lastPoint - 1, lastPoint);
 
 		Path::Point & start = path.points[0];
-		Path::Point & end = path.points[numPoints-1];
+		Path::Point & end = path.points[lastPoint];
 
 		double startAngle = firstLineAngle + M_PI_2;
 		for(double currentTheta = stepTheta; currentTheta < M_PI; currentTheta += stepTheta)

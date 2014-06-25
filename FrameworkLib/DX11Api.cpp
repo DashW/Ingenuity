@@ -266,6 +266,10 @@ const D3D11_INPUT_ELEMENT_DESC instPosCol[] = {
 	{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 	{"COLOR", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 12, D3D11_INPUT_PER_INSTANCE_DATA, 1}
 };
+const D3D11_INPUT_ELEMENT_DESC instPosSca[] = {
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	{ "COLOR", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 12, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+};
 
 void DX11::Api::SetupVertexInformation()
 {
@@ -297,6 +301,8 @@ void DX11::Api::SetupVertexInformation()
 	instanceDescSizes[InstanceType_Pos] = 1;
 	instanceDescs[InstanceType_PosCol] = instPosCol;
 	instanceDescSizes[InstanceType_PosCol] = 2;
+	instanceDescs[InstanceType_PosSca] = instPosSca;
+	instanceDescSizes[InstanceType_PosSca] = 2;
 }
 
 void DX11::Api::Initialize(AssetMgr * assets)
@@ -547,7 +553,7 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 
 	DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
 
-	if(model->wireframe)
+	if(model->wireframe || drawEverythingWireframe)
 	{
 		if(!wireframeState)
 		{
@@ -1117,7 +1123,7 @@ void DX11::Api::SetMultisampling(unsigned multisampleLevel)
 	// Need to rebuild the swap chain!!
 
 	OutputDebugString(L"Not yet implemented");
-	if(IsDebuggerPresent()) __debugbreak();
+	//if(IsDebuggerPresent()) __debugbreak();
 }
 
 void DX11::Api::SetBlendMode(Gpu::BlendMode blendMode)

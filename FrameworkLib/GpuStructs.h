@@ -2,6 +2,7 @@
 
 #include "../Third Party/glm-0.9.4.1/glm/glm.hpp"
 #include "AssetMgr.h"
+#include "GpuShaders.h"
 #include <string>
 
 namespace Ingenuity {
@@ -125,6 +126,7 @@ struct Model
 	bool backFaceCull;
 	bool frontFaceCull;
 	bool destructMesh;
+	bool destructEffect;
 
 	// HACK
 	BoundingSphere boundingSphere;
@@ -132,10 +134,12 @@ struct Model
 	Model() :
 		mesh(0), texture(0), normalMap(0), cubeMap(0), effect(0), color(1.0f, 1.0f, 1.0f, 1.0f),
 		scale(1.0f, 1.0f, 1.0f), diffuseFactor(1.0f), specPower(16.0f), specFactor(1.0f),
-		wrapTexture(false), wireframe(false), backFaceCull(true), frontFaceCull(false), destructMesh(false) {}
+		wrapTexture(false), wireframe(false), backFaceCull(true), frontFaceCull(false), 
+		destructMesh(false), destructEffect(false) {}
 	virtual ~Model()
 	{
 		if(destructMesh) delete mesh;
+		if(effect && destructEffect) delete effect;
 	}
 };
 
@@ -229,6 +233,7 @@ struct DrawSurface
 	{
 		Format_4x8int,
 		Format_4x16float,
+		Format_3x10float,
 		Format_1x16float,
 
 		Format_Total

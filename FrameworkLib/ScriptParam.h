@@ -22,11 +22,14 @@ struct ScriptPtrType
 		GpuDrawSurface,
 		GpuScene,
 		GpuShader,
+		GpuInstanceBuffer,
 
 		FloatArray,
 		HeightParser,
 		ImageBuffer,
-		AudioItem
+		AudioItem,
+		IsoSurface,
+		SVGParser
 	};
 };
 

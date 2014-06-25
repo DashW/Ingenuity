@@ -208,6 +208,10 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 			{
 				instanceType = InstanceType_PosCol;
 			}
+			if(strcmp(instanceTypeChars, "PosSca") == 0)
+			{
+				instanceType = InstanceType_PosSca;
+			}
 		}
 
 		unsigned key = VertApi::GetTechniqueKey(vertexType, instanceType);

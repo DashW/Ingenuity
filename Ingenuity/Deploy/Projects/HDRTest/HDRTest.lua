@@ -12,7 +12,7 @@ function Begin()
 	SetCameraClipFov(camera, 0.2, 30, math.pi/4);
 	SetupFlyCamera(camera, 0, 0.4, -9, 0.01, 10);
 	
-	sceneTarget = CreateSurface(1, 1, true, "4x16f");
+	sceneTarget = CreateSurface(1, 1, true, "3x10f");
 	
 	debugFont = GetFont(40,"Arial");
 end

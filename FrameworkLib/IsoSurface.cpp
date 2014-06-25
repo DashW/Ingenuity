@@ -8,6 +8,8 @@ outVertexBuffer(0),
 fieldValues(0),
 threshold(1.0f),
 cubes(0),
+useMetaPlane(false),
+metaPlaneSqrDepth(1.0f),
 dynamicMesh(0)
 {
 	fieldValues = new float[cubeVertexBuffer.GetLength()];
@@ -125,6 +127,35 @@ void IsoSurface::UpdateObjects()
 			vertex.normal.x += ballToPoint.x * normalScale;
 			vertex.normal.y += ballToPoint.y * normalScale;
 			vertex.normal.z += ballToPoint.z * normalScale;
+		}
+	}
+
+	if(useMetaPlane)
+	{
+		for(unsigned j = 0; j < vbLength; ++j)
+		{
+			// Currently takes approximately 1.5ms per metaball.
+			// Simple addition operation, so would benefit hugely from multithreading.
+
+			Vertex_PosNor & vertex = cubeVertexBuffer.Get(j);
+
+			//get squared distance from ball to point
+			//float squaredDistance=ballToPoint.GetSquaredLength();
+			const float distance = glm::dot(metaPlaneNormal, vertex.position) 
+				+ glm::dot(-metaPlaneNormal, metaPlanePosition);
+
+			const float sqrDistance = distance * distance;
+
+			//value = r^2/d^2
+			fieldValues[j] += metaPlaneSqrDepth / sqrDistance;
+
+			//normal = (r^2 * v)/d^4
+			normalScale = metaPlaneSqrDepth / (sqrDistance*sqrDistance);
+
+			//cubeVertexBuffer.Get(j).normal += ballToPoint*normalScale;
+			vertex.normal.x += metaPlaneNormal.x * normalScale;
+			vertex.normal.y += metaPlaneNormal.y * normalScale;
+			vertex.normal.z += metaPlaneNormal.z * normalScale;
 		}
 	}
 }

@@ -28,6 +28,7 @@ class Window
 	bool visible;
 	bool maximized;
 	bool destroyed;
+	bool fullscreen;
 
 	static std::map<HWND, Window*> windowsByHandle;
 

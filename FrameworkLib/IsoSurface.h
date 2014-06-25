@@ -31,6 +31,11 @@ private:
 	Cube * cubes;
 
 	std::vector<Metaball> metaballs;
+	
+	bool useMetaPlane;
+	glm::vec3 metaPlanePosition;
+	glm::vec3 metaPlaneNormal;
+	float metaPlaneSqrDepth;
 
 	Gpu::Mesh * dynamicMesh;
 
@@ -46,11 +51,19 @@ public:
 		metaballs.back().position = position;
 		metaballs.back().squaredRadius = sqrRadius;
 	}
+	void AddMetaPlane(glm::vec3 position, glm::vec3 normal)
+	{
+		useMetaPlane = true;
+		metaPlanePosition = position;
+		metaPlaneNormal = glm::normalize(normal);
+		metaPlaneSqrDepth = glm::length(normal);
+	}
+
 	unsigned GetNumMetaballs() { return metaballs.size(); }
 	Metaball * GetMetaball(unsigned index) {
 		return (index < metaballs.size() ? &metaballs[index] : 0);
 	}
-	void ClearMetaballs() { metaballs.clear(); }
+	void Clear() { metaballs.clear(); useMetaPlane = false; }
 
 	void UpdateObjects();
 	void UpdateMesh(Gpu::Api * gpu);

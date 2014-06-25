@@ -446,6 +446,12 @@
     <FxCompile Include="Shaders\DX9\WaterShader.fx">
       <Filter>Shaders\DX9</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosNorPosSca.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\VignettePixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">
@@ -511,6 +517,9 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="TextureMultiply.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="Vignette.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>

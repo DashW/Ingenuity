@@ -16,6 +16,11 @@ SvgParser::~SvgParser()
 	{
 		delete it->second;
 	}
+	for(unsigned i = 0; i < graphics.size(); ++i)
+	{
+		if(graphics[i].fill) delete graphics[i].fill;
+		if(graphics[i].stroke) delete graphics[i].stroke;
+	}
 }
 
 void SvgParser::ParseRect(tinyxml2::XMLElement * element, Graphic & graphic, bool image)
@@ -32,8 +37,14 @@ void SvgParser::ParseRect(tinyxml2::XMLElement * element, Graphic & graphic, boo
 		float width = (float) atof(widthText);
 		float height = (float) atof(heightText);
 
-		graphic.fill = builder.BuildRect(x,y,width,height,image);
-		if(!image) graphic.stroke = builder.BuildRectStroke(x,y,width,height,graphic.stylesheet.strokeWidth);
+		graphic.shape.type = ShapeRect;
+		graphic.shape.x = x;
+		graphic.shape.y = y;
+		graphic.shape.w = width;
+		graphic.shape.h = height;
+
+		graphic.fill = builder.BuildRect(x,-y-height,width,height,image);
+		if(!image) graphic.stroke = builder.BuildRectStroke(x,-y-height,width,height,graphic.stylesheet.strokeWidth);
 	}
 }
 
@@ -49,8 +60,14 @@ void SvgParser::ParseCircle(tinyxml2::XMLElement * element, Graphic & graphic)
 		float cy = float(atof(cyText));
 		float radius = float(atof(rText));
 
-		graphic.fill = builder.BuildEllipse(cx,cy,radius,radius);
-		graphic.stroke = builder.BuildEllipseStroke(cx,cy,radius,radius,graphic.stylesheet.strokeWidth);
+		graphic.shape.type = ShapeCircle;
+		graphic.shape.x = cx;
+		graphic.shape.y = cy;
+		graphic.shape.w = radius;
+		graphic.shape.w = radius;
+
+		graphic.fill = builder.BuildEllipse(cx,-cy,radius,radius);
+		graphic.stroke = builder.BuildEllipseStroke(cx,-cy,radius,radius,graphic.stylesheet.strokeWidth);
 	}
 }
 
@@ -506,7 +523,15 @@ void SvgParser::ParseDescription(const char * description, Graphic & graphic)
 		}
 	}
 
-	graphic.fill = builder.BuildPath(pathPoints.data(),pathPoints.size());
+	for(unsigned i = 0; i < pathPoints.size(); ++i)
+	{
+		pathPoints[i].y *= -1;
+	}
+
+	graphic.shape.type = ShapePath;
+	graphic.shape.pathPoints = pathPoints;
+
+	//graphic.fill = builder.BuildPath(pathPoints.data(),pathPoints.size());
 	graphic.stroke = builder.BuildStroke(pathPoints.data(),pathPoints.size(),
 		graphic.stylesheet.strokeWidth,
 		graphic.stylesheet.cornerType,
@@ -1165,19 +1190,17 @@ bool SvgParser::GetNextCssKeyValue(std::stringstream & css, std::string & key, s
 	return false;
 }
 
-Gpu::ComplexModel * SvgParser::ParseSvg(Gpu::Api * gpu, Files::Directory * directory, char * data, unsigned dataSize)
+void SvgParser::ParseSvg(Files::Directory * directory, char * data, unsigned dataSize)
 {
 	tinyxml2::XMLDocument svgDoc;
 
-	if(svgDoc.Parse(data, dataSize) != 0) return 0;
+	if(svgDoc.Parse(data, dataSize) != 0) return;
 	
 	tinyxml2::XMLElement * root = svgDoc.FirstChildElement("svg");
 
-	if(!root) return 0; // Not an SVG document
+	if(!root) return; // Not an SVG document
 
 	unsigned numMeshes = 0;
-
-	std::vector<Graphic> graphics;
 	unsigned level = 0;
 	tinyxml2::XMLElement * element = root->FirstChildElement();
 	while(element)
@@ -1280,11 +1303,14 @@ Gpu::ComplexModel * SvgParser::ParseSvg(Gpu::Api * gpu, Files::Directory * direc
 			}
 		}
 	}
+}
 
+Gpu::ComplexModel * SvgParser::GetModel(Gpu::Api * gpu)
+{
 	Files::Directory * frameworkDir = assets->GetFileApi()->GetKnownDirectory(Files::FrameworkDir);
 	Gpu::Shader * pathShader = assets->GetAsset<Gpu::Shader>(frameworkDir, L"PathShader.xml");
 
-	Gpu::ComplexModel * modelGroup = new Gpu::ComplexModel(numMeshes);
+	Gpu::ComplexModel * modelGroup = new Gpu::ComplexModel(graphics.size() * 2);
 	unsigned currentModel = 0;
 	for(unsigned i = 0; i < graphics.size(); ++i)
 	{
@@ -1294,13 +1320,13 @@ Gpu::ComplexModel * SvgParser::ParseSvg(Gpu::Api * gpu, Files::Directory * direc
 		{
 			Gpu::Model & model = modelGroup->models[currentModel];
 
-			model.mesh = graphic.fill->GpuOnly(gpu);
+			model.mesh = graphic.fill->ToGpuMesh(gpu);
 			model.color.r = graphic.stylesheet.fillR;
 			model.color.g = graphic.stylesheet.fillG;
 			model.color.b = graphic.stylesheet.fillB;
 			model.color.a = graphic.stylesheet.fillA * graphic.stylesheet.opacity;
 			model.position.x += graphic.transform.translateX;
-			model.position.y += graphic.transform.translateY;
+			model.position.y -= graphic.transform.translateY;
 			model.rotation.z += graphic.transform.rotate;
 			model.scale *= graphic.transform.scaleX;
 			model.texture = graphic.texture;
@@ -1336,13 +1362,13 @@ Gpu::ComplexModel * SvgParser::ParseSvg(Gpu::Api * gpu, Files::Directory * direc
 		{
 			Gpu::Model & model = modelGroup->models[currentModel];
 
-			model.mesh = graphic.stroke->GpuOnly(gpu);
+			model.mesh = graphic.stroke->ToGpuMesh(gpu);
 			model.color.r = graphic.stylesheet.strokeR;
 			model.color.g = graphic.stylesheet.strokeG;
 			model.color.b = graphic.stylesheet.strokeB;
 			model.color.a = graphic.stylesheet.strokeA * graphic.stylesheet.opacity;
 			model.position.x += graphic.transform.translateX;
-			model.position.y += graphic.transform.translateY;
+			model.position.y = graphic.transform.translateY;
 			model.rotation.z += graphic.transform.rotate;
 			model.scale *= graphic.transform.scaleX;
 			if(pathShader)
@@ -1372,6 +1398,87 @@ Gpu::ComplexModel * SvgParser::ParseSvg(Gpu::Api * gpu, Files::Directory * direc
 
 			++currentModel;
 		}
+	}
+
+	return modelGroup;
+}
+
+Gpu::ComplexModel * SvgParser::GetAnimatedStroke(Gpu::Api * gpu, float animProgress)
+{
+	//Files::Directory * frameworkDir = assets->GetFileApi()->GetKnownDirectory(Files::FrameworkDir);
+	//Gpu::Shader * pathShader = assets->GetAsset<Gpu::Shader>(frameworkDir, L"PathShader.xml");
+
+	Gpu::ComplexModel * modelGroup = new Gpu::ComplexModel(graphics.size());
+	unsigned currentModel = 0;
+	for(unsigned i = 0; i < graphics.size(); ++i)
+	{
+		Graphic & graphic = graphics[i];
+
+		Gpu::Model & model = modelGroup->models[currentModel];
+
+		Shape & shape = graphic.shape;
+		LocalMesh * animStrokeMesh = 0;
+
+		switch(graphic.shape.type)
+		{
+		case ShapeRect:
+			animStrokeMesh = builder.BuildRectStroke(shape.x, shape.y, shape.w, shape.h, graphic.stylesheet.strokeWidth);
+			break;
+		case ShapeCircle:
+			animStrokeMesh = builder.BuildEllipseStroke(shape.x, shape.y, shape.w, shape.h, graphic.stylesheet.strokeWidth);
+			break;
+		case ShapePath:
+			animStrokeMesh = builder.BuildStroke(
+				shape.pathPoints.data(),
+				shape.pathPoints.size(),
+				graphic.stylesheet.strokeWidth,
+				graphic.stylesheet.cornerType,
+				graphic.stylesheet.capType,
+				graphic.stylesheet.miterLimit,
+				animProgress);
+			break;
+		}
+
+		if(animStrokeMesh)
+		{
+			model.mesh = animStrokeMesh->GpuOnly(gpu);
+		}
+
+		model.color.r = graphic.stylesheet.strokeR;
+		model.color.g = graphic.stylesheet.strokeG;
+		model.color.b = graphic.stylesheet.strokeB;
+		model.color.a = graphic.stylesheet.strokeA * graphic.stylesheet.opacity;
+		model.position.x += graphic.transform.translateX;
+		model.position.y = graphic.transform.translateY;
+		model.rotation.z += graphic.transform.rotate;
+		model.scale *= graphic.transform.scaleX;
+		//if(pathShader)
+		//{
+		//	model.effect = new Gpu::Effect(pathShader);
+		//	if(graphic.stylesheet.strokeGradient.offsets.size() > 0)
+		//	{
+		//		Gradient & gradient = graphic.stylesheet.strokeGradient;
+		//		model.effect->SetParam(0, 1.0f);
+		//		model.effect->SetParam(1, gradient.x1);
+		//		model.effect->SetParam(2, gradient.y1);
+		//		model.effect->SetParam(3, gradient.x2);
+		//		model.effect->SetParam(4, gradient.y2);
+		//		GradientPainter * gradientPainter = new GradientPainter(gradient, gpu);
+		//		model.effect->SetParam(5, gradientPainter->surface);
+		//		gpu->AddDeviceListener(gradientPainter);
+		//		model.effect->SetSamplerParam(Gpu::SamplerParam::AddressU, gradient.spreadMethod, 1);
+		//	}
+		//	else
+		//	{
+		//		model.effect->SetParam(0, 0.0f);
+		//	}
+		//	//model.destructEffect = true;
+		//}
+		model.destructMesh = true;
+		model.backFaceCull = false;
+		//model.wireframe = true;
+
+		++currentModel;
 	}
 
 	return modelGroup;

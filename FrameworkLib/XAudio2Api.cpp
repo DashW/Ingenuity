@@ -11,12 +11,15 @@ namespace XAudio2 {
 
 XAudio2::Item::~Item()
 {
-	if(playBuffer) delete playBuffer;
+	xAudio->Stop(this);
 	if(sourceVoice) sourceVoice->DestroyVoice();
+	if(playBuffer) delete playBuffer;
 }
 
-XAudio2::Api::Api()
-	: xAudioEngine(0), xAudioMasteringVoice(0)
+XAudio2::Api::Api() : 
+	xAudioEngine(0),
+	xAudioMasteringVoice(0),
+	globallyPaused(false)
 {
 	UINT32 flags = 0;
 
@@ -56,9 +59,14 @@ XAudio2::Api::~Api()
 	if(xAudioEngine) xAudioEngine->Release();
 }
 
+void XAudio2::Api::PauseItem(XAudio2::Item * xItem, bool unpause)
+{
+
+}
+
 Audio::Item * XAudio2::Api::CreateAudioItemFromWaveFormat(tWAVEFORMATEX * wfx, char * buffer, unsigned bufferLength)
 {
-	XAudio2::Item * newItem = new XAudio2::Item();
+	XAudio2::Item * newItem = new XAudio2::Item(this);
 
 	newItem->isPlaying = false;
 
@@ -70,19 +78,22 @@ Audio::Item * XAudio2::Api::CreateAudioItemFromWaveFormat(tWAVEFORMATEX * wfx, c
 	if(xAudioEngine && SUCCEEDED(xAudioEngine->CreateSourceVoice(&newItem->sourceVoice,
 		wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, 0, 0, 0)))
 	{
+		unsigned bytesPerSample = (wfx->wBitsPerSample / 8) * wfx->nChannels;
+		newItem->sampleRate = wfx->nSamplesPerSec;
+		newItem->duration = float(bufferLength) / (float(bytesPerSample) * float(newItem->sampleRate));
+
 		return newItem;
 	}
 	else
 	{
-		delete newItem->playBuffer;
 		delete newItem;
 		return 0;
 	}
 }
 
-void XAudio2::Api::Play(Audio::Item* item, bool loop)
+void XAudio2::Api::Play(Audio::Item * item, float seek, bool loop)
 {
-	if(!item || !xAudioEngine) return;
+	if(!item) return;
 
 	XAudio2::Item *xItem = static_cast<XAudio2::Item *>(item);
 	//
@@ -105,32 +116,106 @@ void XAudio2::Api::Play(Audio::Item* item, bool loop)
 	//
 	// Submit the sound buffer and (re)start (ignore any 'stop' failures)
 	//
+	unsigned seekSamples = unsigned(float(xItem->sampleRate) * float(seek));
+	xItem->playBuffer->PlayBegin = seekSamples;
+
 	hr = xItem->sourceVoice->SubmitSourceBuffer(xItem->playBuffer);
 	if(SUCCEEDED(hr))
 	{
-		hr = xItem->sourceVoice->Start(0, XAUDIO2_COMMIT_NOW);
-		if(SUCCEEDED(hr)) xItem->isPlaying = true;
+		XAUDIO2_VOICE_STATE voiceState = { 0 };
+		xItem->sourceVoice->GetState(&voiceState);
+
+		xItem->samplesPlayedBeforeReset = int(voiceState.SamplesPlayed) - int(seekSamples);
+		xItem->isPlaying = true;
+
+		playingItems.push_back(xItem);
+
+		if(!globallyPaused)
+		{
+			hr = xItem->sourceVoice->Start(0, XAUDIO2_COMMIT_NOW);
+		}
 	}
 }
 
 void XAudio2::Api::Pause(Audio::Item* item)
 {
+	// this is very limited: when unpausing, it'll unpause EVERYTHING!
 
+	if(item)
+	{
+		XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
+		if(xItem->isPaused)
+		{
+			xItem->sourceVoice->Start();
+			xItem->isPaused = false;
+		}
+		else
+		{
+			xItem->sourceVoice->Stop();
+			xItem->isPaused = true;
+		}
+	}
+	else
+	{
+		for(unsigned i = 0; i < playingItems.size(); ++i)
+		{
+			if(globallyPaused)
+			{
+				if(!playingItems[i]->isPaused)
+				{
+					playingItems[i]->sourceVoice->Start();
+				}
+			}
+			else
+			{
+				if(!playingItems[i]->isPaused)
+				{
+					playingItems[i]->sourceVoice->Stop();
+				}
+			}
+		}
+		globallyPaused = !globallyPaused;
+	}
 }
 
 void XAudio2::Api::Stop(Audio::Item* item)
 {
-	XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
-
-	HRESULT hr = xItem->sourceVoice->Stop();
-	if(SUCCEEDED(hr))
+	if(item)
 	{
-		hr = xItem->sourceVoice->FlushSourceBuffers();
+		XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
+
+		HRESULT hr = xItem->sourceVoice->Stop();
+		if(SUCCEEDED(hr))
+		{
+			hr = xItem->sourceVoice->FlushSourceBuffers();
+
+			for(unsigned i = 0; i < playingItems.size(); ++i)
+			{
+				if(playingItems[i] == xItem)
+				{
+					playingItems.erase(playingItems.begin() + i);
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(unsigned i = 0; i < playingItems.size(); ++i)
+		{
+			HRESULT hr = playingItems[i]->sourceVoice->Stop();
+			if(SUCCEEDED(hr))
+			{
+				hr = playingItems[i]->sourceVoice->FlushSourceBuffers();
+			}
+		}
+		playingItems.clear();
 	}
 }
 
 void XAudio2::Api::SetVolume(Audio::Item* item, float volume)
 {
+	if(!item) return;
 	XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
 
 	xItem->sourceVoice->SetVolume(volume);
@@ -138,6 +223,7 @@ void XAudio2::Api::SetVolume(Audio::Item* item, float volume)
 
 float XAudio2::Api::GetAmplitude(Audio::Item * item)
 {
+	if(!xAudioEngine) return 0.0f;
 	float peakLevels[2];
 	float rmsLevels[2];
 	XAUDIO2FX_VOLUMEMETER_LEVELS volumeMeter;
@@ -156,6 +242,28 @@ float XAudio2::Api::GetAmplitude(Audio::Item * item)
 	}
 
 	return (peakLevels[0] + peakLevels[1]) / 2;
+}
+
+float XAudio2::Api::GetDuration(Audio::Item * item)
+{
+	if(!item) return 0.0f;
+	XAudio2::Item * xaudio2Item = static_cast<XAudio2::Item*>(item);
+
+	return xaudio2Item->duration;
+}
+
+float XAudio2::Api::GetProgress(Audio::Item * item)
+{
+	if(!item) return 0.0f;
+	XAudio2::Item * xaudio2Item = static_cast<XAudio2::Item*>(item);
+
+	XAUDIO2_VOICE_STATE voiceState = { 0 };
+
+	xaudio2Item->sourceVoice->GetState(&voiceState);
+
+	unsigned samplesPlayed = unsigned(voiceState.SamplesPlayed);
+
+	return float(samplesPlayed - xaudio2Item->samplesPlayedBeforeReset) / float(xaudio2Item->sampleRate);
 }
 
 } // namespace XAudio2

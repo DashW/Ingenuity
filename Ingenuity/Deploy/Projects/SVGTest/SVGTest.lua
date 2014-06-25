@@ -6,6 +6,7 @@
 -- Richard Copperwaite 2013
 
 rotation = 0;
+animTime = 0;
 
 sumDeltas = 0;
 numDeltas = 0;
@@ -23,10 +24,11 @@ end
 
 function Begin()
 	SetMultisampling(4);
+	SetClearColor(1,1,1);
 
 	svgTicket = LoadAssets(
 		{"FrameworkDir", "PathShader.xml", "Shader", "pathShader"},
-		{"ProjectDir", "Hummingbird3.svg", "SVGModel", "svgModel"});
+		{"ProjectDir", "Door.svg", "SVGModel", "svgModel"});
 
 	-- svgModel = GetSVGModel("Hummingbird3.svg");
 	
@@ -39,10 +41,14 @@ function Begin()
 	
 	--SetMeshColor(svgModel,0,1,0,0,1);
 	
-	--camera = CreateCamera(true); --orthographic!
-	camera = CreateCamera(); --perspective!
-	SetCameraPosition(camera,0,0,-1000);
+	camera = CreateCamera(true); --orthographic!
+	--camera = CreateCamera(); --perspective!
+	SetCameraPosition(camera,0,0,-500);
 	SetCameraTarget(camera,0,0,0);
+	
+	lightSphere = CreateModel("PosNor",CreateSphere());
+	SetMeshColor(lightSphere, 0, 0, 0, 0);
+	SetModelScale(lightSphere,10);
 	
 	font = GetFont(20,"Arial");
 	
@@ -55,18 +61,11 @@ end
 
 function Update(delta)	
 	if IsLoaded(svgTicket) then
-		svgModel = GetAsset("svgModel");
---		pathEffect = CreateEffect(")
+		svgParser = GetAsset("svgModel");
+		svgModel = GetSVGModel(svgParser,true,0.5);
+		pathEffect = CreateEffect("pathShader")
 	
-		SetModelPosition(svgModel,-373,247,0);
-		
-		if svgModel then
-			local meshCount = GetNumMeshes(svgModel)
-			while meshCount > 1 do
-				meshCount = meshCount - 1;
-				SetMeshPosition(svgModel,meshCount,0.0,0.0,-meshCount * 10.0); -- WEIRDNESS!!!!!!
-			end
-		end
+		SetModelPosition(svgModel,-373,500,0);
 	
 		svgTicket = -1;
 	end
@@ -80,10 +79,24 @@ function Update(delta)
 	camOffsetX = ((mouseX/screenWidth) - 0.5) * 700;
 	camOffsetY = ((mouseY/screenHeight) - 0.5) * (700/ratio);
 	
-	SetCameraPosition(camera,-camOffsetX,camOffsetY,-1000);
+	
+	SetCameraClipHeight(camera,0,500,screenHeight * 3);
+	--SetCameraPosition(camera,-camOffsetX,camOffsetY,-1000);
 	
 	--text = string.format("%2.2f, %2.2f",mouseX,mouseY);
 	
+	animTime = animTime + (delta * 0.2);
+	if(animTime > 1) then animTime = 0; end
+	
+	if svgParser then
+		svgModel = GetSVGModel(svgParser,true,animTime);
+		SetModelPosition(svgModel,-373,500,-10);
+		local meshCount = GetNumMeshes(svgModel);
+		while meshCount > 0 do
+			meshCount = meshCount - 1;
+			SetMeshEffect(svgModel,meshCount,pathEffect);
+		end
+	end
 end
 
 function Draw()
@@ -93,7 +106,8 @@ function Draw()
 	--SetModelPosition(svgModel,screenWidth/2,-screenHeight/2,0.0);
 	-- DrawComplexModel(rectModel,camera);
 	if svgModel then
-		DrawComplexModel(svgModel,camera);	
+		DrawComplexModel(svgModel,camera);
+		DrawComplexModel(lightSphere,camera);
 	end
 	DrawText(font,text,0,0,0);
 end

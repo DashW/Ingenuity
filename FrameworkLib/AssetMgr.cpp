@@ -129,7 +129,7 @@ int AssetMgr::Load(Files::Directory * directory, const wchar_t * path, AssetType
 	{
 		loader = new RawHeightLoader(gpu, files, directory, path);
 	}
-	if(type == SvgModelAsset)
+	if(type == SvgAsset)
 	{
 		loader = new SvgLoader(this, gpu, directory, path);
 	}

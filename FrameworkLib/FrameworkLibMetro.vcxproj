@@ -141,7 +141,7 @@
       <CompileAsWinRT>true</CompileAsWinRT>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\lua-5.2.3\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -228,6 +228,7 @@
     <ClInclude Include="HeightParser.h" />
     <ClInclude Include="ImageApi.h" />
     <ClInclude Include="InputState.h" />
+    <ClInclude Include="IsoSurface.h" />
     <ClInclude Include="LuaInterpreter.h" />
     <ClInclude Include="MtlParser.h" />
     <ClInclude Include="ObjParser.h" />
@@ -260,6 +261,7 @@
     <ClCompile Include="GeoBuilder.cpp" />
     <ClCompile Include="HeightParser.cpp" />
     <ClCompile Include="InputState.cpp" />
+    <ClCompile Include="IsoSurface.cpp" />
     <ClCompile Include="LuaInterpreter.cpp" />
     <ClCompile Include="MtlParser.cpp" />
     <ClCompile Include="ObjParser.cpp" />

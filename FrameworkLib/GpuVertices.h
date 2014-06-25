@@ -162,6 +162,7 @@ enum InstanceType
 	InstanceType_None,
 	InstanceType_Pos,
 	InstanceType_PosCol,
+	InstanceType_PosSca,
 
 	InstanceType_Count
 };
@@ -188,6 +189,21 @@ struct Instance_PosCol
 		position = model->position;
 		color = model->color;
 	}
+};
+
+struct Instance_PosSca
+{
+	glm::vec3 position;
+	glm::vec3 scale;
+	static const InstanceType type = InstanceType_PosSca;
+
+	void UpdateFromModel(Gpu::Model * model)
+	{
+		position = model->position;
+		scale = model->scale;
+	}
+
+	//Instance_PosSca() : scale(1.0f) {}
 };
 
 class VertApi {
@@ -235,6 +251,8 @@ public:
 			return sizeof(Instance_Pos);
 		case InstanceType_PosCol:
 			return sizeof(Instance_PosCol);
+		case InstanceType_PosSca:
+			return sizeof(Instance_PosSca);
 		}
 		return 0;
 	}

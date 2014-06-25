@@ -27,7 +27,7 @@ public:
 
 	__int64 GetTimeStamp();
 
-	volatile bool running;
+	volatile bool windowClosed;
 };
 
 } // namespace Win32

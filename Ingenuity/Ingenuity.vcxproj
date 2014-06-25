@@ -241,13 +241,21 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+    </PostBuildEvent>
+    <PreBuildEvent>
       <Command>copy "$(SolutionDir)$(Configuration)\*.spritefont" "$(OutDir)"
 copy "$(SolutionDir)$(Configuration)\*.cso" "$(OutDir)"
 copy "$(SolutionDir)$(Configuration)\*.xml" "$(OutDir)"</Command>
-    </PostBuildEvent>
-    <PostBuildEvent>
+    </PreBuildEvent>
+    <PreBuildEvent>
       <Message>Copying Sprite Fonts and Shaders</Message>
-    </PostBuildEvent>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">
     <ClCompile>

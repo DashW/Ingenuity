@@ -117,14 +117,16 @@ struct Path
 	//	}
 	//}
 
-	double Angle(unsigned start, unsigned end)
+	double Angle(Point & startPoint, Point & endPoint)
 	{
-		Point & startPoint = points[start];
-		Point & endPoint = points[end];
-
 		double dx = endPoint.x - startPoint.x;
 		double dy = endPoint.y - startPoint.y;
-		return atan2(dy,dx);
+		return atan2(dy, dx);
+	}
+
+	double Angle(unsigned start, unsigned end)
+	{
+		return Angle(points[start], points[end]);
 	}
 
 	double Angle(unsigned start, unsigned middle, unsigned end, bool fixWinding)

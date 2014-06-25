@@ -113,6 +113,7 @@
     <ClCompile Include="WinRTPlatformApi.cpp">
       <Filter>Application\WinRT</Filter>
     </ClCompile>
+    <ClCompile Include="IsoSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h" />
@@ -230,6 +231,7 @@
     <ClInclude Include="WinRTPlatformApi.h">
       <Filter>Application\WinRT</Filter>
     </ClInclude>
+    <ClInclude Include="IsoSurface.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosCol.hlsl">

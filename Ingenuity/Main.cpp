@@ -13,6 +13,7 @@
 //#include "PythonInterpreter.h"
 #include "InputState.h"
 #include "LuaInterpreter.h"
+#include "AudioApi.h"
 #include <tinyxml2.h>
 #include <string>
 
@@ -32,15 +33,16 @@ class Engine : public RealtimeApp
 		Python
 	};
 
-	ScriptInterpreter * interpreter;
-	ScriptConsole * console;
+	ScriptInterpreter * interpreter = 0;
+	ScriptConsole * console = 0;
 	InterpreterType interpreterType;
 
-	bool beginCalled;
-	bool failedOnInit;
-	bool showConsole;
+	bool beginCalled = false;
+	bool failedOnInit = false;
+	bool showConsole = false;
+	bool audioPaused = false;
 
-	Files::Directory * dataDirectory;
+	Files::Directory * dataDirectory = 0;
 
 	std::wstring projectName;
 	std::wstring projectDirectory;
@@ -161,8 +163,7 @@ class Engine : public RealtimeApp
 
 	virtual void Begin() override
 	{
-		beginCalled = false; failedOnInit = false; showConsole = false;
-		interpreterType = Lua; dataDirectory = 0;
+		interpreterType = Lua;
 
 		// Create the interpreter here.
 		// Could be Lua, Python, CINT, Scheme, whatever...
@@ -278,6 +279,17 @@ class Engine : public RealtimeApp
 		}
 
 		if(interpreter->IsInError()) showConsole = true;
+
+		if(showConsole != audioPaused)
+		{
+			audio->Pause();
+			audioPaused = !audioPaused;
+		}
+
+		if(keyboard.downKeys[1]) //esc
+		{
+			running = false;
+		}
 	}
 
 	virtual void Draw() override

@@ -16,5 +16,5 @@ VertexOut main( in VertexPosTex vin )
 	vout.Pos = mul(mul(float4(vin.Pos.x,vin.Pos.y,vin.Pos.z,1.0f),_world),_viewProjection);
 	vout.Pos2D = vin.Pos.xy;
 	vout.Tex = vin.TexCoord;
-	return vout;
+	return vout; 
 }
