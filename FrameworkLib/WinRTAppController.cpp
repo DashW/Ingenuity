@@ -108,7 +108,7 @@ void WinRT::AppController::Run()
 	prevTimeStamp = GetTimeStamp();
 	startTimeStamp = prevTimeStamp;
 
-	while(app->running && !windowClosed)
+	while(!windowClosed)
 	{
 		__int64 curTimeStamp = GetTimeStamp();
 		float dt = (curTimeStamp - prevTimeStamp) * secsPerCnt;

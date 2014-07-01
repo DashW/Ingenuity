@@ -201,6 +201,8 @@ function Begin()
 	
 	screenSurface1 = CreateSurface();
 	screenSurface2 = CreateSurface();
+	
+	SetClearColor(1,1,1);
 end
 
 function Reload()

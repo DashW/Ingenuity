@@ -9,8 +9,7 @@ DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Directory * directory, 
 	numVertexShaders(0),
 	numPixelShaders(0),
 	vertexShadersLoaded(0),
-	pixelShadersLoaded(0),
-	failed(false)
+	pixelShadersLoaded(0)
 {
 }
 
@@ -124,6 +123,10 @@ struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 			{
 				loader->failed = true;
 			}
+		}
+		else
+		{
+			loader->failed = true;
 		}
 	}
 };

@@ -1185,7 +1185,7 @@ void ScriptCallbacks::ClearSurface(ScriptInterpreter * interpreter)
 
 	Gpu::DrawSurface * gpuSurface = static_cast<Gpu::DrawSurface*>(surface.pvalue->ptr);
 
-	if(r.type == ScriptParam::DOUBLE && g.type == ScriptParam::DOUBLE && b.type == ScriptParam::DOUBLE)
+	if(r.IsNumber() && g.IsNumber() && b.IsNumber())
 	{
 		glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		clearColor.r = float(r.nvalue);

@@ -16,7 +16,6 @@ class ShaderLoader : public Gpu::ShaderLoader
 	unsigned numPixelShaders;
 	unsigned vertexShadersLoaded;
 	unsigned pixelShadersLoaded;
-	volatile bool failed;
 
 	struct VertexShaderResponse;
 	struct PixelShaderResponse;

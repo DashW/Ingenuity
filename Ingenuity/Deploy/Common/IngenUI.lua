@@ -37,7 +37,7 @@ function DrawUIPanel(panel)
 	if panel.texture then
 		SetModelPosition(ingenUiTexSquare,panelX,-panelY,100);
 		SetModelScale(ingenUiTexSquare,panel.width,panel.height,1);
-		SetEffectParam(ingenUiEffect,5,panel.texture);
+		SetMeshTexture(ingenUiTexSquare,0,panel.texture);
 		DrawComplexModel(ingenUiTexSquare,ingenUiCamera);
 	end
 	for key, component in pairs(panel.components) do
@@ -122,7 +122,7 @@ function DrawUIButton(button)
 	if button.image then
 		SetModelPosition(ingenUiTexSquare,buttonX+10,-buttonY-10,30);
 		SetModelScale(ingenUiTexSquare,button.width-20,button.height-20,1);
-		SetEffectParam(ingenUiEffect,5,button.image);
+		SetMeshTexture(ingenUiTexSquare,0,button.image);
 		DrawComplexModel(ingenUiTexSquare,ingenUiCamera);
 	end
 	DrawText(ingenUiFont,button.text,buttonX,buttonY + (button.height/2) - 12);

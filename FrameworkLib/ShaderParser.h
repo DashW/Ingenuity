@@ -51,7 +51,7 @@ protected:
 	virtual void ParseXml() = 0;
 	virtual bool HasParsedXml() = 0;
 
-	bool failed;
+	volatile bool failed;
 
 public:
 	ShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path) :

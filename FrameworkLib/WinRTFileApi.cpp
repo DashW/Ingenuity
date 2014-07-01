@@ -242,6 +242,10 @@ void WinRT::FileApi::OpenFileAsync(StorageFolder ^ storageFolder, const wchar_t 
 			}
 			else
 			{
+				OutputDebugString(L"Failed to load file ");
+				OutputDebugString(pathString.data());
+				OutputDebugString(L"\n");
+
 				winRTfile->openState = Files::Failed;
 				if(response)
 				{

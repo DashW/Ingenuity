@@ -12,7 +12,7 @@ public:
 
 	virtual Item * CreateAudioItemFromWaveFormat(tWAVEFORMATEX * wfx, char * buffer, unsigned dataLength) override { return 0; }
 
-	virtual void Play(Item * item, bool loop = false) override {};
+	virtual void Play(Item * item, float seek = 0.0f, bool loop = false) override {};
 	virtual void Pause(Item * item) override {};
 	virtual void Stop(Item * item = 0) override {};
 	virtual void SetVolume(Item * item, float volume) override {};
