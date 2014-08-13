@@ -201,19 +201,10 @@ float HeightParser::GetHeight(float x, float z)
 	return result;
 }
 
-//float HeightParser::GetHeight(float x, float y, GpuComplexModel * complexModel, unsigned modelIndex)
-//{
-//	if(!complexModel || modelIndex >= complexModel->numModels) return 0.0f;
-//
-//	//glm::vec3 complexModelPos = complexModel->position;
-//	glm::vec3 complexModelScale = complexModel->scale;
-//	//glm::vec3 modelPos = complexModel->models[modelIndex].position;
-//	glm::vec3 modelScale = complexModel->models[modelIndex].scale;
-//
-//	// first, divide by modelScale
-//	// then, divide by complexModelScale
-//
-//	// Alternatively, we could do all this in the script, avoiding having to worry about scale, position AND ROTATION!!!
-//}
+float HeightParser::GetHeight(unsigned x, unsigned z)
+{
+	if(x >= sideLength || z >= sideLength) return 0.0f;
+	return heights[(sideLength * z) + x] * scale;
+}
 
 } // namespace Ingenuity

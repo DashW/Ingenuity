@@ -52,6 +52,14 @@ LocalMesh * ObjParser::CreateMesh(Gpu::Api *gpu)
 	return mesh;
 }
 
+ObjParser::~ObjParser()
+{
+	for(unsigned i = 0; i < meshes.size(); ++i)
+	{
+		delete meshes[i];
+	}
+}
+
 void ObjParser::ParseMesh(Gpu::Api *gpu, std::string text) // SYNCHRONOUS
 {
 	std::stringstream stream(text);

@@ -121,6 +121,12 @@ public:
 	// Get the finished model
 	virtual Gpu::ComplexModel * GetModel() { return model; }
 
+	// Get the number of meshes in the model
+	virtual unsigned GetNumMeshes() { return objParser.GetNumMeshes(); }
+
+	// Get an individual mesh as a LocalMesh
+	virtual LocalMesh * GetMesh(unsigned index) { return objParser.GetMesh(index); }
+
 	// Get the finished model as an IAsset
 	virtual IAsset * GetAsset() override { return static_cast<IAsset*>(model); }
 

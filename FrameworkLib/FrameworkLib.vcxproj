@@ -124,9 +124,9 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\newton-dynamics-r1679\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>-D_SCL_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -136,8 +136,8 @@
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;newton_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-r1679\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Lib>
     <ProjectReference>
@@ -207,7 +207,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\newton-dynamics-3.11\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -239,6 +239,8 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClInclude Include="Debug.h" />
     <ClInclude Include="IsoSurface.h" />
     <ClInclude Include="LuaInterpreter.h" />
+    <ClInclude Include="NewtonApi.h" />
+    <ClInclude Include="PhysicsApi.h" />
     <ClInclude Include="PlatformApi.h" />
     <ClInclude Include="ScriptInterpreter.h" />
     <ClInclude Include="ScriptLogger.h" />
@@ -291,6 +293,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="IsoSurface.cpp" />
     <ClCompile Include="LuaInterpreter.cpp" />
+    <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="ScriptLogger.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
     <ClCompile Include="StepMgr.cpp" />
@@ -767,6 +770,9 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
   <ItemGroup>
     <ProjectReference Include="..\Third Party\glm-0.9.4.1\glm.vcxproj">
       <Project>{b424f40f-5e4e-4265-939e-197256ec971e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Third Party\newton-dynamics-r1679\coreLibrary_300\projects\windows\project_vs2012_static_mt\newton.vcxproj">
+      <Project>{68d9962c-0ec7-445a-b0fd-f87b16d43901}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

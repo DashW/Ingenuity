@@ -7,6 +7,8 @@
 
 namespace Ingenuity {
 
+struct LocalMesh;
+
 class ScriptCallbacks
 {
 	ScriptCallbacks();
@@ -19,6 +21,7 @@ class ScriptCallbacks
 	//static ScriptParam IndexBufferToMap(ScriptInterpreter * interpreter, unsigned * indexBuffer, unsigned numTriangles);
 	static ScriptParam VertexBufferToFloats(ScriptInterpreter * interpreter, IVertexBuffer * vertexBuffer);
 	static ScriptParam IndexBufferToFloats(ScriptInterpreter * interpreter, unsigned * indexBuffer, unsigned numTriangles);
+	static LocalMesh * FloatsToLocalMesh(ScriptInterpreter * interpreter, ScriptParam type, ScriptParam vtx, ScriptParam idx);
 
 public:
 	static void SetSubDirectory(const wchar_t * subPath) { projectDirPath = subPath ? subPath : L""; }
@@ -80,7 +83,7 @@ public:
 		interpreter->RegisterCallback("CreateGrid", &ScriptCallbacks::CreateGrid,
 			"(width,depth,cols,rows[,texX,texY,texW,texH]) Returns vertex and index buffers for a plane");
 		interpreter->RegisterCallback("CreateCube", &ScriptCallbacks::CreateCube,
-			"() Returns vertex and index buffers for a standard 1x1x1 cube at (0,0,0)");
+			"([tex]) Returns vertex and index buffers [with texture coordinates] for a 2x2x2 cube at (0,0,0)");
 		interpreter->RegisterCallback("CreateSphere", &ScriptCallbacks::CreateSphere,
 			"(texture,tangent) Returns vertex and index buffers for a sphere");
 
@@ -118,6 +121,8 @@ public:
 			"(heightmap,x,y,z) Sets a heightmap's scale in each axis. Use before getting model or height values");
 		interpreter->RegisterCallback("GetSVGModel", &ScriptCallbacks::GetSVGModel,
 			"(svg[,stroke,anim]) Gets a model from an SVG parser[, optionally an animated stroke]");
+		interpreter->RegisterCallback("GetWavefrontMesh", &ScriptCallbacks::GetWavefrontMesh,
+			"(name,index) Gets the indexed mesh of the loaded wavefront model with the given asset name");
 
 		interpreter->RegisterCallback("SetEffectParam", &ScriptCallbacks::SetEffectParam,
 			"(effect,paramnum,value) Sets the value of an effect parameter");
@@ -249,6 +254,40 @@ public:
 			"(name,cpu,gpu) Ends the GPU and/or CPU profiling timestamp with the given name");
 		interpreter->RegisterCallback("GetTimestampData", &ScriptCallbacks::GetTimestampData,
 			"(name,cpu[,metric]) Returns the given timestamp's time [or its 'drawcalls','polys' or 'statechanges']");
+
+		// PHYSICS
+		interpreter->RegisterCallback("CreatePhysicsWorld", &ScriptCallbacks::CreatePhysicsWorld,
+			"() Creates an empty physics world");
+		interpreter->RegisterCallback("CreatePhysicsMaterial", &ScriptCallbacks::CreatePhysicsMaterial,
+			"(elasticity,sfriction,kfriction,softness) Creates a physics material");
+		interpreter->RegisterCallback("CreatePhysicsCuboid", &ScriptCallbacks::CreatePhysicsCuboid,
+			"(w,h,d,kinematic) Creates a physics cubiod with the given dimenstions and control method");
+		interpreter->RegisterCallback("CreatePhysicsMesh", &ScriptCallbacks::CreatePhysicsMesh,
+			"(type,vtx,idx) Creates a physics mesh from the given vertex type, vertex and index buffers");
+		interpreter->RegisterCallback("CreatePhysicsHeightmap", &ScriptCallbacks::CreatePhysicsHeightmap,
+			"(heightmap) Creates a physics heightmap from the given heightmap parser");
+		interpreter->RegisterCallback("AddToPhysicsWorld", &ScriptCallbacks::AddToPhysicsWorld,
+			"(world,object[,static]) Adds the given physics object to the given physics world");
+		interpreter->RegisterCallback("RemoveFromPhysicsWorld", &ScriptCallbacks::RemoveFromPhysicsWorld,
+			"(world,object) Removes the given physics object from the given physics world");
+		interpreter->RegisterCallback("UpdatePhysicsWorld", &ScriptCallbacks::UpdatePhysicsWorld,
+			"(world,delta) Updates the given physics world by the given time delta");
+		interpreter->RegisterCallback("SetPhysicsPosition", &ScriptCallbacks::SetPhysicsPosition,
+			"(object,x,y,z) Sets the position of the physics object");
+		interpreter->RegisterCallback("SetPhysicsRotation", &ScriptCallbacks::SetPhysicsRotation,
+			"(object,x,y,z) Sets the rotation of the physics object");
+		interpreter->RegisterCallback("SetPhysicsScale", &ScriptCallbacks::SetPhysicsScale,
+			"(object,x[,y,z]) Sets the scale of the physics object");
+		interpreter->RegisterCallback("SetPhysicsMass", &ScriptCallbacks::SetPhysicsMass,
+			"(object,mass) Sets the mass of the given physics object");
+		interpreter->RegisterCallback("SetPhysicsMaterial", &ScriptCallbacks::SetPhysicsMaterial,
+			"(object,material) Sets the given physics material to the given physics object");
+;		interpreter->RegisterCallback("GetPhysicsPosition", &ScriptCallbacks::GetPhysicsPosition,
+			"(object) Gets the x,y,z position of the physics object");
+		//interpreter->RegisterCallback("GetPhysicsRotation", &ScriptCallbacks::GetPhysicsRotation,
+		//	"(object) Gets the x,y,z rotation of the physics object");
+		interpreter->RegisterCallback("SyncPhysicsMatrix", &ScriptCallbacks::SyncPhysicsMatrix,
+			"(object,model) Updates the given GpuComplexModel with the given PhysicsObject matrix");
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -319,6 +358,7 @@ public:
 	static void GetHeightmapHeight(ScriptInterpreter*);
 	static void GetHeightmapModel(ScriptInterpreter*);
 	static void GetSVGModel(ScriptInterpreter*);
+	static void GetWavefrontMesh(ScriptInterpreter*);
 
 	static void SetClearColor(ScriptInterpreter*);
 	static void SetBlendMode(ScriptInterpreter*);
@@ -367,6 +407,24 @@ public:
 
 	static void CreateInstanceBuffer(ScriptInterpreter*);
 	static void UpdateInstanceBuffer(ScriptInterpreter*);
+
+	static void CreatePhysicsWorld(ScriptInterpreter*);
+	static void UpdatePhysicsWorld(ScriptInterpreter*);
+	static void CreatePhysicsMaterial(ScriptInterpreter*);
+	static void CreatePhysicsCuboid(ScriptInterpreter*);
+	static void CreatePhysicsSphere(ScriptInterpreter*);
+	static void CreatePhysicsMesh(ScriptInterpreter*);
+	static void CreatePhysicsHeightmap(ScriptInterpreter*);
+	static void AddToPhysicsWorld(ScriptInterpreter*);
+	static void RemoveFromPhysicsWorld(ScriptInterpreter*);
+	static void SetPhysicsPosition(ScriptInterpreter*);
+	static void SetPhysicsRotation(ScriptInterpreter*);
+	static void SetPhysicsScale(ScriptInterpreter*);
+	static void SetPhysicsMass(ScriptInterpreter*);
+	static void SetPhysicsMaterial(ScriptInterpreter*);
+	static void GetPhysicsPosition(ScriptInterpreter*);
+	//static void GetPhysicsRotation(ScriptInterpreter*);
+	static void SyncPhysicsMatrix(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity

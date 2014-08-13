@@ -188,7 +188,7 @@ public:
 
 			Model tempModel = *model;
 			tempModel.destructMesh = false;
-			tempModel.position = glm::vec3(0.0f, 0.0f, 0.0f);
+			tempModel.position = glm::vec4(0.0f);
 			instanceModels[mesh] = tempModel;
 		}
 

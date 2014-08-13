@@ -68,7 +68,7 @@ public:
 		consolidate(consolidate),
 		hasTexCoords(false),
 		hasNormals(false) {}
-	virtual ~ObjParser() {}
+	virtual ~ObjParser();
 
 	virtual void ParseMesh(Gpu::Api *gpu, std::string text);
 	virtual void ParseLine(Gpu::Api *gpu, std::string line);

@@ -75,14 +75,14 @@ void DX11::Shader::UpdateConstantBuffer(ID3D11DeviceContext * context, std::vect
 	}
 }
 
-XMMATRIX DX11::ModelShader::GetWorld(Gpu::Model * model)
-{
-	XMMATRIX w = XMMatrixIdentity();
-	w *= XMMatrixScaling(model->scale.x, model->scale.y, model->scale.z);
-	w *= XMMatrixRotationRollPitchYaw(model->rotation.x, model->rotation.y, model->rotation.z);
-	w *= XMMatrixTranslation(model->position.x, model->position.y, model->position.z);
-	return w;
-}
+//XMMATRIX DX11::ModelShader::GetWorld(Gpu::Model * model)
+//{
+//	XMMATRIX w = XMMatrixIdentity();
+//	w *= XMMatrixScaling(model->scale.x, model->scale.y, model->scale.z);
+//	w *= XMMatrixRotationRollPitchYaw(model->rotation.x, model->rotation.y, model->rotation.z);
+//	w *= XMMatrixTranslation(model->position.x, model->position.y, model->position.z);
+//	return w;
+//}
 
 XMMATRIX DX11::ModelShader::GetView(Gpu::Camera * camera)
 {
@@ -268,7 +268,11 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 
 	DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
 
-	XMMATRIX world = GetWorld(model);
+	//XMMATRIX world = GetWorld(model);
+
+	glm::mat4 modelMatrix = model->GetMatrix();
+	XMMATRIX world((float*)&modelMatrix);
+
 	XMStoreFloat4x4(&vertexConstData.world, world);
 
 	XMMATRIX viewProj = GetView(camera) * GetProjection(camera, aspect);

@@ -4,16 +4,30 @@
 #include "WinRTPlatformApi.h"
 #include "DX11Api.h"
 #include "InputState.h"
-#include "XAudio2Api.h"
-#include "DummyAudioApi.h"
-#include "FreeImageApi.h"
-#include "WICImageApi.h"
 #include "AssetMgr.h"
+
+#ifdef USE_XAUDIO2_AUDIOAPI
+#include "XAudio2Api.h"
+#else
+#include "DummyAudioApi.h"
+#endif
+
+#ifdef USE_FREE_IMAGEAPI
+#include "FreeImageApi.h"
+#endif
+#ifdef USE_WIC_IMAGEAPI
+#include "WICImageApi.h"
+#endif
+
+#ifdef USE_NEWTON_PHYSICSAPI
+#include "NewtonApi.h"
+#endif
 
 using namespace Windows::ApplicationModel::Core;
 using namespace Windows::Foundation;
 using namespace Windows::Graphics::Display;
 using namespace Windows::UI::Core;
+using namespace Windows::UI::Input;
 
 namespace Ingenuity {
 
@@ -45,8 +59,14 @@ void WinRT::AppController::Initialize(Windows::ApplicationModel::Core::CoreAppli
 #ifdef USE_WIC_IMAGEAPI
 	app->imaging = new WIC::Api();
 #else
-#error "App has no imaging API!"
+#error "Image API not defined!"
 #endif
+#endif
+
+#ifdef USE_NEWTON_PHYSICSAPI
+	app->physics = new NewtonApi();
+#else
+#error "Physics API not defined!"
 #endif
 
 	appView->Activated +=
@@ -88,6 +108,10 @@ void WinRT::AppController::SetWindow(CoreWindow ^ window)
 		(this, &WinRT::AppController::OnKeyUp);
 	window->CharacterReceived += ref new TypedEventHandler<CoreWindow^, CharacterReceivedEventArgs^>
 		(this, &WinRT::AppController::OnCharacterRecieved);
+	
+	// Hide pointer feedback!
+	PointerVisualizationSettings ^ pointerSettings = PointerVisualizationSettings::GetForCurrentView();
+	pointerSettings->IsContactFeedbackEnabled = false;
 }
 
 void WinRT::AppController::Load(Platform::String^ entryPoint)
@@ -164,6 +188,7 @@ void WinRT::AppController::Uninitialize()
 {
 	if(app)
 	{
+		if(app->physics) delete app->physics;
 		if(app->assets) delete app->assets;
 		if(app->input) delete app->input;
 		if(app->imaging) delete app->imaging;

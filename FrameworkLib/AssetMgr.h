@@ -153,6 +153,8 @@ public:
 		return dynamic_cast<T*>(asset->GetAsset());
 	}
 
+	AssetLoader * GetLoader(const char * name);
+
 	void AddAsset(Files::Directory * directory, const wchar_t * path, IAsset * asset, const char * name = 0);
 
 	Files::Api * GetFileApi() { return files; }

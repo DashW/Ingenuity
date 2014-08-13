@@ -77,6 +77,8 @@ function UpdateFlyCamera(delta)
 	local dirY = (math.sin(flyCamUpAngle));
 	local dirZ = (math.cos(flyCamYAngle) * math.cos(flyCamUpAngle));
 	
+	sideMult = 1 / math.sqrt((dirX*dirX) + (dirZ*dirZ));
+	
 	if GetKeyState('w') then
 		flyCamX = flyCamX + (dirX * delta * flyCamSpeed);
 		flyCamY = flyCamY + (dirY * delta * flyCamSpeed);
@@ -88,12 +90,12 @@ function UpdateFlyCamera(delta)
 		flyCamZ = flyCamZ - (dirZ * delta * flyCamSpeed);
 	end
 	if GetKeyState('a') then
-		flyCamX = flyCamX - (dirZ * delta * flyCamSpeed);
-		flyCamZ = flyCamZ + (dirX * delta * flyCamSpeed);
+		flyCamX = flyCamX - (dirZ * delta * flyCamSpeed * sideMult);
+		flyCamZ = flyCamZ + (dirX * delta * flyCamSpeed * sideMult);
 	end
 	if GetKeyState('d') then
-		flyCamX = flyCamX + (dirZ * delta * flyCamSpeed);
-		flyCamZ = flyCamZ - (dirX * delta * flyCamSpeed);
+		flyCamX = flyCamX + (dirZ * delta * flyCamSpeed * sideMult);
+		flyCamZ = flyCamZ - (dirX * delta * flyCamSpeed * sideMult);
 	end
 
 	SetCameraPosition(flyCamera, flyCamX, flyCamY, flyCamZ);

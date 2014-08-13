@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../Third Party/glm-0.9.4.1/glm/glm.hpp"
+#include "../Third Party/glm-0.9.4.1/glm/gtx/euler_angles.hpp"
+#include "../Third Party/glm-0.9.4.1/glm/gtx/transform.hpp"
 #include "AssetMgr.h"
 #include "GpuShaders.h"
 #include <string>
@@ -112,15 +114,39 @@ struct Model
 	CubeMap * cubeMap;
 	Effect * effect;
 
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale;
+	glm::vec4 position;
+	glm::vec4 rotation;
+	glm::vec4 scale;
+	glm::vec4 matrixPadding;
 	glm::vec4 color;
+
+	inline void SetMatrix(glm::mat4 matrix) 
+	{ 
+		position = matrix[0]; 
+		rotation = matrix[1]; 
+		scale = matrix[2];
+		matrixPadding = matrix[3];
+		useMatrix = true;
+	}
+	inline glm::mat4 GetMatrix() 
+	{ 
+		if(useMatrix)
+		{
+			return glm::mat4(position, rotation, scale, matrixPadding);
+		}
+		else
+		{
+			return glm::translate(position.x, position.y, position.z)
+				* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+				* glm::scale(scale.x, scale.y, scale.z);
+		}
+	}
 
 	float diffuseFactor;
 	float specPower;
 	float specFactor;
 
+	bool useMatrix;
 	bool wireframe;
 	bool wrapTexture;
 	bool backFaceCull;
@@ -132,8 +158,9 @@ struct Model
 	BoundingSphere boundingSphere;
 
 	Model() :
-		mesh(0), texture(0), normalMap(0), cubeMap(0), effect(0), color(1.0f, 1.0f, 1.0f, 1.0f),
-		scale(1.0f, 1.0f, 1.0f), diffuseFactor(1.0f), specPower(16.0f), specFactor(1.0f),
+		mesh(0), texture(0), normalMap(0), cubeMap(0), effect(0),
+		position(0.0f), rotation(0.0f), scale(1.0f), matrixPadding(0.0f), color(1.0f), 
+		diffuseFactor(1.0f), specPower(16.0f), specFactor(1.0f), useMatrix(false),
 		wrapTexture(false), wireframe(false), backFaceCull(true), frontFaceCull(false), 
 		destructMesh(false), destructEffect(false) {}
 	virtual ~Model()

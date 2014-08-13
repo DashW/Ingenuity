@@ -3,9 +3,7 @@
 #include "Win32Window.h"
 #include "Win32FileApi.h"
 #include "Win32PlatformApi.h"
-#include "FreeImageApi.h"
 #include "InputState.h"
-#include "WICImageApi.h"
 
 #include "RealtimeApp.h"
 
@@ -18,9 +16,19 @@
 #ifdef USE_DX9_GPUAPI
 #include "DX9Api.h"
 #endif
-
 #ifdef USE_DX11_GPUAPI
 #include "DX11Api.h"
+#endif
+
+#ifdef USE_FREE_IMAGEAPI
+#include "FreeImageApi.h"
+#endif
+#ifdef USE_WIC_IMAGEAPI
+#include "WICImageApi.h"
+#endif
+
+#ifdef USE_NEWTON_PHYSICSAPI
+#include "NewtonApi.h"
 #endif
 
 #include <Windows.h>
@@ -77,29 +85,20 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 
 	app->steppables = new StepMgr();
 
+	if(FAILED(CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
+	{
+		OutputDebugString(L"Failed to initialize the COM library, required by the DX11 texture loader and win32 file API!");
+	}
+
 #ifdef USE_DX9_GPUAPI
 	app->gpu = new DX9::Api(app->files, app->steppables, window->getHandle());
 #else
 #ifdef USE_DX11_GPUAPI
 	app->gpu = new DX11::Api(app->files, window->getHandle());
 #else
-#error "GPU API NOT DEFINED"
+#error "Gpu API not defined!"
 #endif
 #endif
-
-	if(FAILED(CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
-	{
-		OutputDebugString(L"Failed to initialize the COM library, required by the DX11 texture loader and win32 file API!");
-	}
-
-	app->input = window->inputMgr = new InputState();
-
-	//RECT windowRect;
-	//GetClientRect(window->getHandle(), &windowRect);
-	//app->windowRect.left = static_cast<float>(windowRect.left);
-	//app->windowRect.top = static_cast<float>(windowRect.top);
-	//app->windowRect.right = static_cast<float>(windowRect.right);
-	//app->windowRect.bottom = static_cast<float>(windowRect.bottom);
 
 #ifdef USE_XAUDIO2_AUDIOAPI
 	app->audio = new XAudio2::Api();
@@ -118,6 +117,14 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 #endif
 #endif
 
+#ifdef USE_NEWTON_PHYSICSAPI
+	app->physics = new NewtonApi();
+#else
+#error "Physics API not defined!"
+#endif
+
+	app->input = window->inputMgr = new InputState();
+
 	app->assets = new AssetMgr(app->files, app->gpu, app->imaging, app->steppables, app->audio);
 
 	app->gpu->Initialize(app->assets);
@@ -125,9 +132,8 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 
 Win32::AppController::~AppController()
 {
-	CoUninitialize();
-
 	delete app->imaging;
+	delete app->physics;
 	delete app->steppables;
 	delete app->assets;
 	if(app->audio) delete app->audio; app->audio = 0;
@@ -140,6 +146,8 @@ Win32::AppController::~AppController()
 	delete window->onExitSizeMove;
 	if(window->onClose) delete window->onClose;
 	delete window;
+
+	CoUninitialize();
 }
 
 void Win32::AppController::Run()

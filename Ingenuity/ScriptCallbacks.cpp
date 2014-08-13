@@ -10,6 +10,8 @@
 #include "IngenuityHelper.h"
 #include "PlatformApi.h"
 #include "IsoSurface.h"
+#include "PhysicsApi.h"
+#include "WavefrontLoader.h"
 #include <HeightParser.h>
 #include <sstream>
 #include <vector>
@@ -247,6 +249,213 @@ ScriptParam ScriptCallbacks::IndexBufferToFloats(ScriptInterpreter * interpreter
 	return ScriptParam(scriptFloatArray, ScriptPtrType::FloatArray);
 }
 
+LocalMesh * ScriptCallbacks::FloatsToLocalMesh(ScriptInterpreter * interpreter, ScriptParam type, ScriptParam vertices, ScriptParam indices)
+{
+	LocalMesh * localMesh = 0;
+
+	if(vertices.type == ScriptParam::MAPREF && indices.type == ScriptParam::MAPREF)
+	{
+		ScriptParam key;
+		ScriptParam item;
+
+		std::vector<float> values;
+
+		IVertexBuffer * vb = 0;
+		unsigned vnum = 0;
+		unsigned numvertices = interpreter->GetMapLength(vertices);
+		unsigned numindices = interpreter->GetMapLength(indices);
+
+		if(numvertices == 0 || numindices == 0 || numindices % 3 != 0)
+		{
+			interpreter->ThrowError("Could not create model, no vertices or invalid number of indices");
+			return 0;
+		}
+
+		if(strcmp(type.svalue, "Pos") == 0)
+			vb = new VertexBuffer<Vertex_Pos>(numvertices);
+		else if(strcmp(type.svalue, "PosCol") == 0)
+			vb = new VertexBuffer<Vertex_PosCol>(numvertices);
+		else if(strcmp(type.svalue, "PosNor") == 0)
+			vb = new VertexBuffer<Vertex_PosNor>(numvertices);
+		else if(strcmp(type.svalue, "PosTex") == 0)
+			vb = new VertexBuffer<Vertex_PosTex>(numvertices);
+		else if(strcmp(type.svalue, "PosNorTex") == 0)
+			vb = new VertexBuffer<Vertex_PosNorTex>(numvertices);
+		else if(strcmp(type.svalue, "PosNorTanTex") == 0)
+			vb = new VertexBuffer<Vertex_PosNorTanTex>(numvertices);
+
+		if(!vb)
+		{
+			interpreter->ThrowError("Vertex Type not recognised");
+		}
+
+		while(interpreter->GetMapNext(vertices, key, item))
+		{
+			if(vnum >= vb->GetLength())
+			{
+				interpreter->ThrowError("Could not create model, vertex buffer overflow");
+				return 0;
+			}
+			if(item.type != ScriptParam::MAPREF)
+			{
+				interpreter->ThrowError("Could not create model, vertex is not a data structure");
+				return 0;
+			}
+
+			values.clear();
+
+			ScriptParam component;
+			ScriptParam value;
+
+			while(interpreter->GetMapNext(item, component, value))
+			{
+				if(value.type != ScriptParam::DOUBLE
+					&& value.type != ScriptParam::FLOAT)
+				{
+					interpreter->ThrowError("Could not create model, vertex component is not a number");
+					return 0;
+				}
+
+				values.push_back((float)value.nvalue);
+			}
+
+			bool malsized = false;
+
+			switch(vb->GetVertexType())
+			{
+			case VertexType_Pos:
+				if(values.size() != 3) { malsized = true; break; }
+				((VertexBuffer<Vertex_Pos>*)vb)->Set(vnum, Vertex_Pos(
+					values[0], values[1], values[2]));
+				break;
+			case VertexType_PosCol:
+				if(values.size() != 6) { malsized = true; break; }
+				((VertexBuffer<Vertex_PosCol>*)vb)->Set(vnum, Vertex_PosCol(
+					values[0], values[1], values[2],
+					values[3], values[4], values[5]));
+				break;
+			case VertexType_PosNor:
+				if(values.size() != 6) { malsized = true; break; }
+				((VertexBuffer<Vertex_PosNor>*)vb)->Set(vnum, Vertex_PosNor(
+					values[0], values[1], values[2],
+					values[3], values[4], values[5]));
+				break;
+			case VertexType_PosTex:
+				if(values.size() != 5) { malsized = true; break; }
+				((VertexBuffer<Vertex_PosTex>*)vb)->Set(vnum, Vertex_PosTex(
+					values[0], values[1], values[2],
+					values[3], values[4]));
+				break;
+			case VertexType_PosNorTex:
+				if(values.size() != 8) { malsized = true; break; }
+				((VertexBuffer<Vertex_PosNorTex>*)vb)->Set(vnum, Vertex_PosNorTex(
+					values[0], values[1], values[2],
+					values[3], values[4], values[5],
+					values[6], values[7]));
+				break;
+			case VertexType_PosNorTanTex:
+				if(values.size() != 12) { malsized = true; break; }
+				((VertexBuffer<Vertex_PosNorTanTex>*)vb)->Set(vnum, Vertex_PosNorTanTex(
+					values[0], values[1], values[2],
+					values[3], values[4], values[5],
+					values[6], values[7], values[8], values[9],
+					values[10], values[11]));
+				break;
+			default:
+				interpreter->ThrowError("Could not create model, could not identify vertex type");
+				return 0;
+			}
+
+			if(malsized)
+			{
+				interpreter->ThrowError("Could not create model, incorrect number of vertex components");
+				return 0;
+			}
+
+			++vnum;
+		}
+
+		key = ScriptParam();
+		item = ScriptParam();
+
+		unsigned * ib = new unsigned[numindices];
+		unsigned inum = 0;
+
+		while(interpreter->GetMapNext(indices, key, item))
+		{
+			if(inum >= numindices)
+			{
+				interpreter->ThrowError("Could not create model, index buffer overflow");
+			}
+			if(item.type != ScriptParam::DOUBLE
+				&& item.type != ScriptParam::FLOAT
+				&& item.type != ScriptParam::INT)
+			{
+				interpreter->ThrowError("Could not create model, index is not a number");
+				return 0;
+			}
+
+			ib[inum++] = (unsigned)item.nvalue;
+		}
+
+		localMesh = new LocalMesh(vb, ib, numindices);
+	}
+	else if(vertices.CheckPointer(ScriptPtrType::FloatArray) && indices.CheckPointer(ScriptPtrType::FloatArray))
+	{
+		ScriptFloatArray * vertexArray = (ScriptFloatArray*)vertices.pvalue->ptr;
+		ScriptFloatArray * indexArray = (ScriptFloatArray*)indices.pvalue->ptr;
+
+		IVertexBuffer * vb = 0;
+		unsigned vnum = 0;
+		unsigned numfloats = vertexArray->length;
+		unsigned vertexArraySize = numfloats * sizeof(float);
+		unsigned numindices = indexArray->length;
+
+		if(numfloats == 0 || numindices == 0 || numindices % 3 != 0)
+		{
+			interpreter->ThrowError("Could not create model, no vertices or invalid number of indices");
+			return 0;
+		}
+
+		if(strcmp(type.svalue, "Pos") == 0)
+			vb = new VertexBuffer<Vertex_Pos>(vertexArraySize / sizeof(Vertex_Pos));
+		else if(strcmp(type.svalue, "PosCol") == 0)
+			vb = new VertexBuffer<Vertex_PosCol>(vertexArraySize / sizeof(Vertex_PosCol));
+		else if(strcmp(type.svalue, "PosNor") == 0)
+			vb = new VertexBuffer<Vertex_PosNor>(vertexArraySize / sizeof(Vertex_PosNor));
+		else if(strcmp(type.svalue, "PosTex") == 0)
+			vb = new VertexBuffer<Vertex_PosTex>(vertexArraySize / sizeof(Vertex_PosTex));
+		else if(strcmp(type.svalue, "PosNorTex") == 0)
+			vb = new VertexBuffer<Vertex_PosNorTex>(vertexArraySize / sizeof(Vertex_PosNorTex));
+		else if(strcmp(type.svalue, "PosNorTanTex") == 0)
+			vb = new VertexBuffer<Vertex_PosNorTanTex>(vertexArraySize / sizeof(Vertex_PosNorTanTex));
+
+		unsigned vertexBufferSize = vb->GetLength() * vb->GetElementSize();
+		if(vertexBufferSize != vertexArraySize)
+		{
+			interpreter->ThrowError("Could not create model, float array is not evenly divisible by vertex type!");
+			delete vb;
+			return 0;
+		}
+
+		memcpy(vb->GetData(), vertexArray->floats, vb->GetLength() * vb->GetElementSize());
+
+		unsigned * ib = new unsigned[numindices];
+		for(unsigned i = 0; i < numindices; i++)
+		{
+			ib[i] = unsigned(indexArray->floats[i]);
+		}
+
+		localMesh = new LocalMesh(vb, ib, numindices);
+	}
+	else
+	{
+		interpreter->ThrowError("Could not create model, vertex/index buffers were not tables or floatArrays");
+	}
+
+	return localMesh;
+}
+
 void ScriptCallbacks::ClearConsole(ScriptInterpreter * interpreter)
 {
 	interpreter->GetLogger().Clear();
@@ -254,11 +463,35 @@ void ScriptCallbacks::ClearConsole(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::Help(ScriptInterpreter * interpreter)
 {
-	for(unsigned i = 0; i < interpreter->callbacks.size(); i++)
+	ScriptParam funcName = interpreter->PopParam();
+
+	if(funcName.type == ScriptParam::STRING)
 	{
-		interpreter->GetLogger().Log("%s - %s\n",
-			interpreter->callbacks[i].name,
-			interpreter->callbacks[i].help);
+		bool found = false;
+		for(unsigned i = 0; i < interpreter->callbacks.size(); i++)
+		{
+			if(strcmp(funcName.svalue, interpreter->callbacks[i].name) == 0)
+			{
+				interpreter->GetLogger().Log("%s - %s\n",
+					interpreter->callbacks[i].name,
+					interpreter->callbacks[i].help);
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+		{
+			interpreter->GetLogger().Log("Unrecognized function name: %s", funcName.svalue);
+		}
+	}
+	else
+	{
+		for(unsigned i = 0; i < interpreter->callbacks.size(); i++)
+		{
+			interpreter->GetLogger().Log("%s - %s\n",
+				interpreter->callbacks[i].name,
+				interpreter->callbacks[i].help);
+		}
 	}
 }
 
@@ -416,7 +649,7 @@ void ScriptCallbacks::SetCameraClipFovOrHeight(ScriptInterpreter * interpreter)
 void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 {
 	POP_NUMPARAM(1, width);
-	POP_NUMPARAM(2, height);
+	POP_NUMPARAM(2, depth);
 	POP_NUMPARAM(3, cols);
 	POP_NUMPARAM(4, rows);
 	ScriptParam texX = interpreter->PopParam();
@@ -425,7 +658,7 @@ void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 	ScriptParam texH = interpreter->PopParam();
 
 	float w = float(width.nvalue);
-	float h = float(height.nvalue);
+	float d = float(depth.nvalue);
 	unsigned c = unsigned(cols.nvalue);
 	unsigned r = unsigned(rows.nvalue);
 
@@ -438,11 +671,11 @@ void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 		float tw = float(texW.nvalue);
 		float th = float(texH.nvalue);
 
-		localGrid = GeoBuilder().BuildGrid(w, h, c, r, &Gpu::Rect(tx, ty, tw, th));
+		localGrid = GeoBuilder().BuildGrid(w, d, c, r, &Gpu::Rect(tx, ty, tw, th));
 	}
 	else
 	{
-		localGrid = GeoBuilder().BuildGrid(w, h, c, r);
+		localGrid = GeoBuilder().BuildGrid(w, d, c, r);
 	}
 
 	interpreter->PushParam(VertexBufferToFloats(interpreter, localGrid->vertexBuffer));
@@ -568,8 +801,7 @@ void ScriptCallbacks::SetModelScale(ScriptInterpreter * interpreter)
 
 	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
 
-	if((scaleY.type == ScriptParam::FLOAT || scaleY.type == ScriptParam::DOUBLE)
-		&& (scaleZ.type == ScriptParam::FLOAT || scaleZ.type == ScriptParam::DOUBLE))
+	if(scaleY.IsNumber() && scaleZ.IsNumber())
 	{
 		gpuModel->scale.x = (float)scale.nvalue;
 		gpuModel->scale.y = (float)scaleY.nvalue;
@@ -577,7 +809,7 @@ void ScriptCallbacks::SetModelScale(ScriptInterpreter * interpreter)
 	}
 	else
 	{
-		gpuModel->scale = glm::vec3((float)scale.nvalue);
+		gpuModel->scale = glm::vec4((float)scale.nvalue, (float)scale.nvalue, (float)scale.nvalue, 1.0f);
 	}
 }
 
@@ -790,7 +1022,7 @@ void ScriptCallbacks::SetMeshPosition(ScriptInterpreter * interpreter)
 
 	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
 	unsigned meshnumber = (unsigned) meshnum.nvalue;
-	gpuModel->models[meshnumber].position = glm::vec3(float(x.nvalue),float(y.nvalue),float(z.nvalue));
+	gpuModel->models[meshnumber].position = glm::vec4(float(x.nvalue),float(y.nvalue),float(z.nvalue),0.0f);
 }
 
 void ScriptCallbacks::SetMeshEffect(ScriptInterpreter * interpreter)
@@ -1449,152 +1681,11 @@ void ScriptCallbacks::CreateModel(ScriptInterpreter * interpreter)
 	ScriptParam vertices = interpreter->PopParam();
 	ScriptParam indices = interpreter->PopParam();
 
-	if(vertices.type == ScriptParam::MAPREF && indices.type == ScriptParam::MAPREF)
+	LocalMesh * localMesh = FloatsToLocalMesh(interpreter, type, vertices, indices);
+
+	if(localMesh)
 	{
-		ScriptParam key;
-		ScriptParam item;
-
-		std::vector<float> values;
-
-		IVertexBuffer * vb = 0;
-		unsigned vnum = 0;
-		unsigned numvertices = interpreter->GetMapLength(vertices);
-		unsigned numindices = interpreter->GetMapLength(indices);
-
-		if(numvertices == 0 || numindices == 0 || numindices % 3 != 0)
-		{
-			interpreter->ThrowError("Could not create model, no vertices or invalid number of indices");
-			return;
-		}
-
-		if(strcmp(type.svalue, "Pos") == 0)
-			vb = new VertexBuffer<Vertex_Pos>(numvertices);
-		else if(strcmp(type.svalue, "PosCol") == 0)
-			vb = new VertexBuffer<Vertex_PosCol>(numvertices);
-		else if(strcmp(type.svalue, "PosNor") == 0)
-			vb = new VertexBuffer<Vertex_PosNor>(numvertices);
-		else if(strcmp(type.svalue, "PosTex") == 0)
-			vb = new VertexBuffer<Vertex_PosTex>(numvertices);
-		else if(strcmp(type.svalue, "PosNorTex") == 0)
-			vb = new VertexBuffer<Vertex_PosNorTex>(numvertices);
-		else if(strcmp(type.svalue, "PosNorTanTex") == 0)
-			vb = new VertexBuffer<Vertex_PosNorTanTex>(numvertices);
-
-		if(!vb)
-		{
-			interpreter->ThrowError("Vertex Type not recognised");
-		}
-
-		while(interpreter->GetMapNext(vertices, key, item))
-		{
-			if(vnum >= vb->GetLength())
-			{
-				interpreter->ThrowError("Could not create model, vertex buffer overflow");
-				return;
-			}
-			if(item.type != ScriptParam::MAPREF)
-			{
-				interpreter->ThrowError("Could not create model, vertex is not a data structure");
-				return;
-			}
-
-			values.clear();
-
-			ScriptParam component;
-			ScriptParam value;
-
-			while(interpreter->GetMapNext(item, component, value))
-			{
-				if(value.type != ScriptParam::DOUBLE
-					&& value.type != ScriptParam::FLOAT)
-				{
-					interpreter->ThrowError("Could not create model, vertex component is not a number");
-					return;
-				}
-
-				values.push_back((float)value.nvalue);
-			}
-
-			bool malsized = false;
-
-			switch(vb->GetVertexType())
-			{
-				case VertexType_Pos:
-					if(values.size() != 3) { malsized = true; break; }
-					((VertexBuffer<Vertex_Pos>*)vb)->Set(vnum, Vertex_Pos(
-						values[0], values[1], values[2]));
-					break;
-				case VertexType_PosCol:
-					if(values.size() != 6) { malsized = true; break; }
-					((VertexBuffer<Vertex_PosCol>*)vb)->Set(vnum, Vertex_PosCol(
-						values[0], values[1], values[2],
-						values[3], values[4], values[5]));
-					break;
-				case VertexType_PosNor:
-					if(values.size() != 6) { malsized = true; break; }
-					((VertexBuffer<Vertex_PosNor>*)vb)->Set(vnum, Vertex_PosNor(
-						values[0], values[1], values[2],
-						values[3], values[4], values[5]));
-					break;
-				case VertexType_PosTex:
-					if(values.size() != 5) { malsized = true; break; }
-					((VertexBuffer<Vertex_PosTex>*)vb)->Set(vnum, Vertex_PosTex(
-						values[0], values[1], values[2],
-						values[3], values[4]));
-					break;
-				case VertexType_PosNorTex:
-					if(values.size() != 8) { malsized = true; break; }
-					((VertexBuffer<Vertex_PosNorTex>*)vb)->Set(vnum, Vertex_PosNorTex(
-						values[0], values[1], values[2],
-						values[3], values[4], values[5],
-						values[6], values[7]));
-					break;
-				case VertexType_PosNorTanTex:
-					if(values.size() != 12) { malsized = true; break; }
-					((VertexBuffer<Vertex_PosNorTanTex>*)vb)->Set(vnum, Vertex_PosNorTanTex(
-						values[0], values[1], values[2],
-						values[3], values[4], values[5],
-						values[6], values[7], values[8], values[9],
-						values[10], values[11]));
-					break;
-				default:
-					interpreter->ThrowError("Could not create model, could not identify vertex type");
-					return;
-			}
-
-			if(malsized)
-			{
-				interpreter->ThrowError("Could not create model, incorrect number of vertex components");
-				return;
-			}
-
-			++vnum;
-		}
-
-		key = ScriptParam();
-		item = ScriptParam();
-
-		unsigned * ib = new unsigned[numindices];
-		unsigned inum = 0;
-
-		while(interpreter->GetMapNext(indices, key, item))
-		{
-			if(inum >= numindices)
-			{
-				interpreter->ThrowError("Could not create model, index buffer overflow");
-			}
-			if(item.type != ScriptParam::DOUBLE
-				&& item.type != ScriptParam::FLOAT
-				&& item.type != ScriptParam::INT)
-			{
-				interpreter->ThrowError("Could not create model, index is not a number");
-				return;
-			}
-
-			ib[inum++] = (unsigned)item.nvalue;
-		}
-
-		Gpu::Mesh * mesh = interpreter->GetApp()->gpu->CreateGpuMesh(vb, numindices / 3, ib);
+		Gpu::Mesh * mesh = interpreter->GetApp()->gpu->CreateGpuMesh(localMesh->vertexBuffer, localMesh->numTriangles, localMesh->indexBuffer);
 
 		if(mesh)
 		{
@@ -1605,73 +1696,7 @@ void ScriptCallbacks::CreateModel(ScriptInterpreter * interpreter)
 			interpreter->PushParam(ScriptParam(complexModel, ScriptPtrType::GpuComplexModel));
 		}
 
-		delete vb;
-		delete[] ib;
-	}
-	else if(vertices.type == ScriptParam::POINTER && indices.type == ScriptParam::POINTER
-		&& vertices.pvalue->type == ScriptPtrType::FloatArray && indices.pvalue->type == ScriptPtrType::FloatArray)
-	{
-		ScriptFloatArray * vertexArray = (ScriptFloatArray*)vertices.pvalue->ptr;
-		ScriptFloatArray * indexArray = (ScriptFloatArray*)indices.pvalue->ptr;
-
-		IVertexBuffer * vb = 0;
-		unsigned vnum = 0;
-		unsigned numfloats = vertexArray->length;
-		unsigned vertexArraySize = numfloats * sizeof(float);
-		unsigned numindices = indexArray->length;
-
-		if(numfloats == 0 || numindices == 0 || numindices % 3 != 0)
-		{
-			interpreter->ThrowError("Could not create model, no vertices or invalid number of indices");
-			return;
-		}
-
-		if(strcmp(type.svalue, "Pos") == 0)
-			vb = new VertexBuffer<Vertex_Pos>(vertexArraySize / sizeof(Vertex_Pos));
-		else if(strcmp(type.svalue, "PosCol") == 0)
-			vb = new VertexBuffer<Vertex_PosCol>(vertexArraySize / sizeof(Vertex_PosCol));
-		else if(strcmp(type.svalue, "PosNor") == 0)
-			vb = new VertexBuffer<Vertex_PosNor>(vertexArraySize / sizeof(Vertex_PosNor));
-		else if(strcmp(type.svalue, "PosTex") == 0)
-			vb = new VertexBuffer<Vertex_PosTex>(vertexArraySize / sizeof(Vertex_PosTex));
-		else if(strcmp(type.svalue, "PosNorTex") == 0)
-			vb = new VertexBuffer<Vertex_PosNorTex>(vertexArraySize / sizeof(Vertex_PosNorTex));
-		else if(strcmp(type.svalue, "PosNorTanTex") == 0)
-			vb = new VertexBuffer<Vertex_PosNorTanTex>(vertexArraySize / sizeof(Vertex_PosNorTanTex));
-
-		unsigned vertexBufferSize = vb->GetLength() * vb->GetElementSize();
-		if(vertexBufferSize != vertexArraySize)
-		{
-			interpreter->ThrowError("Could not create model, float array is not evenly divisible by specified vertex type!");
-			delete vb;
-			return;
-		}
-
-		memcpy(vb->GetData(), vertexArray->floats, vb->GetLength() * vb->GetElementSize());
-
-		unsigned * ib = new unsigned[numindices];
-		for(unsigned i = 0; i < numindices; i++)
-		{
-			ib[i] = unsigned(indexArray->floats[i]);
-		}
-
-		Gpu::Mesh * mesh = interpreter->GetApp()->gpu->CreateGpuMesh(vb, numindices / 3, ib);
-
-		if(mesh)
-		{
-			Gpu::ComplexModel * complexModel = new Gpu::ComplexModel(1);
-			complexModel->models[0].mesh = mesh;
-			complexModel->models[0].destructMesh = true;
-
-			interpreter->PushParam(ScriptParam(complexModel, ScriptPtrType::GpuComplexModel));
-		}
-
-		delete vb;
-		delete[] ib;
-	}
-	else
-	{
-		interpreter->ThrowError("Could not create model, vertex/index buffers were not tables or floatArrays");
+		delete localMesh;
 	}
 }
 
@@ -1751,6 +1776,39 @@ void ScriptCallbacks::GetSVGModel(ScriptInterpreter * interpreter)
 	if(model)
 	{
 		interpreter->PushParam(ScriptParam(model, ScriptPtrType::GpuComplexModel));
+	}
+}
+
+void ScriptCallbacks::GetWavefrontMesh(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, name, STRING);
+	POP_NUMPARAM(2, index);
+	interpreter->ClearParams();
+
+	AssetMgr * assets = interpreter->GetApp()->assets;
+
+	AssetLoader * loader = assets->GetLoader(name.svalue);
+
+	if(loader && loader->type == WavefrontModelAsset)
+	{
+		WavefrontLoader * wLoader = static_cast<WavefrontLoader*>(loader);
+
+		unsigned i = unsigned(index.nvalue);
+		
+		if(i < wLoader->GetNumMeshes())
+		{
+			LocalMesh * mesh = wLoader->GetMesh(i);
+			if(mesh)
+			{
+				const char * typeName = VertApi::GetVertexName(mesh->vertexBuffer->GetVertexType());
+				ScriptParam vertices = VertexBufferToFloats(interpreter, mesh->vertexBuffer);
+				ScriptParam indices = IndexBufferToFloats(interpreter, mesh->indexBuffer, mesh->numTriangles);
+
+				interpreter->PushParam(ScriptParam(ScriptParam::STRING,typeName));
+				interpreter->PushParam(vertices);
+				interpreter->PushParam(indices);
+			}
+		}
 	}
 }
 
@@ -2475,6 +2533,236 @@ void ScriptCallbacks::UpdateInstanceBuffer(ScriptInterpreter * interpreter)
 	unsigned activeInstances = unsigned(size.nvalue);
 
 	interpreter->GetApp()->gpu->UpdateInstanceBuffer(buffer, activeInstances, floatArray->floats);
+}
+
+void ScriptCallbacks::CreatePhysicsWorld(ScriptInterpreter * interpreter)
+{
+	PhysicsWorld * physicsWorld = interpreter->GetApp()->physics->CreateWorld(0.0f);
+
+	interpreter->ClearParams();
+	interpreter->PushParam(ScriptParam(physicsWorld, ScriptPtrType::PhysicsWorld));
+}
+
+void ScriptCallbacks::UpdatePhysicsWorld(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, PhysicsWorld);
+	POP_NUMPARAM(2, delta);
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = static_cast<PhysicsWorld*>(world.pvalue->ptr);
+
+	interpreter->GetApp()->physics->UpdateWorld(physicsWorld, float(delta.nvalue));
+}
+
+void ScriptCallbacks::CreatePhysicsMaterial(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, elasticity); // default 0.63
+	POP_NUMPARAM(2, sfriction);  // default 0.95
+	POP_NUMPARAM(3, kfriction);  // default 0.7
+	POP_NUMPARAM(4, softness);   // default 0.32
+	interpreter->ClearParams();
+
+	PhysicsMaterial::Properties properties(
+		float(elasticity.nvalue),
+		float(sfriction.nvalue),
+		float(kfriction.nvalue),
+		float(softness.nvalue));
+
+	PhysicsMaterial * material = interpreter->GetApp()->physics->CreateMaterial(properties);
+
+	interpreter->PushParam(ScriptParam(material, ScriptPtrType::PhysicsMaterial));
+}
+
+void ScriptCallbacks::CreatePhysicsCuboid(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, w);
+	POP_NUMPARAM(2, h);
+	POP_NUMPARAM(3, d);
+	POP_NUMPARAM(4, kinematic);
+	interpreter->ClearParams();
+
+	glm::vec3 size(float(w.nvalue), float(h.nvalue), float(d.nvalue));
+
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateCuboid(size, kinematic.nvalue > 0.0);
+
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
+}
+
+void ScriptCallbacks::CreatePhysicsSphere(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, r);
+	POP_NUMPARAM(2, kinematic);
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateSphere(float(r.nvalue), kinematic.nvalue > 0.0);
+
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
+}
+
+void ScriptCallbacks::CreatePhysicsMesh(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, type, STRING);
+	POP_PTRPARAM(2, vtx, FloatArray);
+	POP_PTRPARAM(3, idx, FloatArray);
+	interpreter->ClearParams();
+
+	LocalMesh * localMesh = FloatsToLocalMesh(interpreter, type, vtx, idx);
+
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateMesh(localMesh, false, true);
+
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
+}
+
+void ScriptCallbacks::CreatePhysicsHeightmap(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, heightmap, HeightParser);
+	interpreter->ClearParams();
+
+	HeightParser * heightParser = static_cast<HeightParser*>(heightmap.pvalue->ptr);
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateHeightmap(heightParser);
+
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
+}
+
+void ScriptCallbacks::AddToPhysicsWorld(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, PhysicsWorld);
+	POP_PTRPARAM(2, object, PhysicsObject);
+	ScriptParam isStatic = interpreter->PopParam();
+
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = static_cast<PhysicsWorld*>(world.pvalue->ptr);
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+
+	bool physicsStatic = false;
+	if(isStatic.IsNumber() || isStatic.type == ScriptParam::BOOL) physicsStatic = isStatic.nvalue > 0.0;
+
+	interpreter->GetApp()->physics->AddToWorld(physicsWorld, physicsObject, physicsStatic);
+}
+
+void ScriptCallbacks::RemoveFromPhysicsWorld(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, PhysicsWorld);
+	POP_PTRPARAM(2, object, PhysicsObject);
+
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = static_cast<PhysicsWorld*>(world.pvalue->ptr);
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+
+	interpreter->GetApp()->physics->RemoveFromWorld(physicsWorld, physicsObject);
+}
+
+void ScriptCallbacks::SetPhysicsPosition(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	glm::vec3 position(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+	
+	interpreter->GetApp()->physics->SetPosition(physicsObject, position);
+}
+
+void ScriptCallbacks::SetPhysicsRotation(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	glm::vec3 rotation(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+
+	interpreter->GetApp()->physics->SetRotation(physicsObject, rotation);
+}
+
+void ScriptCallbacks::SetPhysicsScale(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_NUMPARAM(2, x);
+	ScriptParam y = interpreter->PopParam();
+	ScriptParam z = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	glm::vec3 scale(float(x.nvalue));
+
+	if(y.IsNumber() && z.IsNumber())
+	{
+		scale = glm::vec3(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+	}
+
+	interpreter->GetApp()->physics->SetScale(physicsObject, scale);
+}
+
+void ScriptCallbacks::SetPhysicsMass(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_NUMPARAM(2, mass);
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+
+	interpreter->GetApp()->physics->SetMass(physicsObject, float(mass.nvalue));
+}
+
+void ScriptCallbacks::SetPhysicsMaterial(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_PTRPARAM(2, material, PhysicsMaterial);
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	PhysicsMaterial * physicsMaterial = static_cast<PhysicsMaterial*>(material.pvalue->ptr);
+
+	interpreter->GetApp()->physics->SetMaterial(physicsObject, physicsMaterial);
+}
+
+void ScriptCallbacks::GetPhysicsPosition(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	glm::vec3 position = interpreter->GetApp()->physics->GetPosition(physicsObject);
+
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.x)));
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.y)));
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.z)));
+}
+
+//void ScriptCallbacks::GetPhysicsRotation(ScriptInterpreter * interpreter)
+//{
+//	POP_PTRPARAM(1, object, PhysicsObject);
+//
+//	interpreter->ClearParams();
+//
+//	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+//	glm::vec3 rotation = interpreter->GetApp()->physics->GetRotation(physicsObject);
+//
+//	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(rotation.x)));
+//	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(rotation.y)));
+//	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(rotation.z)));
+//}
+
+void ScriptCallbacks::SyncPhysicsMatrix(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_PTRPARAM(2, model, GpuComplexModel);
+	interpreter->ClearParams();
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
+	const glm::mat4 matrix = interpreter->GetApp()->physics->GetMatrix(physicsObject);
+	gpuModel->models[0].SetMatrix(matrix);
 }
 
 } // namespace Ingenuity

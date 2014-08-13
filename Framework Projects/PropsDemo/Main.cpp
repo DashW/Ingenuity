@@ -210,15 +210,15 @@ public:
 			castle = assets->GetAsset<Gpu::ComplexModel>("castle");
 			if(castle)
 			{
-				castle->position = glm::vec3(0.03f, 0.15f, 0.325f);
-				castle->scale = glm::vec3(0.0035f);
+				castle->position = glm::vec4(0.03f, 0.15f, 0.325f, 1.0f);
+				castle->scale = glm::vec4(0.0035f);
 			}
 
 			skull = assets->GetAsset<Gpu::ComplexModel>("skull");
 			if(skull)
 			{
-				skull->position = glm::vec3(0.03f, 0.155f, 0.36f);
-				skull->scale = glm::vec3(0.007f);
+				skull->position = glm::vec4(0.03f, 0.155f, 0.36f, 1.0f);
+				skull->scale = glm::vec4(0.007f);
 				skull->models[0].color.r = 0.0f;
 				skull->models[0].color.g = 0.0f;
 				skull->models[0].color.b = 0.0f;

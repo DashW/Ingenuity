@@ -159,18 +159,43 @@ struct ComplexModel : public IAsset
 	Model * models;
 	unsigned numModels;
 
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale; 
+	glm::vec4 position;
+	glm::vec4 rotation;
+	glm::vec4 scale; 
+	glm::vec4 matrixPadding;
 
+	bool useMatrix;
 	bool wireframe;
+
+	inline void SetMatrix(glm::mat4 matrix)
+	{
+		position = matrix[0];
+		rotation = matrix[1];
+		scale = matrix[2];
+		matrixPadding = matrix[3];
+		useMatrix = true;
+	}
+	inline glm::mat4 GetMatrix()
+	{
+		if(useMatrix)
+		{
+			return glm::mat4(position, rotation, scale, matrixPadding);
+		}
+		else
+		{
+			return glm::translate(position.x, position.y, position.z)
+				* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
+				* glm::scale(scale.x, scale.y, scale.z);
+		}
+	}
 
 	InstanceBuffer * instances;
 
 	ComplexModel(int numModels) :
 		models(0),
 		numModels(numModels),
-		scale(1.0f, 1.0f, 1.0f),
+		scale(1.0f),
+		useMatrix(false),
 		wireframe(false),
 		instances(0)
 	{
@@ -202,9 +227,16 @@ struct ComplexModel : public IAsset
 		for(unsigned i = 0; i < numModels; ++i)
 		{
 			tempModel = models[i];
-			tempModel.position += position; // with respect to rotation about the parent model's axis??
-			tempModel.rotation += rotation;
-			tempModel.scale *= scale;
+			if(useMatrix || tempModel.useMatrix)
+			{
+				tempModel.SetMatrix(tempModel.GetMatrix() * GetMatrix());
+			}
+			else
+			{
+				tempModel.position += position; // with respect to rotation about the parent model's axis??
+				tempModel.rotation += rotation;
+				tempModel.scale *= scale;
+			}
 			tempModel.wireframe = wireframe ? true : tempModel.wireframe;
 			tempModel.destructMesh = false;
 

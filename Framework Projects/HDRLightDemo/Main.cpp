@@ -189,18 +189,18 @@ public:
 		column1.scale.x = 0.325f;
 		column1.scale.y = 1.5f;
 		column1.scale.z = 0.325f;
-		column1.position = glm::vec3(3.5f, 0.0f, 3.0f);
+		column1.position = glm::vec4(3.5f, 0.0f, 3.0f, 1.0f);
 		column1.specPower = 5.0f;
 		column1.diffuseFactor = 0.5f;
 
 		column2 = column1;
-		column2.position = glm::vec3(-3.5f, 0.0f, 3.0f);
+		column2.position = glm::vec4(-3.5f, 0.0f, 3.0f, 1.0f);
 
 		column3 = column1;
-		column3.position = glm::vec3(3.5f, 0.0f, -3.0f);
+		column3.position = glm::vec4(3.5f, 0.0f, -3.0f, 1.0f);
 
 		column4 = column1;
-		column4.position = glm::vec3(-3.5f, 0.0f, -3.0f);
+		column4.position = glm::vec4(-3.5f, 0.0f, -3.0f, 1.0f);
 
 		painting1.mesh = geoBuilder.BuildGrid(3.5f, 2.5f, 2, 2, &Gpu::Rect(0.0f, 1.0f, 1.0f, 0.0f))->GpuOnly(gpu);
 		painting1.rotation.x = static_cast<float>(-M_PI_2);
@@ -229,11 +229,11 @@ public:
 		lights[1]->atten = 0.0f;
 
 		sphere.mesh = geoBuilder.BuildSphere(0.1f, 20, 20)->GpuOnly(gpu);
-		sphere.position = lights[0]->position;
+		sphere.position = glm::vec4(lights[0]->position, 1.0f);
 		sphere.color = glm::vec4(lights[0]->color * 40.0f, 1.0f);
 
 		sphere2 = sphere;
-		sphere2.position = lights[1]->position;
+		sphere2.position = glm::vec4(lights[1]->position, 1.0f);
 		sphere2.color = glm::vec4(lights[1]->color * 40.0f, 1.0f);
 
 		surface1 = gpu->CreateScreenDrawSurface(1.0f, 1.0f, Gpu::DrawSurface::Format_4x16float);

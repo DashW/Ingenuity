@@ -52,7 +52,7 @@ public:
 
 		skybox = new Gpu::Model();
 		skybox->mesh = GeoBuilder().BuildSkyCube()->GpuOnly(gpu);
-		skybox->scale = glm::vec3(20.0f);
+		skybox->scale = glm::vec4(20.0f);
 		skybox->backFaceCull = false;
 
 		Files::Directory * appDir = files->GetKnownDirectory(Files::AppDir);

@@ -1,4 +1,4 @@
-// Class to parse a RAW height map into a normal'd mesh surface
+// Class to parse a RAW height map into a surface mesh
 #pragma once
 
 #include "AssetMgr.h"
@@ -28,7 +28,12 @@ public:
 	void SetScale(float width, float height, float depth);
 	LocalMesh * GetMesh(Gpu::Rect* texRect = 0);
 	float GetHeight(float x, float z);
-	//float GetHeight(float x, float z, GpuComplexModel * complexModel, unsigned modelIndex);
+	float GetHeight(unsigned x, unsigned z);
+	float * GetData() { return heights.data(); }
+	unsigned GetSideLength() { return sideLength; }
+	float GetScale() { return scale; }
+	float GetWidth() { return width; }
+	float GetDepth() { return depth; }
 
 	virtual AssetType GetType() override { return RawHeightMapAsset; }
 	virtual IAsset * GetAsset() override { return this; }
@@ -37,7 +42,6 @@ public:
 struct RawHeightLoader : public SimpleLoader
 {
 	Gpu::Api * gpu;
-	//HeightParser parser;
 
 	RawHeightLoader(Gpu::Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path) :
 		SimpleLoader(files, directory, path, RawHeightMapAsset), gpu(gpu) {}
@@ -51,10 +55,6 @@ struct RawHeightLoader : public SimpleLoader
 			HeightParser * heightmap = new HeightParser();
 			if(heightmap->ParseHeightmap(buffer, sideLength))
 			{
-				//GpuMesh * mesh = parser.GetMesh(&GpuRect(0.0f, 0.0f, 1.0f, 1.0f))->GpuOnly(gpu);
-				//GpuComplexModel * model = new GpuComplexModel(1);
-				//model->models[0].mesh = mesh;
-				//asset = model;
 				asset = heightmap;
 			}
 			else

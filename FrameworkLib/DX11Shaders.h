@@ -149,7 +149,7 @@ struct ModelShader : public Shader
 	ModelShader(ID3D11Device * device);
 	virtual ~ModelShader();
 
-	DirectX::XMMATRIX GetWorld(Gpu::Model * model);
+	//DirectX::XMMATRIX GetWorld(Gpu::Model * model);
 	DirectX::XMMATRIX GetView(Gpu::Camera * camera);
 	DirectX::XMMATRIX GetProjection(Gpu::Camera * camera, float aspect);
 

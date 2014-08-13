@@ -8,6 +8,7 @@ class AssetMgr;
 class InputState;
 class StepMgr;
 class PlatformApi;
+class PhysicsApi;
 
 namespace Audio {
 class Api;
@@ -25,15 +26,16 @@ class Api;
 class RealtimeApp 
 {
 public:
-	Audio::Api * audio;
-	Files::Api * files;
-	Gpu::Api   * gpu;
-	Image::Api * imaging;
+	Audio::Api  * audio;
+	Files::Api  * files;
+	Gpu::Api    * gpu;
+	Image::Api  * imaging;
 	PlatformApi * platform;
+	PhysicsApi  * physics;
 
-	AssetMgr   * assets;
-	InputState * input;
-	StepMgr    * steppables;
+	AssetMgr    * assets;
+	InputState  * input;
+	StepMgr     * steppables;
 
 	float currentTime;
 
@@ -45,6 +47,7 @@ public:
 		gpu(0),
 		imaging(0),
 		platform(0),
+		physics(0),
 		assets(0),
 		input(0),
 		steppables(0),

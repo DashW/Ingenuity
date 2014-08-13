@@ -141,9 +141,9 @@
       <CompileAsWinRT>true</CompileAsWinRT>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\lua-5.2.3\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.4.1;$(ProjectDir)..\Third Party\lua-5.2.3\src;$(ProjectDir)..\Third Party\newton-dynamics-r1679\coreLibrary_300\source\newton;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -153,10 +153,13 @@
     <Lib />
     <Lib>
       <AdditionalOptions>/ignore:4264 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>windowscodecs.lib;mfplat.lib;mfreadwrite.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\lua-5.2.3\Release Win8;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>windowscodecs.lib;mfplat.lib;mfreadwrite.lib;lua.lib;newton.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\lua-5.2.3\Release Win8;$(ProjectDir)..\Third Party\newton-dynamics-r1679\coreLibrary_300\projects\windows\project_vs2012_static_md\Win32\newton\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <ProjectReference />
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm'">
     <ClCompile>
@@ -231,7 +234,9 @@
     <ClInclude Include="IsoSurface.h" />
     <ClInclude Include="LuaInterpreter.h" />
     <ClInclude Include="MtlParser.h" />
+    <ClInclude Include="NewtonApi.h" />
     <ClInclude Include="ObjParser.h" />
+    <ClInclude Include="PhysicsApi.h" />
     <ClInclude Include="PlatformApi.h" />
     <ClInclude Include="RealtimeApp.h" />
     <ClInclude Include="ScriptInterpreter.h" />
@@ -264,6 +269,7 @@
     <ClCompile Include="IsoSurface.cpp" />
     <ClCompile Include="LuaInterpreter.cpp" />
     <ClCompile Include="MtlParser.cpp" />
+    <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="ObjParser.cpp" />
     <ClCompile Include="ScriptLogger.cpp" />
     <ClCompile Include="ShaderParser.cpp" />

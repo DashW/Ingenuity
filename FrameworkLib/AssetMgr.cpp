@@ -53,6 +53,23 @@ AssetMgr::~AssetMgr()
 	}
 }
 
+AssetLoader * AssetMgr::GetLoader(const char * name)
+{
+	for(unsigned i = 0; i < requestBank.size(); ++i)
+	{
+		Request & request = requestBank[i];
+		for(unsigned j = 0; j < request.size(); ++j)
+		{
+			AssetLoader * loader = request[j];
+			if(loader->name.compare(name) == 0)
+			{
+				return loader;
+			}
+		}
+	}
+	return 0;
+}
+
 void AssetMgr::AddAsset(Files::Directory * directory, const wchar_t * path, IAsset * asset, const char * name)
 {
 	unsigned assetIndex = assetBank.size();

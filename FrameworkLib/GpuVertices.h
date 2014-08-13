@@ -174,7 +174,8 @@ struct Instance_Pos
 
 	void UpdateFromModel(Gpu::Model * model)
 	{
-		position = model->position;
+		if(model->useMatrix) return;
+		position = glm::vec3(model->position);
 	}
 };
 
@@ -186,7 +187,8 @@ struct Instance_PosCol
 
 	void UpdateFromModel(Gpu::Model * model)
 	{
-		position = model->position;
+		if(model->useMatrix) return;
+		position = glm::vec3(model->position);
 		color = model->color;
 	}
 };
@@ -199,8 +201,9 @@ struct Instance_PosSca
 
 	void UpdateFromModel(Gpu::Model * model)
 	{
-		position = model->position;
-		scale = model->scale;
+		if(model->useMatrix) return;
+		position = glm::vec3(model->position);
+		scale = glm::vec3(model->scale);
 	}
 
 	//Instance_PosSca() : scale(1.0f) {}

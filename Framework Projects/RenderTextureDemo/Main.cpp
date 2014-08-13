@@ -124,7 +124,7 @@ public:
 				model->models[0].color.r = 0.8f;
 				model->models[0].color.g = 0.8f;
 				model->models[0].color.b = 0.8f;
-				model->scale = glm::vec3(modelScale);
+				model->scale = glm::vec4(modelScale);
 				model->position.y = modelPos;
 				//model->wireframe = true;
 				//model->models[0].backFaceCull = false;

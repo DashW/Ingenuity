@@ -29,7 +29,10 @@ struct ScriptPtrType
 		ImageBuffer,
 		AudioItem,
 		IsoSurface,
-		SVGParser
+		SVGParser,
+		PhysicsWorld,
+		PhysicsObject,
+		PhysicsMaterial
 	};
 };
 

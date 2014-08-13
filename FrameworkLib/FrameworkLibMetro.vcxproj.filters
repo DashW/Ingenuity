@@ -114,6 +114,7 @@
       <Filter>Application\WinRT</Filter>
     </ClCompile>
     <ClCompile Include="IsoSurface.cpp" />
+    <ClCompile Include="NewtonApi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h" />
@@ -232,6 +233,8 @@
       <Filter>Application\WinRT</Filter>
     </ClInclude>
     <ClInclude Include="IsoSurface.h" />
+    <ClInclude Include="NewtonApi.h" />
+    <ClInclude Include="PhysicsApi.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\DX11\BaseShaderPixPosCol.hlsl">

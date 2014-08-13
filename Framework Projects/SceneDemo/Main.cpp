@@ -98,7 +98,7 @@ public:
 
 		lightModel = new Gpu::Model();
 		lightModel->mesh = sphereMesh;
-		lightModel->position = light->position;
+		lightModel->position = glm::vec4(light->position, 1.0f);
 
 		scene->SetDirty();
 	}
@@ -149,7 +149,7 @@ public:
 					vaseModels[i].texture = vaseTexture;
 					vaseModels[i].position.x = ((i % (numCols / 2)) + 1) * (i % numCols < numCols / 2 ? 10.0f : -10.0f);
 					vaseModels[i].position.z = ((i / numCols) - offset) * 10.0f;
-					vaseModels[i].scale = glm::vec3(0.08f);
+					vaseModels[i].scale = glm::vec4(0.08f);
 					scene->Add(&vaseModels[i]);
 				}
 			}

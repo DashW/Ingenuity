@@ -269,7 +269,7 @@ void WavefrontLoader::Step()
 		for(unsigned i = 0; i < objParser.GetNumMeshes(); ++i)
 		{
 			model->models[i].boundingSphere = GeoBuilder().GenerateBoundingSphere(objParser.GetMesh(i)->vertexBuffer);
-			model->models[i].mesh = objParser.GetMesh(i)->GpuOnly(gpu);
+			model->models[i].mesh = objParser.GetMesh(i)->ToGpuMesh(gpu);
 			model->models[i].destructMesh = true;
 		}
 

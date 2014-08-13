@@ -176,6 +176,8 @@
     <ClInclude Include="Win32PlatformApi.h">
       <Filter>Application\Win32</Filter>
     </ClInclude>
+    <ClInclude Include="PhysicsApi.h" />
+    <ClInclude Include="NewtonApi.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -268,6 +270,7 @@
     <ClCompile Include="Win32PlatformApi.cpp">
       <Filter>Application\Win32</Filter>
     </ClCompile>
+    <ClCompile Include="NewtonApi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
