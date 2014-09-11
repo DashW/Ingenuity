@@ -34,6 +34,8 @@ Third Party/DirectXTK 2014-04/Bin/
 Third Party/DirectXTK 2014-04/Audio/Bin/
 Third Party/glm-0.9.4.1/Debug/
 Third Party/glm-0.9.4.1/Release/
-Third Party/newton-dynamics-r1679/coreLibrary_300/projects/windows/*/Win32/
-Third Party/newton-dynamics-r1679/coreLibrary_300/source/pthreads.2/*/Win32/
-Third Party/newton-dynamics-r1679/packages/
+Third Party/newton-dynamics-master/applications/
+Third Party/newton-dynamics-master/coreLibrary_300/projects/windows/*/Win32/
+Third Party/newton-dynamics-master/coreLibrary_300/source/pthreads.2/*/Win32/
+Third Party/newton-dynamics-master/packages/
+Third Party/newton-dynamics-master-old/

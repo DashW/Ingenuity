@@ -28,6 +28,11 @@ struct Vertex_Pos
 	Vertex_Pos() {}
 	Vertex_Pos(float x, float y, float z) :
 		position(x, y, z) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+	}
 };
 
 struct Vertex_PosCol
@@ -43,6 +48,11 @@ struct Vertex_PosCol
 	Vertex_PosCol(float x, float y, float z,
 		float r, float g, float b) :
 		position(x, y, z), color(r, g, b) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+	}
 };
 
 struct Vertex_PosNor
@@ -60,6 +70,12 @@ struct Vertex_PosNor
 	Vertex_PosNor(float x, float y, float z,
 		float u, float v, float w) :
 		position(x, y, z), normal(u, v, w) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
+	}
 };
 
 struct Vertex_PosTex
@@ -75,6 +91,11 @@ struct Vertex_PosTex
 	Vertex_PosTex(float x, float y, float z,
 		float tx, float ty) :
 		position(x, y, z), texCoord(tx, ty) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+	}
 };
 
 struct Vertex_PosNorTex
@@ -94,6 +115,12 @@ struct Vertex_PosNorTex
 		float u, float v, float w,
 		float tx, float ty) :
 		position(x, y, z), normal(u, v, w), texCoord(tx, ty) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
+	}
 };
 
 struct Vertex_PosNorTanTex
@@ -116,6 +143,13 @@ struct Vertex_PosNorTanTex
 		position(x, y, z), normal(norx, nory, norz),
 		tangent(tanx, tany, tanz), tanChirality(tanc),
 		texCoord(tx, ty) {}
+
+	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	{
+		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
+		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
+		// TODO: NEED TO ADD TRANSFORMATION FOR THE TANGENT!!
+	}
 };
 
 class IVertexBuffer
@@ -129,6 +163,7 @@ public:
 	virtual unsigned GetElementSize() = 0;
 	virtual unsigned GetLength() { return length; };
 	virtual VertexType GetVertexType() = 0;
+	virtual void Transform(glm::mat4 matrix) = 0;
 };
 
 template <class VERTEX>
@@ -152,6 +187,12 @@ public:
 	virtual void * GetData() override { return buffer; }
 	virtual unsigned GetElementSize() override { return sizeof(VERTEX); }
 	virtual VertexType GetVertexType() override { return type; }
+	virtual void Transform(glm::mat4 matrix) override
+	{
+		const glm::mat4 invTraMatrix = glm::inverse(glm::transpose(matrix));
+		for(unsigned i = 0; i < length; i++)
+			buffer[i].Transform(matrix, invTraMatrix);
+	}
 
 	void Set(unsigned index, VERTEX & vertex) { buffer[index] = vertex; }
 	VERTEX & Get(unsigned index) { return buffer[index]; }

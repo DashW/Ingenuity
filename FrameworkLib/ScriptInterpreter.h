@@ -125,6 +125,8 @@ public:
 
 	virtual bool HasFunction(const char * functionName) = 0;
 
+	//virtual ScriptParam GetGlobal(const char * globalName) = 0;
+
 	void CallFunction(const char* functionName /*, ...*/)
 	{
 		if(!inError)

@@ -183,9 +183,9 @@ struct ComplexModel : public IAsset
 		}
 		else
 		{
-			return glm::translate(position.x, position.y, position.z)
+			return glm::translate(glm::vec3(position))
 				* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
-				* glm::scale(scale.x, scale.y, scale.z);
+				* glm::scale(glm::vec3(scale.x));
 		}
 	}
 

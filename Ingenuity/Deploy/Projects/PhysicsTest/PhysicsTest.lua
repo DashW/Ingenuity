@@ -48,21 +48,31 @@ function Begin()
 	SetModelScale(floorModel,5,0.5,5);
 	--SetMeshColor(floorModel,0,0.0,1.0,0.0);
 	
+	capsuleModel = CreateModel("PosNor",CreateCapsule(2.0));
+	SetModelScale(capsuleModel, 1.0);
+	--SetModelRotation(capsuleModel, 0, math.pi/2, 0);
+	
 	skyModel = CreateSkyCube();
 	
 	physicsWorld = CreatePhysicsWorld();
 	
 	physicsCube = CreatePhysicsCuboid(2,2,2,false);
-	--physicsFloor = CreatePhysicsCuboid(10,1,10,false);
+	physicsFloor = CreatePhysicsCuboid(10,1,10,false);
 	
 	woodMaterial = CreatePhysicsMaterial(0.63,0.95,0.7,0.32);
 	SetPhysicsMaterial(physicsCube, woodMaterial);
 	
 	AddToPhysicsWorld(physicsWorld,physicsCube,false);
-	--AddToPhysicsWorld(physicsWorld,physicsFloor,true);
+	AddToPhysicsWorld(physicsWorld,physicsFloor,true);
+	
+	physicsCapsule = CreatePhysicsCapsule(0.5, 2.0, false);
+	AddToPhysicsWorld(physicsWorld,physicsCapsule,false);
 	
 	SetPhysicsPosition(physicsCube,0,4,0);
 	SetPhysicsRotation(physicsCube,0,0,1);
+	
+	SetPhysicsPosition(physicsCapsule, 2, 4, 2);
+	SetPhysicsRotation(physicsCapsule, 0, 0, 1);
 	
 	debugFont = GetFont(40,"Arial");
 end
@@ -78,9 +88,9 @@ function Update(delta)
 		SetModelScale(vaseModel,0.02);
 		
 		physicsVase = CreatePhysicsMesh(GetWavefrontMesh("vasemodel",0));
-		AddToPhysicsWorld(physicsWorld,physicsVase,false);
-		SetPhysicsScale(physicsVase,0.02);
-		SetPhysicsPosition(physicsVase,2,2,0);
+		--AddToPhysicsWorld(physicsWorld,physicsVase,false);
+		--SetPhysicsScale(physicsVase,0.02);
+		--SetPhysicsPosition(physicsVase,2,2,0);
 		
 		landEffect = CreateEffect("landshader");
 		SetEffectParam(landEffect,0,GetAsset("grasstex"));  --tex1
@@ -97,9 +107,9 @@ function Update(delta)
 		SetMeshEffect(landModel,0,landEffect);
 		SetModelPosition(landModel,0,-8,0);
 		
-		physicsLand = CreatePhysicsHeightmap(heightmap);
-		AddToPhysicsWorld(physicsWorld,physicsLand,true);
-		SetPhysicsPosition(physicsLand,0,-8,0);
+		--physicsLand = CreatePhysicsHeightmap(heightmap);
+		--AddToPhysicsWorld(physicsWorld,physicsLand,true);
+		--SetPhysicsPosition(physicsLand,0,-8,0);
 		
 		if skyEffect then
 			SetMeshCubeMap(skyModel,0,skyMap);
@@ -115,6 +125,7 @@ function Update(delta)
 	UpdatePhysicsWorld(physicsWorld,delta);
 	
 	SyncPhysicsMatrix(physicsCube,cubeModel);
+	SyncPhysicsMatrix(physicsCapsule,capsuleModel);
 	if assetTicket == -1 then
 		SyncPhysicsMatrix(physicsVase,vaseModel);
 	end
@@ -124,8 +135,11 @@ function Update(delta)
 		SetPhysicsPosition(physicsCube,0,4,0);
 		SetPhysicsRotation(physicsCube,0,0,1);
 		
-		SetPhysicsPosition(physicsVase,0,8,0);
-		SetPhysicsRotation(physicsVase,0,0,0);
+		--SetPhysicsPosition(physicsVase,0,8,0);
+		--SetPhysicsRotation(physicsVase,0,0,0);
+	
+		SetPhysicsPosition(physicsCapsule, 2, 4, 2);
+		SetPhysicsRotation(physicsCapsule, 0, 0, 0);
 	end
 	
 	UpdateFlyCamera(delta);
@@ -133,12 +147,13 @@ function Update(delta)
 end
 
 function Draw()
-	--DrawComplexModel(floorModel,camera);
+	DrawComplexModel(floorModel,camera);
 	DrawComplexModel(cubeModel,camera);
+	DrawComplexModel(capsuleModel,camera);
 	
 	if assetTicket == -1 then
-		DrawComplexModel(vaseModel,camera);
-		DrawComplexModel(landModel,camera);
+		--DrawComplexModel(vaseModel,camera);
+		--DrawComplexModel(landModel,camera);
 		DrawComplexModel(skyModel,camera);
 	end
 	

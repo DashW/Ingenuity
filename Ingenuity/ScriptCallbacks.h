@@ -86,6 +86,8 @@ public:
 			"([tex]) Returns vertex and index buffers [with texture coordinates] for a 2x2x2 cube at (0,0,0)");
 		interpreter->RegisterCallback("CreateSphere", &ScriptCallbacks::CreateSphere,
 			"(texture,tangent) Returns vertex and index buffers for a sphere");
+		interpreter->RegisterCallback("CreateCapsule", &ScriptCallbacks::CreateCapsule,
+			"(length) Returns vertex and index buffers for a capsule (round-ended cylinder)");
 
 		interpreter->RegisterCallback("SetModelPosition", &ScriptCallbacks::SetModelPosition,
 			"(model,x,y,z) Sets the world position of a model");
@@ -95,6 +97,8 @@ public:
 			"(model,scale[,scaleY,scaleZ]) Sets the local size of a model, optionally in each axis.");
 		interpreter->RegisterCallback("SetMeshPosition", &ScriptCallbacks::SetMeshPosition,
 			"(model,meshnum,x,y,z) Sets the position of a mesh relative to its parent model");
+		interpreter->RegisterCallback("SetMeshRotation", &ScriptCallbacks::SetMeshRotation,
+			"(model,meshnum,x,y,z) Sets the rotation of a mesh relative to its parent model");
 		interpreter->RegisterCallback("SetMeshEffect", &ScriptCallbacks::SetMeshEffect,
 			"(model,meshnum,effect) Sets an effect to a specific mesh in a complex model");
 		interpreter->RegisterCallback("SetMeshTexture", &ScriptCallbacks::SetMeshTexture,
@@ -261,7 +265,11 @@ public:
 		interpreter->RegisterCallback("CreatePhysicsMaterial", &ScriptCallbacks::CreatePhysicsMaterial,
 			"(elasticity,sfriction,kfriction,softness) Creates a physics material");
 		interpreter->RegisterCallback("CreatePhysicsCuboid", &ScriptCallbacks::CreatePhysicsCuboid,
-			"(w,h,d,kinematic) Creates a physics cubiod with the given dimenstions and control method");
+			"(w,h,d,kinematic) Creates a physics cuboid with the given dimenstions and control method");
+		interpreter->RegisterCallback("CreatePhysicsSphere", &ScriptCallbacks::CreatePhysicsSphere,
+			"(r,kinematic) Creates a physics sphere with the given radius and control method");
+		interpreter->RegisterCallback("CreatePhysicsCapsule", &ScriptCallbacks::CreatePhysicsCapsule,
+			"(r,l,kinematic) Creates a physics capsule with the given radius/length and control method");
 		interpreter->RegisterCallback("CreatePhysicsMesh", &ScriptCallbacks::CreatePhysicsMesh,
 			"(type,vtx,idx) Creates a physics mesh from the given vertex type, vertex and index buffers");
 		interpreter->RegisterCallback("CreatePhysicsHeightmap", &ScriptCallbacks::CreatePhysicsHeightmap,
@@ -288,6 +296,17 @@ public:
 		//	"(object) Gets the x,y,z rotation of the physics object");
 		interpreter->RegisterCallback("SyncPhysicsMatrix", &ScriptCallbacks::SyncPhysicsMatrix,
 			"(object,model) Updates the given GpuComplexModel with the given PhysicsObject matrix");
+
+		interpreter->RegisterCallback("CreatePhysicsRagdoll", &ScriptCallbacks::CreatePhysicsRagdoll,
+			"(world) Creates a physical ragdoll in the given physics world");
+		interpreter->RegisterCallback("AddPhysicsRagdollBone", &ScriptCallbacks::AddPhysicsRagdollBone,
+			"(ragdoll,object,index) Adds a physics object to the ragdoll as a bone");
+		interpreter->RegisterCallback("GetPhysicsRagdollBone", &ScriptCallbacks::GetPhysicsRagdollBone,
+			"(ragdoll,index) Gets a specific bone physics object from the physics ragdoll");
+		//interpreter->RegisterCallback("FinalizePhysicsRagdoll", &ScriptCallbacks::FinalizePhysicsRagdoll,
+		//	"(ragdoll) Performs final measurements and transformations of a physics ragdoll");
+		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
+			"(object) Returns a debug model for the given physics object");
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -305,6 +324,7 @@ public:
 	static void CreateGrid(ScriptInterpreter*);
 	static void CreateCube(ScriptInterpreter*);
 	static void CreateSphere(ScriptInterpreter*);
+	static void CreateCapsule(ScriptInterpreter*);
 
 	static void SetModelPosition(ScriptInterpreter*);
 	static void SetModelRotation(ScriptInterpreter*);
@@ -322,6 +342,7 @@ public:
 	static void SetLightAttenuation(ScriptInterpreter*);
 
 	static void SetMeshPosition(ScriptInterpreter*);
+	static void SetMeshRotation(ScriptInterpreter*);
 	static void SetMeshTexture(ScriptInterpreter*);
 	static void SetMeshNormal(ScriptInterpreter*);
 	static void SetMeshCubeMap(ScriptInterpreter*);
@@ -413,6 +434,7 @@ public:
 	static void CreatePhysicsMaterial(ScriptInterpreter*);
 	static void CreatePhysicsCuboid(ScriptInterpreter*);
 	static void CreatePhysicsSphere(ScriptInterpreter*);
+	static void CreatePhysicsCapsule(ScriptInterpreter*);
 	static void CreatePhysicsMesh(ScriptInterpreter*);
 	static void CreatePhysicsHeightmap(ScriptInterpreter*);
 	static void AddToPhysicsWorld(ScriptInterpreter*);
@@ -425,6 +447,12 @@ public:
 	static void GetPhysicsPosition(ScriptInterpreter*);
 	//static void GetPhysicsRotation(ScriptInterpreter*);
 	static void SyncPhysicsMatrix(ScriptInterpreter*);
+
+	static void CreatePhysicsRagdoll(ScriptInterpreter*);
+	static void AddPhysicsRagdollBone(ScriptInterpreter*);
+	static void GetPhysicsRagdollBone(ScriptInterpreter*);
+	//static void FinalizePhysicsRagdoll(ScriptInterpreter*);
+	static void GetPhysicsDebugModel(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity

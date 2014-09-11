@@ -34,9 +34,18 @@ struct LocalMesh
 
 	Gpu::Mesh * ToGpuMesh(Gpu::Api * gpu, bool dynamic = false, bool bind = false)
 	{
-		if(!(gpu && vertexBuffer && indexBuffer)) return 0;
+		if(!gpu || !vertexBuffer) return 0;
 
-		Gpu::Mesh * createdMesh = gpu->CreateGpuMesh(vertexBuffer, numTriangles, indexBuffer, dynamic);
+		Gpu::Mesh * createdMesh;
+		if(indexBuffer)
+		{
+			createdMesh = gpu->CreateGpuMesh(vertexBuffer, numTriangles, indexBuffer, dynamic);
+		}
+		else
+		{
+			createdMesh = gpu->CreateGpuMesh(vertexBuffer, dynamic);
+		}
+
 		if(bind) boundDynamicMesh = createdMesh;
 		return createdMesh;
 	}
@@ -56,6 +65,8 @@ struct LocalMesh
 			gpu->UpdateDynamicMesh(boundDynamicMesh, numTriangles, indexBuffer);
 		}
 	}
+
+	LocalMesh * CombineWith(LocalMesh * other);
 };
 
 class GeoBuilder
@@ -75,11 +86,26 @@ class GeoBuilder
 		}
 	};
 
+	IVertexBuffer * BuildVertexBufferHemisphere(
+		const float radius, const unsigned sectors, const unsigned stacks);
+	unsigned * BuildIndexBufferHemisphere(
+		const unsigned sectors, const unsigned stacks, unsigned& numTriangles);
+
+	IVertexBuffer * BuildVertexBufferDisc(
+		const float radius, const unsigned sectors);
+	unsigned * BuildIndexBufferDisc(
+		const unsigned sectors, unsigned& numTriangles);
+
+	IVertexBuffer * BuildVertexBufferTube(
+		const float height, const float radius, const unsigned sectors, const unsigned stacks);
+	unsigned * BuildIndexBufferTube(
+		const unsigned sectors, const unsigned stacks, unsigned& numTriangles);
+
 	IVertexBuffer* BuildVertexBufferCylinder(
 		const float height, const float radius, const unsigned sectors,
 		const unsigned stacks, bool texCoords = false, const bool sphere = false);
 	unsigned* BuildIndexBufferCylinder(
-		const unsigned sectors, const unsigned stacks, unsigned& length);
+		const unsigned sectors, const unsigned stacks, unsigned& numTriangles);
 
 	void GenerateSortedIndices(Path & path, std::vector<unsigned> & sortedIndices);
 	void FixPathCrossover(double crossX, double crossY, unsigned edge1, unsigned edge2, Path & path);
@@ -135,6 +161,7 @@ public:
 	LocalMesh * BuildSkyCube();
 	LocalMesh * BuildCylinder(float radius, float length, unsigned sectors, unsigned stacks, bool texCoords = false);
 	LocalMesh * BuildSphere(float radius, unsigned sectors, unsigned stacks, bool texCoords = false);
+	LocalMesh * BuildCapsule(float radius, float length, unsigned sectors, unsigned stacks);
 	LocalMesh * BuildGrid(float width, float depth, unsigned columns, unsigned rows, Gpu::Rect* textureRect = 0, bool tangents = false);
 
 	void GenerateNormals(IVertexBuffer * buffer, unsigned numTriangles, unsigned * indexData);

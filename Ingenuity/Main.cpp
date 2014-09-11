@@ -48,6 +48,9 @@ class Engine : public RealtimeApp
 	std::wstring projectDirectory;
 	std::wstring scriptPath;
 
+	//ScriptParam updateFunction;
+	//ScriptParam drawFunction;
+
 	struct ScriptResponse : public Files::Response
 	{
 		Engine * parent;

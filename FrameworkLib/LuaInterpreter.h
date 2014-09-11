@@ -35,6 +35,8 @@ public:
 
 	virtual bool HasFunction(const char * name) override;
 
+	//virtual ScriptParam GetGlobal(const char * globalName) override;
+
 	virtual void CallFunction(ScriptParam function) override;
 
 	virtual void RegisterCallback(ScriptCallback & callbacks) override;

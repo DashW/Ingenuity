@@ -32,7 +32,8 @@ struct ScriptPtrType
 		SVGParser,
 		PhysicsWorld,
 		PhysicsObject,
-		PhysicsMaterial
+		PhysicsMaterial,
+		PhysicsRagdoll
 	};
 };
 

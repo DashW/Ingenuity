@@ -220,6 +220,12 @@ bool LuaInterpreter::HasFunction(const char * name)
 	return hasFunction;
 }
 
+//ScriptParam LuaInterpreter::GetGlobal(const char * globalName)
+//{
+//	lua_getglobal(state, globalName);
+//	return PopLuaParam();
+//}
+
 void LuaInterpreter::FunctionCalled(const char * function)
 {
 	// Clear all the temp tables

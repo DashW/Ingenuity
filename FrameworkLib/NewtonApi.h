@@ -12,6 +12,8 @@ class NewtonBody;
 class NewtonJoint;
 class NewtonMaterial;
 
+class RagDollManager;
+
 namespace Ingenuity {
 
 struct NewtonPhysicsWorld : public PhysicsWorld
@@ -35,6 +37,7 @@ struct NewtonPhysicsSpec
 	{
 		Cuboid,
 		Sphere,
+		Capsule,
 		Mesh,
 		Heightmap
 	};
@@ -55,6 +58,12 @@ struct NewtonPhysicsSphereSpec : public NewtonPhysicsSpec
 {
 	virtual Type GetType() override { return Sphere; }
 	float radius = 0.0f;
+};
+struct NewtonPhysicsCapsuleSpec : public NewtonPhysicsSpec
+{
+	virtual Type GetType() override { return Capsule; }
+	float radius = 0.0f;
+	float length = 0.0f;
 };
 struct NewtonPhysicsMeshSpec : public NewtonPhysicsSpec
 {
@@ -88,6 +97,14 @@ struct NewtonPhysicsObject : public PhysicsObject
 	void RemoveFromWorld();
 };
 
+struct NewtonPhysicsRagdoll : public PhysicsRagdoll
+{
+	RagDollManager * manager;
+
+	NewtonPhysicsRagdoll() : manager(0) {}
+	virtual ~NewtonPhysicsRagdoll();
+};
+
 class NewtonApi : public PhysicsApi
 {
 	float physicsTime;
@@ -101,15 +118,17 @@ class NewtonApi : public PhysicsApi
 	MaterialPairBank materialPairBank;
 
 	static void SetTransformCallback(const NewtonBody * const body, const float * const matrix, int threadIndex);
-	static void ApplyForceAndTorqueCallback(const NewtonBody * body, float timestep, int threadIndex);
 	static int AABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const NewtonBody* const body1, int threadIndex);
 	//static int CompoundAABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const void* const collsionNode0, const NewtonBody* const body1, const void* const collsionNode1, int threadIndex);
 	static void ContactCollisionCallback(const NewtonJoint* contactJoint, float timestep, int threadIndex);
+	static void DebugPolygonCallback(void* userData, int vertexCount, const float* faceVertec, int id);
 	
 	//int GetNewtonMaterialID(NewtonWorld * newtonWorld, PhysicsMaterial * material);
 	static void ApplyMassMatrix(NewtonPhysicsObject * physicsObject);
 	 
 public:
+	static void ApplyForceAndTorqueCallback(const NewtonBody * body, float timestep, int threadIndex);
+
 	NewtonApi();
 	virtual ~NewtonApi();
 
@@ -121,22 +140,31 @@ public:
 
 	virtual PhysicsObject * CreateCuboid(glm::vec3 size, bool kinematic = false) override;
 	virtual PhysicsObject * CreateSphere(float radius, bool kinematic = false) override;
+	virtual PhysicsObject * CreateCapsule(float radius, float length, bool kinematic = false) override;
 	virtual PhysicsObject * CreateMesh(LocalMesh * mesh, bool kinematic = false, bool deleteLocal = false) override;
 	virtual PhysicsObject * CreateHeightmap(HeightParser * parser) override;
+	virtual PhysicsRagdoll * CreateRagdoll(PhysicsWorld * world) override;
 
 	virtual void AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool isStatic = false) override;
 	virtual void RemoveFromWorld(PhysicsWorld * world, PhysicsObject * object) override;
 	virtual void UpdateWorld(PhysicsWorld * world, float deltaTime) override;
 
+	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, unsigned boneIndex) override;
+
 	virtual glm::vec3 GetPosition(PhysicsObject * object) override;
 	//virtual glm::vec3 GetRotation(PhysicsObject * object) override;
 	virtual glm::mat4 GetMatrix(PhysicsObject * object) override;
+	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) override;
 	
+	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) override;
+	virtual void SetLocalRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) override;
 	virtual void SetRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetScale(PhysicsObject * object, glm::vec3 scale) override;
 	virtual void SetMass(PhysicsObject * object, float mass) override;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) override;
+
+	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) override;
 };
 
 } // namespace Ingenuity

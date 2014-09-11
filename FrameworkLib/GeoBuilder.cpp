@@ -15,6 +15,218 @@ Path * GeoBuilder::staticPath = 0;
 std::vector<unsigned> * GeoBuilder::staticMonotone = 0;
 const double GeoBuilder::crossoverFixingOffset = 0.01f;
 
+LocalMesh * LocalMesh::CombineWith(LocalMesh * other)
+{
+	if(other->vertexBuffer->GetVertexType() != vertexBuffer->GetVertexType()) return 0;
+
+	// Create the new vertex and index buffers
+
+	const unsigned newTriangleCount = numTriangles + other->numTriangles;
+	unsigned * newIndexBuffer = new unsigned[newTriangleCount * 3];
+	IVertexBuffer * newVertexBuffer;
+	switch(vertexBuffer->GetVertexType())
+	{
+	case VertexType_Pos:
+		newVertexBuffer = new VertexBuffer<Vertex_Pos>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	case VertexType_PosCol:
+		newVertexBuffer = new VertexBuffer<Vertex_PosCol>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	case VertexType_PosNor:
+		newVertexBuffer = new VertexBuffer<Vertex_PosNor>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	case VertexType_PosTex:
+		newVertexBuffer = new VertexBuffer<Vertex_PosTex>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	case VertexType_PosNorTex:
+		newVertexBuffer = new VertexBuffer<Vertex_PosNorTex>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	case VertexType_PosNorTanTex:
+		newVertexBuffer = new VertexBuffer<Vertex_PosNorTanTex>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
+		break;
+	}
+
+	// Copy the vertex buffers
+
+	char * newData = (char*) newVertexBuffer->GetData();
+	const unsigned myDataLength = vertexBuffer->GetElementSize() * vertexBuffer->GetLength();
+	const unsigned otherDataLength = other->vertexBuffer->GetElementSize() * other->vertexBuffer->GetLength();
+
+	memcpy(newData, vertexBuffer->GetData(), myDataLength);
+	memcpy(newData + myDataLength, other->vertexBuffer->GetData(), otherDataLength);
+
+	// Copy the index buffers
+
+	const unsigned indexCount = (numTriangles * 3);
+	const unsigned otherIndexCount = (other->numTriangles * 3);
+	memcpy(newIndexBuffer, indexBuffer, indexCount * sizeof(unsigned));
+	memcpy(newIndexBuffer + indexCount, other->indexBuffer, otherIndexCount * sizeof(unsigned));
+
+	// Correct the second set of indices
+
+	for(unsigned i = 0; i < otherIndexCount; ++i)
+	{
+		newIndexBuffer[indexCount + i] += vertexBuffer->GetLength();
+	}
+
+	return new LocalMesh(newVertexBuffer, newIndexBuffer, newTriangleCount * 3);
+}
+
+IVertexBuffer * GeoBuilder::BuildVertexBufferHemisphere(
+	const float radius, const unsigned sectors, const unsigned stacks)
+{
+	unsigned numVertices = ((sectors + 1) * (stacks + 1)) + 1;
+	VertexBuffer<Vertex_PosNor> * b = new VertexBuffer<Vertex_PosNor>(numVertices);
+	b->Set(0, Vertex_PosNor(-0.0f, -0.0f, -radius, -0.0f, -0.0f, -1.0f));
+
+	for(unsigned i = 0; i < (stacks + 1); i++)
+	{
+		float stackAngle = (float(M_PI_2) / float(stacks + 1));
+		const float depth = -cosf(stackAngle * float(i + 1)) * radius;
+		float stackRadius = sqrtf((radius*radius) - (depth*depth));
+		float sectorAngle = float(M_PI * 2.0) / float(sectors);
+
+		for(unsigned j = 0; j < (sectors + 1); j++)
+		{
+			float x = sinf(sectorAngle * float(j)) * stackRadius;
+			float y = cosf(sectorAngle * float(j)) * stackRadius;
+			float normalx = x / radius;
+			float normaly = y / radius;
+			float normalz = depth / radius;
+			unsigned index = ((sectors + 1) * i) + j + 1;
+
+			b->Set(index, Vertex_PosNor(x, y, depth, normalx, normaly, normalz));
+		}
+	}
+	return b;
+}
+
+unsigned * GeoBuilder::BuildIndexBufferHemisphere(
+	const unsigned sectors, const unsigned stacks, unsigned& numTriangles)
+{
+	numTriangles = sectors * ((stacks * 2) + 1);
+	unsigned numVertices = ((sectors + 1) * (stacks + 1)) + 1;
+
+	unsigned* k = new unsigned[numTriangles * 3];
+	int index = 0;
+
+	for(unsigned i = 0; i < sectors; i++)
+	{
+		// Bottom
+		k[index++] = 0;
+		k[index++] = i + 1;
+		k[index++] = ((i + 1)) + 1;
+
+		// Quads
+		for(unsigned j = 0; j < stacks; j++)
+		{
+			k[index++] = (i + 1) + j * (sectors + 1);               //TOPLEFT
+			k[index++] = (i + 1) + (j + 1) * (sectors + 1);           //BOTTOMLEFT
+			k[index++] = ((i + 1)) + 1 + (j * (sectors + 1));		//TOPRIGHT
+
+			k[index++] = ((i + 1)) + 1 + (j * (sectors + 1));		//TOPRIGHT
+			k[index++] = (i + 1) + ((j + 1) * (sectors + 1));         //BOTTOMLEFT
+			k[index++] = ((i + 1)) + 1 + ((j + 1) * (sectors + 1));	//BOTTOMRIGHT
+		}
+	}
+
+	return k;
+}
+
+IVertexBuffer * GeoBuilder::BuildVertexBufferDisc(
+	const float radius, const unsigned sectors)
+{
+	unsigned numVertices = sectors + 1;
+	VertexBuffer<Vertex_PosNor> * b = new VertexBuffer<Vertex_PosNor>(numVertices);
+	b->Set(0, Vertex_PosNor(-0.0f, -0.0f, -0.0f, -0.0f, -0.0f, -1.0f));
+
+	const float depth = 0.0f;
+	const float sectorAngle = float(M_PI * 2.0) / float(sectors);
+
+	for(unsigned j = 0; j < sectors; j++)
+	{
+		float x = sinf(sectorAngle * float(j)) * radius;
+		float y = cosf(sectorAngle * float(j)) * radius;
+		float normalx = 0.0f;
+		float normaly = 0.0f;
+		float normalz = -1.0f;
+		unsigned index = j + 1;
+		b->Set(index, Vertex_PosNor(x, y, depth, normalx, normaly, normalz));
+	}
+	return b;
+}
+
+unsigned * GeoBuilder::BuildIndexBufferDisc(
+	const unsigned sectors, unsigned& numTriangles)
+{
+	numTriangles = sectors;
+
+	unsigned* k = new unsigned[numTriangles * 3];
+	int index = 0;
+
+	for(unsigned i = 0; i < sectors; i++)
+	{
+		k[index++] = 0;
+		k[index++] = i + 1;
+		k[index++] = ((i + 1) % sectors) + 1;
+	}
+
+	return k;
+}
+
+IVertexBuffer * GeoBuilder::BuildVertexBufferTube(
+	const float height, const float radius, const unsigned sectors, const unsigned stacks)
+{
+	unsigned numVertices = (sectors + 1) * (stacks + 1);
+	VertexBuffer<Vertex_PosNor> * b = 0;
+	VertexBuffer<Vertex_PosNorTex> * bTex = 0;
+	b = new VertexBuffer<Vertex_PosNor>(numVertices);
+
+	for(unsigned i = 0; i < (stacks + 1); i++)
+	{
+		const float depth = ((-1.0f + ((2.0f / (stacks)) * i)) * (height / 2.0f));
+
+		for(unsigned j = 0; j < (sectors + 1); j++)
+		{
+			float x = sin((2 * float(M_PI) / (sectors)) * j) * radius;
+			float y = cos((2 * float(M_PI) / (sectors)) * j) * radius;
+			float normalx = x / radius;
+			float normaly = y / radius;
+			float normalz = 0.0f;
+			unsigned index = ((sectors + 1) * i) + j;
+			b->Set(index, Vertex_PosNor(x, y, depth, normalx, normaly, normalz));
+		}
+	}
+	return b;
+}
+
+unsigned * GeoBuilder::BuildIndexBufferTube(
+	const unsigned sectors, const unsigned stacks, unsigned& numTriangles)
+{
+	numTriangles = sectors * stacks * 2;
+	unsigned numVertices = (sectors + 1) * (stacks + 1);
+
+	unsigned* k = new unsigned[numTriangles * 3];
+	int index = 0;
+
+	for(unsigned i = 0; i < sectors; i++)
+	{
+		// Quads
+		for(unsigned j = 0; j < stacks; j++)
+		{
+			k[index++] = i + (j * (sectors + 1));               //TOPLEFT
+			k[index++] = i + ((j + 1) * (sectors + 1));         //BOTTOMLEFT
+			k[index++] = i + 1 + (j * (sectors + 1));		    //TOPRIGHT
+
+			k[index++] = i + 1 + (j * (sectors + 1));		    //TOPRIGHT
+			k[index++] = i + ((j + 1) * (sectors + 1));         //BOTTOMLEFT
+			k[index++] = i + 1 + ((j + 1) * (sectors + 1));	    //BOTTOMRIGHT
+		}
+	}
+
+	return k;
+}
+
 IVertexBuffer * GeoBuilder::BuildVertexBufferCylinder(
 		const float height, const float radius, const unsigned sectors, 
 		const unsigned stacks, bool texCoords, const bool sphere)
@@ -40,11 +252,15 @@ IVertexBuffer * GeoBuilder::BuildVertexBufferCylinder(
 		const float depth = ((-1.0f + 
 			(sphere ? (2.0f / (stacks + 2)) * (i + 1) : (2.0f / (stacks)) * i)) 
 			* (height/2.0f));
+
+		// Depth needs to be special for capsules! Stacks no longer mean the same as they mean for cylinders
+
 		float stackRadius;
 		if(sphere)
-			stackRadius = sqrtf( powf(radius,2.0f) - powf(depth,2.0f) );
+			stackRadius = sqrtf( (radius*radius) - (depth*depth) );
 		else
 			stackRadius = radius;
+
 		for(unsigned j = 0; j < (sectors+1); j++)
 		{
 			float x = sin((2 * float(M_PI) / (sectors)) * j) * stackRadius;
@@ -52,14 +268,16 @@ IVertexBuffer * GeoBuilder::BuildVertexBufferCylinder(
 			float normalx = x/radius;
 			float normaly = y/radius;
 			float normalz = sphere ? depth/radius : 0.0f;
+			unsigned index = ((sectors + 1) * i) + j + 1;
 			if(texCoords)
 			{
-				bTex->Set(((sectors+1) * i) + j + 1, Vertex_PosNorTex(x, y, depth, normalx, normaly, normalz, 
-					((float)j)/((float)(sectors)), ((float)i)/((float)stacks)));
+				float texU = float(j) / float(sectors);
+				float texV = float(i) / float(stacks);
+				bTex->Set(index, Vertex_PosNorTex(x, y, depth, normalx, normaly, normalz, texU, texV));
 			}
 			else
 			{
-				b->Set(((sectors+1) * i) + j + 1, Vertex_PosNor(x, y, depth, normalx, normaly, normalz));
+				b->Set(index, Vertex_PosNor(x, y, depth, normalx, normaly, normalz));
 			}
 		}
 	}
@@ -963,18 +1181,88 @@ LocalMesh * GeoBuilder::BuildSkyCube()
 
 LocalMesh * GeoBuilder::BuildCylinder(float radius, float length, unsigned sectors, unsigned stacks, bool texCoords)
 {
-	LocalMesh * cylinder = new LocalMesh();
-	cylinder->vertexBuffer = BuildVertexBufferCylinder(length, radius, sectors, stacks, texCoords, false);
-	cylinder->indexBuffer  = BuildIndexBufferCylinder(sectors, stacks, cylinder->numTriangles);
+	LocalMesh * tube = new LocalMesh();
+	tube->vertexBuffer = BuildVertexBufferTube(length, radius, sectors, stacks);
+	tube->indexBuffer = BuildIndexBufferTube(sectors, stacks, tube->numTriangles);
+
+	LocalMesh * cap = new LocalMesh();
+	cap->vertexBuffer = BuildVertexBufferDisc(radius, sectors);
+	cap->indexBuffer = BuildIndexBufferDisc(sectors, cap->numTriangles);
+
+	LocalMesh * cap2 = new LocalMesh();
+	cap2->vertexBuffer = BuildVertexBufferDisc(radius, sectors);
+	cap2->indexBuffer = BuildIndexBufferDisc(sectors, cap2->numTriangles);
+
+	glm::mat4 moveMatrix = glm::translate(glm::vec3(0.0f, 0.0f, length * -0.5f));
+	cap->vertexBuffer->Transform(moveMatrix);
+
+	moveMatrix = glm::translate(glm::vec3(0.0f, 0.0f, length * 0.5f)) * glm::eulerAngleY(float(M_PI));
+	cap2->vertexBuffer->Transform(moveMatrix);
+
+	LocalMesh * openTube = tube->CombineWith(cap);
+	LocalMesh * cylinder = openTube->CombineWith(cap2);
+	
+	delete tube;
+	delete cap;
+	delete cap2;
+	delete openTube;
+
 	return cylinder;
 }
 
 LocalMesh * GeoBuilder::BuildSphere(float radius, unsigned sectors, unsigned stacks, bool texCoords)
 {
-	LocalMesh * sphere = new LocalMesh();
-	sphere->vertexBuffer = BuildVertexBufferCylinder(radius * 2.0f, radius, sectors, stacks, texCoords, true);
-	sphere->indexBuffer  = BuildIndexBufferCylinder(sectors, stacks, sphere->numTriangles);
+	LocalMesh * hemi1 = new LocalMesh();
+	hemi1->vertexBuffer = BuildVertexBufferHemisphere(radius, sectors, stacks);
+	hemi1->indexBuffer = BuildIndexBufferHemisphere(sectors, stacks, hemi1->numTriangles);
+
+	LocalMesh * hemi2 = new LocalMesh();
+	hemi2->vertexBuffer = BuildVertexBufferHemisphere(radius, sectors, stacks);
+	hemi2->indexBuffer = BuildIndexBufferHemisphere(sectors, stacks, hemi2->numTriangles);
+
+	glm::mat4 moveMatrix = glm::eulerAngleY(float(M_PI));
+	hemi2->vertexBuffer->Transform(moveMatrix);
+
+	LocalMesh * sphere = hemi1->CombineWith(hemi2);
+
+	delete hemi1;
+	delete hemi2;
+
 	return sphere;
+}
+
+LocalMesh * GeoBuilder::BuildCapsule(float radius, float length, unsigned sectors, unsigned stacks)
+{
+	LocalMesh * tube = new LocalMesh();
+	tube->vertexBuffer = BuildVertexBufferTube(length, radius, sectors, stacks);
+	tube->indexBuffer = BuildIndexBufferTube(sectors, stacks, tube->numTriangles);
+
+	LocalMesh * cap = new LocalMesh();
+	cap->vertexBuffer = BuildVertexBufferHemisphere(radius, sectors, stacks);
+	cap->indexBuffer = BuildIndexBufferHemisphere(sectors, stacks, cap->numTriangles);
+
+	LocalMesh * cap2 = new LocalMesh();
+	cap2->vertexBuffer = BuildVertexBufferHemisphere(radius, sectors, stacks);
+	cap2->indexBuffer = BuildIndexBufferHemisphere(sectors, stacks, cap2->numTriangles);
+
+	glm::mat4 moveMatrix = glm::translate(glm::vec3(0.0f, 0.0f, length * -0.5f));
+	cap->vertexBuffer->Transform(moveMatrix);
+
+	moveMatrix = glm::translate(glm::vec3(0.0f, 0.0f, length * 0.5f)) * glm::eulerAngleY(float(M_PI));
+	cap2->vertexBuffer->Transform(moveMatrix);
+
+	LocalMesh * testTube = tube->CombineWith(cap);
+	LocalMesh * capsule = testTube->CombineWith(cap2);
+
+	delete tube;
+	delete cap;
+	delete cap2;
+	delete testTube;
+
+	moveMatrix = glm::eulerAngleY(float(M_PI / 2.0));
+	capsule->vertexBuffer->Transform(moveMatrix);
+
+	return capsule;
 }
 
 LocalMesh * GeoBuilder::BuildGrid(float width, float depth, unsigned columns, unsigned rows, Gpu::Rect* textureRect, bool tangents)

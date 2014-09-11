@@ -32,7 +32,9 @@ public:
 		font = gpu->CreateGpuFont(40,L"Arial");
 		//teapot = gpu->CreateTeapot();
 		//teapot->mesh = gpu->CreateCylinder(0.5f, 3.0f, 20, 20);
-		teapot->mesh = GeoBuilder().BuildCylinder(0.5f, 3.0f, 20, 20)->GpuOnly(gpu);
+		teapot->mesh = GeoBuilder().BuildCapsule(0.5f, 3.0f, 20, 20)->GpuOnly(gpu);
+		teapot->color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		//teapot->wireframe = true;
 		//teapot->rotationX = static_cast<float>(M_PI_2);
 		//teapot->positionX = 1.0f;
 		//teapot = gpu->CreateSphere(1.0f,20,20);

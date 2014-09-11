@@ -704,12 +704,24 @@ void ScriptCallbacks::CreateCube(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::CreateSphere(ScriptInterpreter * interpreter)
 {
-	LocalMesh * localSphere = GeoBuilder().BuildSphere(0.5f,50,50);
+	LocalMesh * localSphere = GeoBuilder().BuildSphere(0.5f, 20, 20);
 
 	interpreter->PushParam(VertexBufferToFloats(interpreter, localSphere->vertexBuffer));
 	interpreter->PushParam(IndexBufferToFloats(interpreter, localSphere->indexBuffer, localSphere->numTriangles));
 
 	delete localSphere;
+}
+
+void ScriptCallbacks::CreateCapsule(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1,length)
+
+	LocalMesh * localCapsule = GeoBuilder().BuildCapsule(0.5f, float(length.nvalue), 20, 20);
+
+	interpreter->PushParam(VertexBufferToFloats(interpreter, localCapsule->vertexBuffer));
+	interpreter->PushParam(IndexBufferToFloats(interpreter, localCapsule->indexBuffer, localCapsule->numTriangles));
+
+	delete localCapsule;
 }
 
 void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
@@ -1019,10 +1031,25 @@ void ScriptCallbacks::SetMeshPosition(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(3,x);
 	POP_NUMPARAM(4,y);
 	POP_NUMPARAM(5,z);
+	interpreter->ClearParams();
 
 	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
 	unsigned meshnumber = (unsigned) meshnum.nvalue;
 	gpuModel->models[meshnumber].position = glm::vec4(float(x.nvalue),float(y.nvalue),float(z.nvalue),0.0f);
+}
+
+void ScriptCallbacks::SetMeshRotation(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, model, GpuComplexModel);
+	POP_NUMPARAM(2, meshnum);
+	POP_NUMPARAM(3, x);
+	POP_NUMPARAM(4, y);
+	POP_NUMPARAM(5, z);
+	interpreter->ClearParams();
+
+	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
+	unsigned meshnumber = (unsigned)meshnum.nvalue;
+	gpuModel->models[meshnumber].rotation = glm::vec4(float(x.nvalue), float(y.nvalue), float(z.nvalue), 0.0f);
 }
 
 void ScriptCallbacks::SetMeshEffect(ScriptInterpreter * interpreter)
@@ -2599,6 +2626,17 @@ void ScriptCallbacks::CreatePhysicsSphere(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
 }
 
+void ScriptCallbacks::CreatePhysicsCapsule(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, r);
+	POP_NUMPARAM(2, l);
+	POP_NUMPARAM(3, kinematic);
+	
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateCapsule(float(r.nvalue), float(l.nvalue), kinematic.nvalue > 0.0);
+
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptPtrType::PhysicsObject));
+}
+
 void ScriptCallbacks::CreatePhysicsMesh(ScriptInterpreter * interpreter)
 {
 	POP_PARAM(1, type, STRING);
@@ -2763,6 +2801,68 @@ void ScriptCallbacks::SyncPhysicsMatrix(ScriptInterpreter * interpreter)
 	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
 	const glm::mat4 matrix = interpreter->GetApp()->physics->GetMatrix(physicsObject);
 	gpuModel->models[0].SetMatrix(matrix);
+}
+
+void ScriptCallbacks::CreatePhysicsRagdoll(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, PhysicsWorld);
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = static_cast<PhysicsWorld*>(world.pvalue->ptr);
+	PhysicsRagdoll * physicsRagdoll = interpreter->GetApp()->physics->CreateRagdoll(physicsWorld);
+
+	interpreter->PushParam(ScriptParam(physicsRagdoll, ScriptPtrType::PhysicsRagdoll));
+}
+
+void ScriptCallbacks::AddPhysicsRagdollBone(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
+	POP_PTRPARAM(2, object, PhysicsObject);
+	POP_NUMPARAM(3, index);
+
+	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	
+	interpreter->GetApp()->physics->AddRagdollBone(physicsRagdoll, physicsObject, unsigned(index.nvalue));
+}
+
+void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
+	POP_NUMPARAM(2, index);
+	interpreter->ClearParams();
+
+	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->GetRagdollObject(physicsRagdoll, unsigned(index.nvalue));
+
+	if(physicsObject)
+	{
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, ScriptPtrType::PhysicsObject)));
+	}
+}
+
+//void ScriptCallbacks::FinalizePhysicsRagdoll(ScriptInterpreter * interpreter)
+//{
+//	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
+//
+//	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
+//
+//	interpreter->GetApp()->physics->FinalizeRagdoll(physicsRagdoll);
+//}
+
+void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+
+	LocalMesh * localMesh = interpreter->GetApp()->physics->GetDebugMesh(physicsObject);
+	
+	Gpu::ComplexModel * complexModel = new Gpu::ComplexModel(1);
+	complexModel->models[0].mesh = localMesh->GpuOnly(interpreter->GetApp()->gpu);
+	complexModel->models[0].destructMesh = true;
+
+	interpreter->PushParam(ScriptParam(complexModel, ScriptPtrType::GpuComplexModel));
 }
 
 } // namespace Ingenuity

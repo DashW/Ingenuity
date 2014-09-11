@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <hash_map>
-#include "../Third Party/glm-0.9.4.1/glm/ext.hpp"
+#include "../Third Party/glm-0.9.5.4/glm/ext.hpp"
 
 namespace Ingenuity {
 
