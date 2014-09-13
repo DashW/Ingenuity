@@ -281,9 +281,9 @@ public:
 		interpreter->RegisterCallback("UpdatePhysicsWorld", &ScriptCallbacks::UpdatePhysicsWorld,
 			"(world,delta) Updates the given physics world by the given time delta");
 		interpreter->RegisterCallback("SetPhysicsPosition", &ScriptCallbacks::SetPhysicsPosition,
-			"(object,x,y,z) Sets the position of the physics object");
+			"(object,x,y,z[,local]) Sets the [local] position of the physics object");
 		interpreter->RegisterCallback("SetPhysicsRotation", &ScriptCallbacks::SetPhysicsRotation,
-			"(object,x,y,z) Sets the rotation of the physics object");
+			"(object,x,y,z[,local]) Sets the [local] rotation of the physics object");
 		interpreter->RegisterCallback("SetPhysicsScale", &ScriptCallbacks::SetPhysicsScale,
 			"(object,x[,y,z]) Sets the scale of the physics object");
 		interpreter->RegisterCallback("SetPhysicsMass", &ScriptCallbacks::SetPhysicsMass,
@@ -303,8 +303,8 @@ public:
 			"(ragdoll,object,index) Adds a physics object to the ragdoll as a bone");
 		interpreter->RegisterCallback("GetPhysicsRagdollBone", &ScriptCallbacks::GetPhysicsRagdollBone,
 			"(ragdoll,index) Gets a specific bone physics object from the physics ragdoll");
-		//interpreter->RegisterCallback("FinalizePhysicsRagdoll", &ScriptCallbacks::FinalizePhysicsRagdoll,
-		//	"(ragdoll) Performs final measurements and transformations of a physics ragdoll");
+		interpreter->RegisterCallback("FinalizePhysicsRagdoll", &ScriptCallbacks::FinalizePhysicsRagdoll,
+			"(ragdoll) Performs final measurements and transformations of a physics ragdoll");
 		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
 			"(object) Returns a debug model for the given physics object");
 	}
@@ -451,7 +451,7 @@ public:
 	static void CreatePhysicsRagdoll(ScriptInterpreter*);
 	static void AddPhysicsRagdollBone(ScriptInterpreter*);
 	static void GetPhysicsRagdollBone(ScriptInterpreter*);
-	//static void FinalizePhysicsRagdoll(ScriptInterpreter*);
+	static void FinalizePhysicsRagdoll(ScriptInterpreter*);
 	static void GetPhysicsDebugModel(ScriptInterpreter*);
 };
 

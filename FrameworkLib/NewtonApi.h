@@ -149,7 +149,8 @@ public:
 	virtual void RemoveFromWorld(PhysicsWorld * world, PhysicsObject * object) override;
 	virtual void UpdateWorld(PhysicsWorld * world, float deltaTime) override;
 
-	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, unsigned boneIndex) override;
+	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot) override;
+	virtual void FinalizeRagdoll(PhysicsRagdoll * ragdoll) override;
 
 	virtual glm::vec3 GetPosition(PhysicsObject * object) override;
 	//virtual glm::vec3 GetRotation(PhysicsObject * object) override;

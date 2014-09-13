@@ -2698,13 +2698,20 @@ void ScriptCallbacks::SetPhysicsPosition(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(2, x);
 	POP_NUMPARAM(3, y);
 	POP_NUMPARAM(4, z);
-
+	ScriptParam local = interpreter->PopParam();
 	interpreter->ClearParams();
 
 	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
 	glm::vec3 position(float(x.nvalue), float(y.nvalue), float(z.nvalue));
 	
-	interpreter->GetApp()->physics->SetPosition(physicsObject, position);
+	if((local.IsNumber() || local.type == ScriptParam::BOOL) && local.nvalue > 0.0)
+	{
+		interpreter->GetApp()->physics->SetLocalPosition(physicsObject, position);
+	}
+	else
+	{
+		interpreter->GetApp()->physics->SetPosition(physicsObject, position);
+	}
 }
 
 void ScriptCallbacks::SetPhysicsRotation(ScriptInterpreter * interpreter)
@@ -2713,12 +2720,20 @@ void ScriptCallbacks::SetPhysicsRotation(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(2, x);
 	POP_NUMPARAM(3, y);
 	POP_NUMPARAM(4, z);
+	ScriptParam local = interpreter->PopParam();
 	interpreter->ClearParams();
 
 	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
 	glm::vec3 rotation(float(x.nvalue), float(y.nvalue), float(z.nvalue));
 
-	interpreter->GetApp()->physics->SetRotation(physicsObject, rotation);
+	if((local.IsNumber() || local.type == ScriptParam::BOOL) && local.nvalue > 0.0)
+	{
+		interpreter->GetApp()->physics->SetLocalRotation(physicsObject, rotation);
+	}
+	else
+	{
+		interpreter->GetApp()->physics->SetRotation(physicsObject, rotation);
+	}
 }
 
 void ScriptCallbacks::SetPhysicsScale(ScriptInterpreter * interpreter)
@@ -2818,12 +2833,25 @@ void ScriptCallbacks::AddPhysicsRagdollBone(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
 	POP_PTRPARAM(2, object, PhysicsObject);
-	POP_NUMPARAM(3, index);
+	POP_NUMPARAM(3, parent);
+	POP_NUMPARAM(4, cone);
+	POP_NUMPARAM(5, min);
+	POP_NUMPARAM(6, max);
+	POP_NUMPARAM(7, childRotX);
+	POP_NUMPARAM(8, childRotY);
+	POP_NUMPARAM(9, childRotZ);
+	POP_NUMPARAM(10, parenRotX);
+	POP_NUMPARAM(11, parenRotY);
+	POP_NUMPARAM(12, parenRotZ);
+	interpreter->ClearParams();
 
 	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
 	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
 	
-	interpreter->GetApp()->physics->AddRagdollBone(physicsRagdoll, physicsObject, unsigned(index.nvalue));
+	glm::vec3 joint(float(cone.nvalue), float(min.nvalue), float(max.nvalue));
+	glm::vec3 childRot(float(childRotX.nvalue), float(childRotY.nvalue), float(childRotZ.nvalue));
+	glm::vec3 parentRot(float(parenRotX.nvalue), float(parenRotY.nvalue), float(parenRotZ.nvalue));
+	interpreter->GetApp()->physics->AddRagdollBone(physicsRagdoll, physicsObject, int(parent.nvalue), joint, childRot, parentRot);
 }
 
 void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
@@ -2841,14 +2869,14 @@ void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
 	}
 }
 
-//void ScriptCallbacks::FinalizePhysicsRagdoll(ScriptInterpreter * interpreter)
-//{
-//	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
-//
-//	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
-//
-//	interpreter->GetApp()->physics->FinalizeRagdoll(physicsRagdoll);
-//}
+void ScriptCallbacks::FinalizePhysicsRagdoll(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, ragdoll, PhysicsRagdoll);
+
+	PhysicsRagdoll * physicsRagdoll = static_cast<PhysicsRagdoll*>(ragdoll.pvalue->ptr);
+
+	interpreter->GetApp()->physics->FinalizeRagdoll(physicsRagdoll);
+}
 
 void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 {

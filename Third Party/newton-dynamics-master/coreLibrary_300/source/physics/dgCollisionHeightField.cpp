@@ -28,7 +28,7 @@
 #define DG_HIGHTFILD_DATA_ID 0x45AF5E07
 
 dgVector dgCollisionHeightField::m_yMask (0xffffffff, 0, 0xffffffff, 0);
-dgVector dgCollisionHeightField::m_padding (dgFloat32 (1.0e-3f), dgFloat32 (1.0e-3f), dgFloat32 (1.0e-3f), dgFloat32 (0.0f));
+dgVector dgCollisionHeightField::m_padding (dgFloat32 (0.25f), dgFloat32 (0.25f), dgFloat32 (0.25f), dgFloat32 (0.0f));
 
 dgInt32 dgCollisionHeightField::m_cellIndices[][4] =
 {
@@ -845,6 +845,11 @@ void dgCollisionHeightField::GetCollidingFaces (dgPolygonMeshDesc* const data) c
 
 	// the user data is the pointer to the collision geometry
 	CalculateMinExtend3d (data->m_p0, data->m_p1, boxP0, boxP1);
+	boxP0 += data->m_boxDistanceTravelInMeshSpace & (data->m_boxDistanceTravelInMeshSpace < dgVector (dgFloat32 (0.0f)));  
+	boxP1 += data->m_boxDistanceTravelInMeshSpace & (data->m_boxDistanceTravelInMeshSpace > dgVector (dgFloat32 (0.0f)));  
+
+	boxP0 = (boxP0.GetMax(dgVector (dgFloat32 (0.0f))) & m_yMask) + boxP0.AndNot(m_yMask);
+	boxP1 = (boxP1.GetMax(dgVector (dgFloat32 (0.0f))) & m_yMask) + boxP1.AndNot(m_yMask);
 
 	dgVector p0 (boxP0.Scale4(m_horizontalScaleInv).GetInt());
 	dgVector p1 (boxP1.Scale4(m_horizontalScaleInv).GetInt());

@@ -61,6 +61,10 @@ unsigned64 dGetTimeInMicroseconds()
 #endif
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// NEWTON EXAMPLE DATA - REMOVE WHEN CONFIDENT THAT EXTERNAL API IS WORKING //
+//////////////////////////////////////////////////////////////////////////////
+
 struct RAGDOLL_BONE_DEFINITION
 {
 	char m_boneName[32];
@@ -104,147 +108,146 @@ struct RAGDOLL_BONE_DEFINITION
 	dFloat m_rotation_z;
 };
 
-
 static RAGDOLL_BONE_DEFINITION skeletonRagDoll[] =
 {
-	{ "Bip01_Pelvis", "capsule", -1, 
-	0.0f, 0.0f, -90.0f, 
-	0.0f, 0.0f, 0.01f, 
-	0.07f, 0.16f, 30.0f, 
-	0.0f, -0.0f, 0.0f, 
-	0.0f, 0.0f, 0.0f, 
+	{ "Bip01_Pelvis", "capsule", -1,
+	0.0f, 0.0f, -90.0f,
+	0.0f, 0.0f, 0.01f,
+	0.07f, 0.16f, 30.0f,
+	0.0f, -0.0f, 0.0f,
+	0.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 0.0f,
 	-0.02f, 0.89f, 0.0f,
 	1.57f, 0.0f, 3.14f },
 	// -- transform position="-0.020121 0.887429 0.000003 1.000000" eulerAngles="1.570796 -0.000001 3.141593 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_Spine", "capsule", 0, 
-	0.0f, 0.0f, -90.0f, 
-	0.0f, 0.0f, 0.06f, 
-	0.07f, 0.14f, 20.0f, 
-	30.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_Spine", "capsule", 0,
+	0.0f, 0.0f, -90.0f,
+	0.0f, 0.0f, 0.06f,
+	0.07f, 0.14f, 20.0f,
+	30.0f, -30.0f, 30.0f,
+	0.0f, -90.0f, 0.0f,
 	0.0f, -90.0f, 0.0f,
 	0.0f, 0.0f, 0.1f,
 	0.0f, 0.0f, 0.0f },
 	// transform position="-0.000110 0.000000 0.091558 1.000000" eulerAngles="-0.000000 0.000796 0.000073 0.000000" localScale="1.000001 1.320000 1.000000 1.000000"
 
-	{ "Bip01_Spine1", "capsule", 1, 
-	0.0f, 0.0f, -90.0f, 
-	0.0f, 0.0f, 0.06f, 
-	0.07f, 0.12f, 20.0f, 
-	30.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_Spine1", "capsule", 1,
+	0.0f, 0.0f, -90.0f,
+	0.0f, 0.0f, 0.06f,
+	0.07f, 0.12f, 20.0f,
+	30.0f, -30.0f, 30.0f,
 	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.14f, 
+	0.0f, -90.0f, 0.0f,
+	0.0f, 0.0f, 0.14f,
 	0.0f, 0.0f, 0.0f },
 	// transform position="-0.000110 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	
-	{ "Bip01_Spine2", "capsule", 2, 
-	0.0f, 0.0f, -90.0f, 
-	0.0f, 0.0f, 0.06f, 
-	0.07f, 0.08f, 20.0f, 
-	30.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+
+	{ "Bip01_Spine2", "capsule", 2,
+	0.0f, 0.0f, -90.0f,
+	0.0f, 0.0f, 0.06f,
+	0.07f, 0.08f, 20.0f,
+	30.0f, -30.0f, 30.0f,
+	0.0f, -90.0f, 0.0f,
 	0.0f, -90.0f, 0.0f,
 	0.0f, 0.0f, 0.14f,
 	0.0f, 0.0f, 0.0f },
 	// transform position="-0.000110 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_L_Thigh", "capsule", 0, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.19f, 
-	0.05f, 0.34f, 10.0f, 
-	80.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_L_Thigh", "capsule", 0,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.19f,
+	0.05f, 0.34f, 10.0f,
+	80.0f, -30.0f, 30.0f,
+	0.0f, -90.0f, 0.0f,
 	90.0f, -30.0f, -90.0f,
-	0.0f, 0.1f, 0.0f, 
+	0.0f, 0.1f, 0.0f,
 	3.14f, -0.1f, 0.0f },
 	// transform position="-0.000007 0.105093 0.000000 1.000000" eulerAngles="3.141591 -0.100000 0.000076 0.000000" localScale="1.000000 1.320000 1.000000 1.000000"
-	
-	{ "Bip01_L_Calf", "capsule", 4, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.19f, 
+
+	{ "Bip01_L_Calf", "capsule", 4,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.19f,
 	0.05f, 0.34f, 5.0f,
-	0.0f, -150.0f, 0.0f, 
-	0.0f, 0.0f, -90.0f, 
+	0.0f, -150.0f, 0.0f,
+	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, 0.4f,
 	0.0f, -0.2f, 0.0f },
 	// transform position="0.000000 0.000000 0.398078 1.000000" eulerAngles="-0.000000 -0.200000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	
-	{ "Bip01_L_Foot", "capsule", 5, 
-	90.0f, 00.0f, 0.0f, 
-	0.05f, 0.00f, 0.05f, 
-	0.05f, 0.13f, 3.0f, 
-	0.0f, -45.0f, 45.0f, 
-	0.0f, 0.0f, -90.0f, 
+
+	{ "Bip01_L_Foot", "capsule", 5,
+	90.0f, 00.0f, 0.0f,
+	0.05f, 0.00f, 0.05f,
+	0.05f, 0.13f, 3.0f,
+	0.0f, -45.0f, 45.0f,
+	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, 0.4f,
 	0.0f, 0.1f, 0.0f },
 	// transform position="-0.000000 -0.000000 0.398078 1.000000" eulerAngles="-0.000000 0.100000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_R_Thigh", "capsule", 0, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.19f, 
-	0.05f, 0.34f, 10.0f, 
-	80.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_R_Thigh", "capsule", 0,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.19f,
+	0.05f, 0.34f, 10.0f,
+	80.0f, -30.0f, 30.0f,
+	0.0f, -90.0f, 0.0f,
 	90.0f, -30.0f, 90.0f,
 	0.0f, -0.1f, 0.0f,
 	3.14f, -0.1f, 0.0f },
 	// transform position="0.000007 -0.105093 0.000000 1.000000" eulerAngles="3.141591 -0.100000 0.000076 0.000000" localScale="1.000000 1.320000 1.000000 1.000000"
-	
-	{ "Bip01_R_Calf", "capsule", 7, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.19f, 
-	0.05f, 0.34f, 5.0f, 
-	0.0f, 0.0f, 150.0f, 
-	0.0f, 0.0f, 90.0f, 
+
+	{ "Bip01_R_Calf", "capsule", 7,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.19f,
+	0.05f, 0.34f, 5.0f,
+	0.0f, 0.0f, 150.0f,
 	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.4f, 
+	0.0f, 0.0f, 90.0f,
+	0.0f, 0.0f, 0.4f,
 	0.0f, -0.2f, 0.0f },
 	// transform position="0.000000 0.000000 0.398078 1.000000" eulerAngles="-0.000000 -0.200000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	
+
 	{ "Bip01_R_Foot", "capsule", 8,
-	90.0f, 00.0f, 0.0f, 
-	0.05f, 0.00f, 0.05f, 
-	0.05f, 0.13f, 3.0f, 
-	0.0f, -45.0f, 45.0f, 
-	0.0f, 0.0f, 90.0f, 
+	90.0f, 00.0f, 0.0f,
+	0.05f, 0.00f, 0.05f,
+	0.05f, 0.13f, 3.0f,
+	0.0f, -45.0f, 45.0f,
 	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.39f,
+	0.0f, 0.0f, 90.0f,
+	0.0f, 0.0f, 0.4f,
 	0.0f, 0.1f, 0.0f },
 	// transform position="-0.000000 -0.000000 0.398078 1.000000" eulerAngles="-0.000000 0.100000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_Neck", "capsule", 3, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.05f, 
-	0.03f, 0.04f, 5.0f, 
-	30.0f, -30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_Neck", "capsule", 3,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.05f,
+	0.03f, 0.04f, 5.0f,
+	30.0f, -30.0f, 30.0f,
 	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.14f, 
+	0.0f, -90.0f, 0.0f,
+	0.0f, 0.0f, 0.14f,
 	0.0f, 0.0f, 0.0f },
 	// transform position="-0.000048 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	
-	{ "Bip01_Head", "sphere", 10, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.09f, 
-	0.09f, 0.0f, 5.0f, 
-	30.0f, -60.0f, 60.0f, 
-	0.0f, -90.0f, 0.0f, 
+
+	{ "Bip01_Head", "sphere", 10,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.09f,
+	0.09f, 0.0f, 5.0f,
+	30.0f, -60.0f, 60.0f,
+	0.0f, -90.0f, 0.0f,
 	0.0f, -90.0f, 0.0f,
 	0.0f, 0.0f, 0.06f,
 	0.0f, 0.0f, 0.0f },
 	// transform position="0.000000 -0.000000 0.059712 1.000000" eulerAngles="0.000000 -0.000798 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_L_UpperArm", "capsule", 3, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.12f, 
-	0.03f, 0.23f, 10.0f, 
-	80.0f, 30.0f, 30.0f, 
-	0.0f, -90.0f, 0.0f, 
+	{ "Bip01_L_UpperArm", "capsule", 3,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.12f,
+	0.03f, 0.23f, 10.0f,
+	80.0f, 30.0f, 30.0f,
+	0.0f, -90.0f, 0.0f,
 	90.0f, -30.0f, 90.0f,
 	0.0f, 0.14f, 0.10f,
 	3.04f, 0.0f, 3.24f },
@@ -252,33 +255,33 @@ static RAGDOLL_BONE_DEFINITION skeletonRagDoll[] =
 	// CLAVICLE:
 	// transform position="-0.000001 0.027865 0.138000 1.000000" eulerAngles="1.570796 0.000796 3.141593 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_L_Forearm", "capsule", 12, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.12f, 
-	0.03f, 0.23f, 7.0f, 
-	0.0f, 0.0f, 150.0f, 
-	0.0f, 0.0f, 90.0f, 
+	{ "Bip01_L_Forearm", "capsule", 12,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.12f,
+	0.03f, 0.23f, 7.0f,
+	0.0f, 0.0f, 150.0f,
+	0.0f, 0.0f, 90.0f,
 	0.0f, 0.0f, 90.0f,
 	0.0f, 0.0f, 0.24f,
 	0.0f, -0.2f, 0.0f },
 	// transform position="-0.000000 0.000000 0.238847 1.000000" eulerAngles="-0.000001 -0.200000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	
-	{ "Bip01_L_Hand", "capsule", 13, 
-	0.0f, 90.0f, 0.0f, 
-	0.00f, 0.0f, 0.05f, 
-	0.05f, 0.05f, 2.0f, 
-	0.0f, -45.0f, 45.0f, 
-	0.0f, 0.0f, 90.0f, 
+
+	{ "Bip01_L_Hand", "capsule", 13,
+	0.0f, 90.0f, 0.0f,
+	0.00f, 0.0f, 0.05f,
+	0.05f, 0.05f, 2.0f,
+	0.0f, -45.0f, 45.0f,
+	0.0f, 0.0f, 90.0f,
 	0.0f, 0.0f, 90.0f,
 	0.0f, 0.0f, 0.24f,
 	0.0f, 0.0f, -1.57f },
 	// transform position="-0.000000 -0.000000 0.238847 1.000000" eulerAngles="-0.000000 -0.000000 -1.570000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_R_UpperArm", "capsule", 3, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.12f, 
+	{ "Bip01_R_UpperArm", "capsule", 3,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.12f,
 	0.03f, 0.23f, 10.0f,
-	80.0f, 30.0f, 30.0f, 
+	80.0f, 30.0f, 30.0f,
 	0.0f, -90.0f, 0.0f,
 	90.0f, -30.0f, -90.0f,
 	0.0f, -0.14f, 0.10f,
@@ -287,28 +290,32 @@ static RAGDOLL_BONE_DEFINITION skeletonRagDoll[] =
 	// CLAVICLE:
 	// transform position = "-0.000000 -0.027865 0.138000 1.000000" eulerAngles = "-1.570796 0.000797 -3.141593 0.000000" localScale = "1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_R_Forearm", "capsule", 15, 
-	0.0f, 90.0f, 0.0f, 
-	0.0f, 0.0f, 0.12f, 
-	0.03f, 0.23f, 7.0f, 
-	0.0f, -150.0f, 0.0f, 
-	0.0f, 0.0f, -90.0f, 
+	{ "Bip01_R_Forearm", "capsule", 15,
+	0.0f, 90.0f, 0.0f,
+	0.0f, 0.0f, 0.12f,
+	0.03f, 0.23f, 7.0f,
+	0.0f, -150.0f, 0.0f,
+	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, 0.24f,
 	0.0f, -0.2f, 0.0f },
 	// transform position="-0.000000 0.000000 0.238847 1.000000" eulerAngles="-0.000002 -0.200000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 
-	{ "Bip01_R_Hand", "capsule", 16, 
-	0.0f, 90.0f, 0.0f, 
-	0.00f, 0.0f, 0.05f, 
-	0.05f, 0.05f, 2.0f, 
-	0.0f, -45.0f, 45.0f, 
-	0.0f, 0.0f, -90.0f, 
+	{ "Bip01_R_Hand", "capsule", 16,
+	0.0f, 90.0f, 0.0f,
+	0.00f, 0.0f, 0.05f,
+	0.05f, 0.05f, 2.0f,
+	0.0f, -45.0f, 45.0f,
+	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, -90.0f,
 	0.0f, 0.0f, 0.24f,
 	0.0f, 0.0f, 1.57f },
 	// transform position="-0.000000 0.000000 0.238846 1.000000" eulerAngles="-0.000000 -0.000000 1.570000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
 };
+
+////////////////////////////////
+// END OF NEWTON EXAMPLE DATA //
+////////////////////////////////
 
 class RagDollManager : public CustomArticulaledTransformManager
 {
@@ -411,27 +418,27 @@ public:
 		//DemoEntity* const ent = (DemoEntity*)NewtonBodyGetUserData(bone->m_body);
 		//DemoEntityManager* const scene = (DemoEntityManager*)NewtonWorldGetUserData(NewtonBodyGetWorld(bone->m_body));
 
-		dQuaternion rot(localMatrix);
+		//dQuaternion rot(localMatrix);
 		//ent->SetMatrix(*scene, rot, localMatrix.m_posit);
 	}
 
-	NewtonCollision* MakeConvexHull(Ingenuity::IVertexBuffer * vertexBuffer) const
-	{
-		dVector points[1024 * 16];
+	//NewtonCollision* MakeConvexHull(Ingenuity::IVertexBuffer * vertexBuffer) const
+	//{
+	//	dVector points[1024 * 16];
 
-		dAssert(vertexBuffer->GetLength() && (int(vertexBuffer->GetLength()) < int(sizeof(points) / sizeof(points[0]))));
+	//	dAssert(vertexBuffer->GetLength() && (int(vertexBuffer->GetLength()) < int(sizeof(points) / sizeof(points[0]))));
 
-		// go over the vertex array and find and collect all vertices's weighted by this bone.
-		dFloat* const array = (float*) vertexBuffer->GetData();
-		for(unsigned i = 0; i < vertexBuffer->GetLength(); i++) {
-			unsigned offset = i * (vertexBuffer->GetElementSize() / sizeof(float));
-			points[i].m_x = array[offset + 0];
-			points[i].m_y = array[offset + 1];
-			points[i].m_z = array[offset + 2];
-		}
+	//	// go over the vertex array and find and collect all vertices's weighted by this bone.
+	//	dFloat* const array = (float*)vertexBuffer->GetData();
+	//	for(unsigned i = 0; i < vertexBuffer->GetLength(); i++) {
+	//		unsigned offset = i * (vertexBuffer->GetElementSize() / sizeof(float));
+	//		points[i].m_x = array[offset + 0];
+	//		points[i].m_y = array[offset + 1];
+	//		points[i].m_z = array[offset + 2];
+	//	}
 
-		return NewtonCreateConvexHull(GetWorld(), vertexBuffer->GetLength(), &points[0].m_x, sizeof(dVector), 1.0e-3f, 0, NULL);
-	}
+	//	return NewtonCreateConvexHull(GetWorld(), vertexBuffer->GetLength(), &points[0].m_x, sizeof(dVector), 1.0e-3f, 0, NULL);
+	//}
 
 
 	Ingenuity::NewtonPhysicsObject * CreateRagDollBodyPart(const RAGDOLL_BONE_DEFINITION* definitions, int index)
@@ -495,40 +502,29 @@ public:
 	}
 
 
-	void ConnectBodyParts(NewtonBody* const bone, NewtonBody* const parent, const RAGDOLL_BONE_DEFINITION& definition) const
+	void ConnectBodyParts(NewtonBody* const bone, NewtonBody* const parent, glm::vec3 jointInfo, glm::vec3 childRot, glm::vec3 parentRot) const
 	{
 		dMatrix matrix;
 		NewtonBodyGetMatrix(bone, &matrix[0][0]);
 
-		dMatrix parentPinAndPivotInGlobalSpace(dPitchMatrix(definition.m_parentPitch * 3.141592f / 180.0f) * dYawMatrix(definition.m_parentYaw * 3.141592f / 180.0f) * dRollMatrix(definition.m_parentRoll * 3.141592f / 180.0f));
+		dMatrix parentPinAndPivotInGlobalSpace(dPitchMatrix(parentRot.x) * dYawMatrix(parentRot.y) * dRollMatrix(parentRot.z));
 		parentPinAndPivotInGlobalSpace = parentPinAndPivotInGlobalSpace * matrix;
 
-		dMatrix childPinAndPivotInGlobalSpace(dPitchMatrix(definition.m_childPitch * 3.141592f / 180.0f) * dYawMatrix(definition.m_childYaw * 3.141592f / 180.0f) * dRollMatrix(definition.m_childRoll * 3.141592f / 180.0f));
+		dMatrix childPinAndPivotInGlobalSpace(dPitchMatrix(childRot.x) * dYawMatrix(childRot.y) * dRollMatrix(childRot.z));
 		childPinAndPivotInGlobalSpace = childPinAndPivotInGlobalSpace * matrix;
 
 		CustomLimitBallAndSocket* const joint = new CustomLimitBallAndSocket(childPinAndPivotInGlobalSpace, bone, parentPinAndPivotInGlobalSpace, parent);
 
-		joint->SetConeAngle(definition.m_coneAngle * 3.141592f / 180.0f);
-		joint->SetTwistAngle(definition.m_minTwistAngle * 3.141592f / 180.0f, definition.m_maxTwistAngle * 3.141592f / 180.0f);
+		joint->SetConeAngle(jointInfo.x);
+		joint->SetTwistAngle(jointInfo.y, jointInfo.z);
 	}
 
 	glm::mat4 CalculateBoneMatrix(const RAGDOLL_BONE_DEFINITION* const definitions, int index)
 	{
-		//glm::mat4 position = glm::translate(glm::vec3(
-		//	definitions[index].m_position_x,
-		//	definitions[index].m_position_y,
-		//	definitions[index].m_position_z));
-
-		glm::mat4 matrix = 
+		glm::mat4 matrix =
 			glm::eulerAngleZ(definitions[index].m_rotation_z) *
 			glm::eulerAngleY(definitions[index].m_rotation_y) *
 			glm::eulerAngleX(definitions[index].m_rotation_x);
-
-		//glm::mat4 matrix = glm::eulerAngleYXZ(
-		//	definitions[index].m_rotation_y,
-		//	definitions[index].m_rotation_x,
-		//	definitions[index].m_rotation_z
-		//	);
 
 		matrix[3] = glm::vec4(
 			definitions[index].m_position_x,
@@ -545,30 +541,7 @@ public:
 		return parentMatrix * matrix;
 	}
 
-
-	// THESE ARE WRONG! JUST MULTIPLY THE BONE'S LOCAL MATRIX BY ITS DIRECT PARENT'S GLOBAL MATRIX.
-	//glm::mat4 CalculateBoneMatrix(int index)
-	//{
-	//	return CalculateBoneMatrix(controller->GetBone(index));
-	//}
-
-	//glm::mat4 CalculateBoneMatrix(const CustomArticulatedTransformController::dSkeletonBone * skeletonBone)
-	//{
-	//	glm::mat4 matrix; 
-	//	NewtonBodyGetMatrix(controller->GetBoneBody(skeletonBone), (float*)&matrix);
-
-	//	glm::mat4 parentMatrix;
-	//	skeletonBone = controller->GetParent(skeletonBone);
-	//	if(skeletonBone)
-	//	{
-	//		parentMatrix = CalculateBoneMatrix(skeletonBone);
-	//	}
-
-	//	return parentMatrix * matrix;
-	//}
-
-
-	void CreateRagDoll(const dMatrix& location, RAGDOLL_BONE_DEFINITION* const definitions, int definitionCount)
+	void CreateRagDoll()
 	{
 		NewtonWorld* const world = GetWorld();
 		//DemoEntityManager* const scene = (DemoEntityManager*)NewtonWorldGetUserData(world);
@@ -589,17 +562,15 @@ public:
 			{
 				delete physicsObjects[i];
 			}
-			delete[] physicsObjects;
 		}
 
-		numPhysicsObjects = (unsigned)definitionCount;
-		physicsObjects = new Ingenuity::NewtonPhysicsObject*[numPhysicsObjects];
+		//numPhysicsObjects = (unsigned)definitionCount;
+	}
 
+	void CreateDemoRagDoll(RAGDOLL_BONE_DEFINITION* const definitions, int definitionCount)
+	{
 		// add the root bone
-		//DemoEntity* const rootEntity = (DemoEntity*)ragDollEntity->Find(definition[0].m_boneName);
 		physicsObjects[0] = CreateRagDollBodyPart(definitions, 0);
-		// for debugging
-		//NewtonBodySetMassMatrix(rootBone, 0.0f, 0.0f, 0.0f, 0.0f);
 
 		NewtonBody * rootBone = physicsObjects[0]->newtonBody;
 
@@ -608,20 +579,12 @@ public:
 		NewtonCollisionSetUserData(NewtonBodyGetCollision(rootBone), skelBone);
 
 		int stackIndex = 0;
-		//DemoEntity* childEntities[32];
-		CustomArticulatedTransformController::dSkeletonBone* skelBones[32];
 		skelBones[0] = skelBone;
-		//for(DemoEntity* child = rootEntity->GetChild(); child; child = child->GetSibling()) {
-		//	parentBones[stackIndex] = bone;
-		//	childEntities[stackIndex] = child;
-		//	stackIndex++;
-		//}
 
 		// walk model hierarchic adding all children designed as rigid body bones. 
 		for(int j = 1; j < definitionCount; j++) {
 			stackIndex--;
 			//DemoEntity* const entity = childEntities[stackIndex];
-			//CustomArticulatedTransformController::dSkeletonBone* parentBone = skelBones[stackIndex];
 
 			int parentIndex = definitions[j].m_parent;
 
@@ -632,7 +595,10 @@ public:
 			CustomArticulatedTransformController::dSkeletonBone* parentBone = skelBones[parentIndex];
 
 			// connect this body part to its parent with a ragdoll joint
-			ConnectBodyParts(bone, parentBone->m_body, definitions[j]);
+			glm::vec3 joint(definitions[j].m_coneAngle * 3.141592f / 180.0f, definitions[j].m_minTwistAngle * 3.141592f / 180.0f, definitions[j].m_maxTwistAngle * 3.141592f / 180.0f);
+			glm::vec3 childRot(definitions[j].m_childPitch * 3.141592f / 180.0f, definitions[j].m_childYaw * 3.141592f / 180.0f, definitions[j].m_childRoll * 3.141592f / 180.0f);
+			glm::vec3 parentRot(definitions[j].m_parentPitch * 3.141592f / 180.0f, definitions[j].m_parentYaw * 3.141592f / 180.0f, definitions[j].m_parentRoll * 3.141592f / 180.0f);
+			ConnectBodyParts(bone, parentBone->m_body, joint, childRot, parentRot);
 
 			// This is used to add extra waypoint matrices for bones that might not be directly parented (e.g. clavicle)
 			glm::mat4 bindMatrix(1.0f);
@@ -642,40 +608,32 @@ public:
 			NewtonCollisionSetUserData(NewtonBodyGetCollision(bone), parentBone);
 
 			skelBones[j] = parentBone;
-
-			//for(DemoEntity* child = entity->GetChild(); child; child = child->GetSibling()) {
-			//	parentBones[stackIndex] = parentBone;
-			//	childEntities[stackIndex] = child;
-			//	stackIndex++;
-			//}
 		}
 
+		numPhysicsObjects = definitionCount;
+	}
+
+	void FinalizeRagDoll(const dMatrix& location)
+	{
 		// set the collision mask
 		// note this container work best with a material call back for setting bit field 
 		controller->SetDefaultSelfCollisionMask();
 
-		NewtonBody * bone = physicsObjects[0]->newtonBody;
+		NewtonBody * rootBone = physicsObjects[0]->newtonBody;
 		dMatrix rootMatrix;
-		NewtonBodyGetMatrix(bone, (float*)&rootMatrix);
+		NewtonBodyGetMatrix(rootBone, (float*)&rootMatrix);
 
 		// transform the entire contraction to its location
 		dMatrix worldMatrix(rootMatrix * location); // FIXME!!!
 		NewtonBodySetMatrixRecursive(rootBone, &worldMatrix[0][0]);
-
-		dMatrix testMatrix;
-		NewtonBodyGetMatrix(bone, (float*)&testMatrix);
-
-		NewtonBody * bone2 = physicsObjects[1]->newtonBody;
-		dMatrix testMatrix2;
-		NewtonBodyGetMatrix(bone2, (float*)&testMatrix2);
 	}
 
 	int m_material;
 
-	unsigned numPhysicsObjects;
-	Ingenuity::NewtonPhysicsObject ** physicsObjects;
 	CustomArticulatedTransformController* controller;
 	CustomArticulatedTransformController::dSkeletonBone* skelBones[32];
+	Ingenuity::NewtonPhysicsObject * physicsObjects[32];
+	unsigned numPhysicsObjects;
 };
 
 namespace Ingenuity {
@@ -696,18 +654,17 @@ NewtonPhysicsObject::~NewtonPhysicsObject()
 
 NewtonPhysicsRagdoll::~NewtonPhysicsRagdoll()
 {
-	if(manager)
-	{
-		if(manager->numPhysicsObjects > 0)
-		{
-			for(unsigned i = 0; i < manager->numPhysicsObjects; ++i)
-			{
-				delete manager->physicsObjects[i];
-			}
-			delete[] manager->physicsObjects;
-		}
-		//delete manager;
-	}
+	//if(manager)
+	//{
+	//	if(manager->numPhysicsObjects > 0)
+	//	{
+	//		for(unsigned i = 0; i < manager->numPhysicsObjects; ++i)
+	//		{
+	//			delete manager->physicsObjects[i];
+	//		}
+	//	}
+	//	//delete manager;
+	//}
 }
 
 void NewtonPhysicsObject::RemoveFromWorld()
@@ -720,9 +677,9 @@ void NewtonPhysicsObject::RemoveFromWorld()
 }
 
 NewtonApi::NewtonApi() :
-	physicsTime(0.0f),
-	microseconds(0),
-	reentrantUpdate(false)
+physicsTime(0.0f),
+microseconds(0),
+reentrantUpdate(false)
 {
 	QueryPerformanceFrequency(&frequency);
 }
@@ -789,8 +746,8 @@ int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const N
 	NewtonCollisionGetScale(collision1, &scale1.x, &scale1.y, &scale1.z);
 
 	NewtonApi * const newtonApi = static_cast<NewtonApi*>(NewtonMaterialGetUserData(
-		NewtonBodyGetWorld(body0), 
-		NewtonBodyGetMaterialGroupID(body0), 
+		NewtonBodyGetWorld(body0),
+		NewtonBodyGetMaterialGroupID(body0),
 		NewtonBodyGetMaterialGroupID(body1)));
 
 	bool contactOverridden = false;
@@ -807,11 +764,11 @@ int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const N
 			NewtonMaterialSetContactElasticity(material, props.elasticity);
 			NewtonMaterialSetContactFrictionCoef(material, props.staticFriction, props.kineticFriction, 0);
 			NewtonMaterialSetContactFrictionCoef(material, props.staticFriction, props.kineticFriction, 1);
-			
+
 			contactOverridden = true;
 		}
 	}
-	
+
 	if(!contactOverridden)
 	{
 		PhysicsMaterial::Properties props0;
@@ -823,8 +780,8 @@ int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const N
 		// HACK TO (SORT OF) FIX SCALED COLLISIONS
 		NewtonMaterialSetContactSoftness(material, (props0.softness * props1.softness * scale0.x * scale1.x));
 		NewtonMaterialSetContactElasticity(material, props0.elasticity * props1.elasticity);
-		NewtonMaterialSetContactFrictionCoef(material, 
-			props0.staticFriction * props1.staticFriction, 
+		NewtonMaterialSetContactFrictionCoef(material,
+			props0.staticFriction * props1.staticFriction,
 			props0.kineticFriction * props1.kineticFriction, 0);
 		NewtonMaterialSetContactFrictionCoef(material,
 			props0.staticFriction * props1.staticFriction,
@@ -841,7 +798,7 @@ int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const N
 
 void NewtonApi::ContactCollisionCallback(const NewtonJoint* contactJoint, float timestep, int threadIndex)
 {
-	
+
 }
 
 void NewtonApi::DebugPolygonCallback(void* userData, int vertexCount, const float* faceVertec, int id)
@@ -924,14 +881,14 @@ PhysicsWorld * NewtonApi::CreateWorld(float scale, glm::vec3 gravity)
 PhysicsMaterial * NewtonApi::CreateMaterial(PhysicsMaterial::Properties & properties)
 {
 	materialBank.push_back(properties);
-	return new NewtonPhysicsMaterial(materialBank.size()-1);
+	return new NewtonPhysicsMaterial(materialBank.size() - 1);
 }
 
 void NewtonApi::SetMaterial(PhysicsMaterial * material, PhysicsMaterial::Properties & properties)
 {
 	if(!material) return;
 	NewtonPhysicsMaterial * physicsMaterial = static_cast<NewtonPhysicsMaterial*>(material);
-	if(physicsMaterial->index > -1 && physicsMaterial->index < (int) materialBank.size())
+	if(physicsMaterial->index > -1 && physicsMaterial->index < (int)materialBank.size())
 	{
 		materialBank[physicsMaterial->index] = properties;
 	}
@@ -944,7 +901,7 @@ void NewtonApi::OverrideMaterialPair(PhysicsMaterial * mat1, PhysicsMaterial * m
 	NewtonPhysicsMaterial * physicsMat2 = static_cast<NewtonPhysicsMaterial*>(mat2);
 	int index1 = physicsMat1->index;
 	int index2 = physicsMat2->index;
-	
+
 	materialPairBank[PairKey(index1, index2)] = properties;
 	materialPairBank[PairKey(index2, index1)] = properties;
 }
@@ -997,9 +954,7 @@ PhysicsRagdoll * NewtonApi::CreateRagdoll(PhysicsWorld * world)
 
 	RagDollManager* const manager = new RagDollManager(physicsWorld->newtonWorld);
 
-	dMatrix matrix(dGetIdentityMatrix());
-
-	manager->CreateRagDoll(matrix, skeletonRagDoll, sizeof(skeletonRagDoll) / sizeof(skeletonRagDoll[0]));
+	manager->CreateRagDoll();
 
 	NewtonPhysicsRagdoll * physicsRagdoll = new NewtonPhysicsRagdoll();
 	physicsRagdoll->manager = manager;
@@ -1007,71 +962,11 @@ PhysicsRagdoll * NewtonApi::CreateRagdoll(PhysicsWorld * world)
 	return physicsRagdoll;
 }
 
-void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, unsigned boneIndex)
-{
-	// TODO!!!! THE RAGDOLL MANAGER STILL NEEDS TO COMPUTE THE MATRIX OF THE DYNAMIC BODY FROM ITS PARENTS...
-	// See CalculateBoneMatrix()
-
-	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
-	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
-	RagDollManager * manager = physicsRagdoll->manager;
-
-	int parentIndex = skeletonRagDoll[boneIndex].m_parent;
-
-	//physicsObjects[j] = CreateRagDollBodyPart(definitions, j);
-
-	// CREATERAGDOLLBODYPART
-
-	//// calculate the bone matrix
-	//glm::mat4 matrix = CalculateBoneMatrix(definitions, index);
-
-	//NewtonWorld* const world = GetWorld();
-
-	//// create the rigid body that will make this bone
-	//NewtonBody* const bone = NewtonCreateDynamicBody(world, shape, &matrix[0][0]);
-
-	//// calculate the moment of inertia and the relative center of mass of the solid
-	//NewtonBodySetMassProperties(bone, definition.m_mass, shape);
-
-	//// save the user data with the bone body (usually the visual geometry)
-	////NewtonBodySetUserData(bone, bodyPart);
-
-	//// assign the material for early collision culling
-	//NewtonBodySetMaterialGroupID(bone, m_material);
-
-	//// set the bod part force and torque call back to the gravity force, skip the transform callback
-	//NewtonBodySetForceAndTorqueCallback(bone, Ingenuity::NewtonApi::ApplyForceAndTorqueCallback);
-
-	//// destroy the collision helper shape 
-	//NewtonDestroyCollision(shape);
-
-	//physicsObject->newtonBody = bone;
-	
-	// END
-
-	NewtonBody * body = physicsObject->newtonBody;
-	NewtonBody * parentBody = manager->physicsObjects[parentIndex]->newtonBody;
-
-	CustomArticulatedTransformController::dSkeletonBone* parentBone = manager->skelBones[parentIndex];
-
-	// connect this body part to its parent with a ragdoll joint
-	manager->ConnectBodyParts(body, parentBody, skeletonRagDoll[boneIndex]);
-
-	// This is used to add extra waypoint matrices for bones that might not be directly parented (e.g. clavicle)
-	glm::mat4 bindMatrix(1.0f);
-	CustomArticulatedTransformController::dSkeletonBone* skelBone = manager->controller->AddBone(body, (dMatrix&)bindMatrix, parentBone);
-
-	// save the controller as the collision user data, for collision culling
-	NewtonCollisionSetUserData(NewtonBodyGetCollision(body), skelBone);
-
-	manager->skelBones[boneIndex] = skelBone;
-}
-
 void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool isStatic)
 {
 	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(world);
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
-	
+
 	if(!physicsObject->spec || !physicsWorld->newtonWorld) return;
 
 	NewtonInvalidateCache(physicsWorld->newtonWorld);
@@ -1080,120 +975,120 @@ void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool is
 
 	switch(physicsObject->spec->GetType())
 	{
-		case NewtonPhysicsSpec::Cuboid:
-		{
-			NewtonPhysicsCuboidSpec * cubeSpec = static_cast<NewtonPhysicsCuboidSpec*>(physicsObject->spec);
-			collision = NewtonCreateBox(physicsWorld->newtonWorld,
-				cubeSpec->dimensions.x,
-				cubeSpec->dimensions.y,
-				cubeSpec->dimensions.z,
-				0, 0);
-			break;
-		}
-		case NewtonPhysicsSpec::Sphere:
-		{
-			NewtonPhysicsSphereSpec * sphereSpec = static_cast<NewtonPhysicsSphereSpec*>(physicsObject->spec);
-			collision = NewtonCreateSphere(physicsWorld->newtonWorld, sphereSpec->radius, 0, 0);
-			break;
-		}
-		case NewtonPhysicsSpec::Capsule:
-		{
-			NewtonPhysicsCapsuleSpec * capsuleSpec = static_cast<NewtonPhysicsCapsuleSpec*>(physicsObject->spec);
-			collision = NewtonCreateCapsule(physicsWorld->newtonWorld, capsuleSpec->radius, capsuleSpec->length, 0, 0);
-			break;
-		}
-		case NewtonPhysicsSpec::Mesh:
-		{
-			NewtonPhysicsMeshSpec * meshSpec = static_cast<NewtonPhysicsMeshSpec*>(physicsObject->spec);
-			//LocalMesh * localMesh = meshSpec->mesh;
-			//NewtonMesh * newtonMesh = NewtonMeshCreate(physicsWorld->newtonWorld);
+	case NewtonPhysicsSpec::Cuboid:
+	{
+		NewtonPhysicsCuboidSpec * cubeSpec = static_cast<NewtonPhysicsCuboidSpec*>(physicsObject->spec);
+		collision = NewtonCreateBox(physicsWorld->newtonWorld,
+			cubeSpec->dimensions.x,
+			cubeSpec->dimensions.y,
+			cubeSpec->dimensions.z,
+			0, 0);
+		break;
+	}
+	case NewtonPhysicsSpec::Sphere:
+	{
+		NewtonPhysicsSphereSpec * sphereSpec = static_cast<NewtonPhysicsSphereSpec*>(physicsObject->spec);
+		collision = NewtonCreateSphere(physicsWorld->newtonWorld, sphereSpec->radius, 0, 0);
+		break;
+	}
+	case NewtonPhysicsSpec::Capsule:
+	{
+		NewtonPhysicsCapsuleSpec * capsuleSpec = static_cast<NewtonPhysicsCapsuleSpec*>(physicsObject->spec);
+		collision = NewtonCreateCapsule(physicsWorld->newtonWorld, capsuleSpec->radius, capsuleSpec->length, 0, 0);
+		break;
+	}
+	case NewtonPhysicsSpec::Mesh:
+	{
+		NewtonPhysicsMeshSpec * meshSpec = static_cast<NewtonPhysicsMeshSpec*>(physicsObject->spec);
+		//LocalMesh * localMesh = meshSpec->mesh;
+		//NewtonMesh * newtonMesh = NewtonMeshCreate(physicsWorld->newtonWorld);
 
-			//NewtonMeshBeginFace(newtonMesh);
+		//NewtonMeshBeginFace(newtonMesh);
 
-			//for(unsigned i = 0; i < localMesh->numTriangles; ++i)
-			//{
-			//	glm::vec3 positions[3];
-			//	for(unsigned j = 0; j < 3; j++)
-			//	{
-			//		unsigned index = localMesh->indexBuffer[(i * 3) + j];
-			//		unsigned byteOffset = (localMesh->vertexBuffer->GetElementSize() * index);
-			//		char * byteBuffer = (char*) localMesh->vertexBuffer->GetData();
-			//		positions[j] = *((glm::vec3*)(&byteBuffer[byteOffset]));
-			//	}
-			//	//glm::vec3 temp = positions[2];
-			//	//positions[2] = positions[1];
-			//	//positions[1] = temp;
+		//for(unsigned i = 0; i < localMesh->numTriangles; ++i)
+		//{
+		//	glm::vec3 positions[3];
+		//	for(unsigned j = 0; j < 3; j++)
+		//	{
+		//		unsigned index = localMesh->indexBuffer[(i * 3) + j];
+		//		unsigned byteOffset = (localMesh->vertexBuffer->GetElementSize() * index);
+		//		char * byteBuffer = (char*) localMesh->vertexBuffer->GetData();
+		//		positions[j] = *((glm::vec3*)(&byteBuffer[byteOffset]));
+		//	}
+		//	//glm::vec3 temp = positions[2];
+		//	//positions[2] = positions[1];
+		//	//positions[1] = temp;
 
-			//	NewtonMeshAddFace(newtonMesh, 3, (float*)&positions, sizeof(glm::vec3), 0);
-			//}
+		//	NewtonMeshAddFace(newtonMesh, 3, (float*)&positions, sizeof(glm::vec3), 0);
+		//}
 
-			//NewtonMeshEndFace(newtonMesh);
+		//NewtonMeshEndFace(newtonMesh);
 
-			glm::mat4 offsetMatrix;
-			IVertexBuffer * vertexBuffer = meshSpec->mesh->vertexBuffer;
+		glm::mat4 offsetMatrix;
+		IVertexBuffer * vertexBuffer = meshSpec->mesh->vertexBuffer;
 
-			//for(unsigned i = 0; i < debugVertexBuffer->GetLength(); ++i)
-			//{
-			//	debugVertexBuffer->Get(i).position *= 0.02;
-			//}
+		//for(unsigned i = 0; i < debugVertexBuffer->GetLength(); ++i)
+		//{
+		//	debugVertexBuffer->Get(i).position *= 0.02;
+		//}
 
-			collision = NewtonCreateConvexHull(
-				physicsWorld->newtonWorld,
-				vertexBuffer->GetLength(),
-				(float*)vertexBuffer->GetData(),
-				vertexBuffer->GetElementSize(),
-				0.0f, 0, (float*)&offsetMatrix);
+		collision = NewtonCreateConvexHull(
+			physicsWorld->newtonWorld,
+			vertexBuffer->GetLength(),
+			(float*)vertexBuffer->GetData(),
+			vertexBuffer->GetElementSize(),
+			0.0f, 0, (float*)&offsetMatrix);
 
-			//NewtonMeshFixTJoints(newtonMesh);
+		//NewtonMeshFixTJoints(newtonMesh);
 
-			//NewtonMeshCalculateVertexNormals(newtonMesh, 0.0f);
+		//NewtonMeshCalculateVertexNormals(newtonMesh, 0.0f);
 
-			//NewtonMesh* const convexApproximation = NewtonMeshApproximateConvexDecomposition(newtonMesh, 0.01f, 0.2f, 32, 100, NULL);
+		//NewtonMesh* const convexApproximation = NewtonMeshApproximateConvexDecomposition(newtonMesh, 0.01f, 0.2f, 32, 100, NULL);
 
-			//NewtonMeshSaveOFF(convexApproximation, "debugConvex");
+		//NewtonMeshSaveOFF(convexApproximation, "debugConvex");
 
-			//collision = NewtonCreateTreeCollisionFromMesh(physicsWorld->newtonWorld, newtonMesh, 0);
+		//collision = NewtonCreateTreeCollisionFromMesh(physicsWorld->newtonWorld, newtonMesh, 0);
 
-			//NewtonMesh * firstSegment = NewtonMeshCreateFirstSingleSegment(newtonMesh);
+		//NewtonMesh * firstSegment = NewtonMeshCreateFirstSingleSegment(newtonMesh);
 
-			//collision = NewtonCreateCompoundCollisionFromMesh(physicsWorld->newtonWorld, newtonMesh, 0.001f, 0, 0);
+		//collision = NewtonCreateCompoundCollisionFromMesh(physicsWorld->newtonWorld, newtonMesh, 0.001f, 0, 0);
 
-			//collision = NewtonCreateConvexHullFromMesh(physicsWorld->newtonWorld, firstSegment, 0.001f, 0);
+		//collision = NewtonCreateConvexHullFromMesh(physicsWorld->newtonWorld, firstSegment, 0.001f, 0);
 
-			//NewtonMesh * convexHullMesh = NewtonMeshCreateFromCollision(collision);
-			
-			//NewtonMeshSaveOFF(convexHullMesh, "debugHull");
+		//NewtonMesh * convexHullMesh = NewtonMeshCreateFromCollision(collision);
 
-			//NewtonMeshDestroy(convexApproximation);
-			//NewtonMeshDestroy(newtonMesh);
+		//NewtonMeshSaveOFF(convexHullMesh, "debugHull");
 
-			//NewtonCreateConvexHull(physicsWorld->newtonWorld, localMesh->vertexBuffer->GetLength(), )
+		//NewtonMeshDestroy(convexApproximation);
+		//NewtonMeshDestroy(newtonMesh);
 
-			//NewtonCreateConvexHullFromMesh()
+		//NewtonCreateConvexHull(physicsWorld->newtonWorld, localMesh->vertexBuffer->GetLength(), )
 
-			break;
-		}
-		case NewtonPhysicsSpec::Heightmap:
-		{
-			// Not allowed to create dynamic heightmap bodies, no internal volume
-			if(!isStatic) return;
-			
-			NewtonPhysicsHeightmapSpec * heightSpec = static_cast<NewtonPhysicsHeightmapSpec*>(physicsObject->spec);
-			HeightParser * heightParser = heightSpec->heightParser;
-			int sideLength = (int)heightParser->GetSideLength();
-			char* const attributes = new char[sideLength * sideLength];
-			memset(attributes, 0, sideLength * sideLength * sizeof(char));
+		//NewtonCreateConvexHullFromMesh()
 
-			collision = NewtonCreateHeightFieldCollision(physicsWorld->newtonWorld,
-				sideLength, sideLength, 1, 0, heightParser->GetData(),
-				attributes, heightParser->GetScale(), heightParser->GetWidth() / (float) (sideLength - 1), 0);
+		break;
+	}
+	case NewtonPhysicsSpec::Heightmap:
+	{
+		// Not allowed to create dynamic heightmap bodies, no internal volume
+		if(!isStatic) return;
 
-			glm::mat4 offset = glm::translate(glm::vec3(heightParser->GetWidth() / -2.0f, 0.0f, heightParser->GetWidth() / -2.0f));
-			NewtonCollisionSetMatrix(collision, (float*)&offset);
+		NewtonPhysicsHeightmapSpec * heightSpec = static_cast<NewtonPhysicsHeightmapSpec*>(physicsObject->spec);
+		HeightParser * heightParser = heightSpec->heightParser;
+		int sideLength = (int)heightParser->GetSideLength();
+		char* const attributes = new char[sideLength * sideLength];
+		memset(attributes, 0, sideLength * sideLength * sizeof(char));
 
-			delete[] attributes;
-			break;
-		}
+		collision = NewtonCreateHeightFieldCollision(physicsWorld->newtonWorld,
+			sideLength, sideLength, 1, 0, heightParser->GetData(),
+			attributes, heightParser->GetScale(), heightParser->GetWidth() / (float)(sideLength - 1), 0);
+
+		glm::mat4 offset = glm::translate(glm::vec3(heightParser->GetWidth() / -2.0f, 0.0f, heightParser->GetWidth() / -2.0f));
+		NewtonCollisionSetMatrix(collision, (float*)&offset);
+
+		delete[] attributes;
+		break;
+	}
 	}
 
 	NewtonBody * body = 0;
@@ -1202,11 +1097,11 @@ void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool is
 
 	if(physicsObject->spec->kinematic)
 	{
-		body = NewtonCreateKinematicBody(physicsWorld->newtonWorld, collision, (float*) &matrix);
+		body = NewtonCreateKinematicBody(physicsWorld->newtonWorld, collision, (float*)&matrix);
 	}
 	else
 	{
-		body = NewtonCreateDynamicBody(physicsWorld->newtonWorld, collision, (float*) &matrix);
+		body = NewtonCreateDynamicBody(physicsWorld->newtonWorld, collision, (float*)&matrix);
 	}
 
 	//PhysicsMaterial * material = cachedMaterials[physicsObject->spec->materialKey];
@@ -1280,6 +1175,63 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 	}
 }
 
+void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot)
+{
+	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
+	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
+	RagDollManager * manager = physicsRagdoll->manager;
+
+	NewtonBody * body = physicsObject->newtonBody;
+	CustomArticulatedTransformController::dSkeletonBone * parentBone = 0;
+
+	if(parentIndex >= (int)manager->numPhysicsObjects) return;
+
+	if(parentIndex > -1)
+	{
+		NewtonBody * parentBody = manager->physicsObjects[parentIndex]->newtonBody;
+		parentBone = manager->skelBones[parentIndex];
+
+		glm::mat4 bodyMatrix;
+		glm::mat4 parentMatrix;
+		NewtonBodyGetMatrix(body, (float*)&bodyMatrix);
+		NewtonBodyGetMatrix(parentBody, (float*)&parentMatrix);
+
+		bodyMatrix = parentMatrix * bodyMatrix;
+
+		NewtonBodySetMatrix(body, (float*)&bodyMatrix);
+
+		// connect this body part to its parent with a ragdoll joint
+		manager->ConnectBodyParts(body, parentBody, joint, childRot, parentRot);
+	}
+
+	// This is used to add extra waypoint matrices for bones that might not be directly parented (e.g. clavicle)
+	glm::mat4 bindMatrix(1.0f);
+	CustomArticulatedTransformController::dSkeletonBone* skelBone = manager->controller->AddBone(body, (dMatrix&)bindMatrix, parentBone);
+
+	// assign the material for early collision culling
+	NewtonBodySetMaterialGroupID(body, manager->m_material);
+
+	// save the controller as the collision user data, for collision culling
+	NewtonCollisionSetUserData(NewtonBodyGetCollision(body), skelBone);
+
+	manager->skelBones[manager->numPhysicsObjects] = skelBone;
+	manager->physicsObjects[manager->numPhysicsObjects] = physicsObject;
+	manager->numPhysicsObjects++;
+}
+
+void NewtonApi::FinalizeRagdoll(PhysicsRagdoll * ragdoll)
+{
+	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
+
+	if(physicsRagdoll->manager->numPhysicsObjects < 1)
+	{
+		physicsRagdoll->manager->CreateDemoRagDoll(skeletonRagDoll, sizeof(skeletonRagDoll) / sizeof(skeletonRagDoll[0]));
+	}
+
+	glm::mat4 matrix;
+	physicsRagdoll->manager->FinalizeRagDoll((float*)&matrix);
+}
+
 glm::vec3 NewtonApi::GetPosition(PhysicsObject * object)
 {
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
@@ -1340,6 +1292,7 @@ void NewtonApi::SetLocalPosition(PhysicsObject * object, glm::vec3 position)
 	if(!physicsObject->newtonBody) return;
 
 	dMatrix matrix;
+	NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &matrix[0][0]);
 	matrix.m_posit.m_x = position.x;
 	matrix.m_posit.m_y = position.y;
 	matrix.m_posit.m_z = position.z;
@@ -1352,9 +1305,14 @@ void NewtonApi::SetLocalRotation(PhysicsObject * object, glm::vec3 rotation)
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
 	if(!physicsObject->newtonBody) return;
 
-	dMatrix matrix(dPitchMatrix(rotation.x * 3.141592f / 180.0f) * dYawMatrix(rotation.y * 3.141592f / 180.0f) * dRollMatrix(rotation.z * 3.141592f / 180.0f));
+	dMatrix rotMatrix(dPitchMatrix(rotation.x) * dYawMatrix(rotation.y) * dRollMatrix(rotation.z));
 
-	NewtonCollisionSetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), (float*)&matrix);
+	dMatrix matrix;
+	NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &matrix[0][0]);
+
+	rotMatrix.m_posit = matrix.m_posit;
+
+	NewtonCollisionSetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), (float*)&rotMatrix);
 }
 
 void NewtonApi::SetPosition(PhysicsObject * object, glm::vec3 position)
@@ -1366,7 +1324,7 @@ void NewtonApi::SetPosition(PhysicsObject * object, glm::vec3 position)
 	glm::mat4 matrix;
 	NewtonBodyGetMatrix(physicsObject->newtonBody, (float*)&matrix);
 
-	matrix[3] = glm::vec4(position,1.0f);
+	matrix[3] = glm::vec4(position, 1.0f);
 
 	NewtonBodySetMatrix(physicsObject->newtonBody, (float*)&matrix);
 }
@@ -1431,7 +1389,7 @@ LocalMesh * NewtonApi::GetDebugMesh(PhysicsObject * object)
 	glm::mat4 matrix;
 	NewtonCollisionGetMatrix(collision, (float*)&matrix);
 	matrix = glm::inverse(matrix);
-	NewtonCollisionForEachPolygonDo(collision, (float*)&matrix, DebugPolygonCallback, (void*) &verts);
+	NewtonCollisionForEachPolygonDo(collision, (float*)&matrix, DebugPolygonCallback, (void*)&verts);
 
 	LocalMesh * localMesh = new LocalMesh();
 	localMesh->vertexBuffer = new VertexBuffer<Vertex_PosNor>(verts.size());

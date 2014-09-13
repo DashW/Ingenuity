@@ -84,7 +84,8 @@ public:
 	virtual void RemoveFromWorld(PhysicsWorld * world, PhysicsObject * object) = 0;
 	virtual void UpdateWorld(PhysicsWorld * world, float deltaTime) = 0;
 
-	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, unsigned boneIndex) = 0;
+	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot) = 0;
+	virtual void FinalizeRagdoll(PhysicsRagdoll * ragdoll) = 0;
 
 	virtual glm::vec3 GetPosition(PhysicsObject * object) = 0;
 	//virtual glm::vec3 GetRotation(PhysicsObject * object) = 0;
