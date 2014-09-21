@@ -33,7 +33,8 @@ struct ScriptPtrType
 		PhysicsWorld,
 		PhysicsObject,
 		PhysicsMaterial,
-		PhysicsRagdoll
+		PhysicsRagdoll,
+		LeapHelper
 	};
 };
 

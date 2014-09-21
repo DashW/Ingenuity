@@ -150,8 +150,8 @@ struct ModelShader : public Shader
 	virtual ~ModelShader();
 
 	//DirectX::XMMATRIX GetWorld(Gpu::Model * model);
-	DirectX::XMMATRIX GetView(Gpu::Camera * camera);
-	DirectX::XMMATRIX GetProjection(Gpu::Camera * camera, float aspect);
+	//DirectX::XMMATRIX GetView(Gpu::Camera * camera);
+	//DirectX::XMMATRIX GetProjection(Gpu::Camera * camera, float aspect);
 
 	bool SetTechnique(ID3D11DeviceContext * direct3Dcontext, VertexType vType, InstanceType iType);
 	bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect);

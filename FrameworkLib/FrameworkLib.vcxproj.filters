@@ -178,6 +178,7 @@
     </ClInclude>
     <ClInclude Include="PhysicsApi.h" />
     <ClInclude Include="NewtonApi.h" />
+    <ClInclude Include="LeapMotionHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -271,6 +272,7 @@
       <Filter>Application\Win32</Filter>
     </ClCompile>
     <ClCompile Include="NewtonApi.cpp" />
+    <ClCompile Include="LeapMotionHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">

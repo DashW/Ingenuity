@@ -136,8 +136,8 @@
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Lib>
     <ProjectReference>
@@ -238,6 +238,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClInclude Include="ImageApi.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="IsoSurface.h" />
+    <ClInclude Include="LeapMotionHelper.h" />
     <ClInclude Include="LuaInterpreter.h" />
     <ClInclude Include="NewtonApi.h" />
     <ClInclude Include="PhysicsApi.h" />
@@ -292,6 +293,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClCompile Include="FreeImageApi.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="IsoSurface.cpp" />
+    <ClCompile Include="LeapMotionHelper.cpp" />
     <ClCompile Include="LuaInterpreter.cpp" />
     <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="ScriptLogger.cpp" />

@@ -1259,8 +1259,8 @@ LocalMesh * GeoBuilder::BuildCapsule(float radius, float length, unsigned sector
 	delete cap2;
 	delete testTube;
 
-	moveMatrix = glm::eulerAngleY(float(M_PI / 2.0));
-	capsule->vertexBuffer->Transform(moveMatrix);
+	//moveMatrix = glm::eulerAngleY(float(M_PI / 2.0));
+	//capsule->vertexBuffer->Transform(moveMatrix);
 
 	return capsule;
 }

@@ -38,4 +38,6 @@ Third Party/newton-dynamics-master/applications/
 Third Party/newton-dynamics-master/coreLibrary_300/projects/windows/*/Win32/
 Third Party/newton-dynamics-master/coreLibrary_300/source/pthreads.2/*/Win32/
 Third Party/newton-dynamics-master/packages/
-Third Party/newton-dynamics-master-old/
+
+# Not open source, not allowed to distribute
+Third Party/LeapSDK/

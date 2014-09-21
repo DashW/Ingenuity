@@ -16,7 +16,7 @@ Ingenuity Framework is a lightweight collection of C++ libraries and API wrapper
 - An experimental vector graphics library with SVG parser & path triangulator
 
 Planned features include:
-Multithreading, Runtime Libraries, OpenGL, Geometry Shaders, Culling & Picking
+Geometry Shaders, Culling, OpenGL, Runtime Libraries, Multithreading, and support for more asset formats (OGG, COLLADA)
 
 Ingenuity Game Engine is a scripting frontend for the Ingenuity Framework, intended for rapid development without sacrificing quality. Features include development on target platform, runtime script reloading, and a basic console.
 

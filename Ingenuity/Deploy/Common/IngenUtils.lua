@@ -34,6 +34,34 @@ function PrintGlobals()
 	end
 end
 
+function CreateAccumulator()
+	return {
+		stack = {},
+		count = 0,
+		sum = 0,
+		Add = function(self,value)
+			table.insert(self.stack, value);
+			self.count = self.count + 1;
+			self.sum = self.sum + value;
+		end,
+		Average = function(self)
+			return self.sum / self.count;
+		end,
+		Sum = function(self)
+			return self.sum;
+		end,
+		Clear = function(self,sub)
+			self.stack = {};
+			self.count = 0;
+			if sub then
+				self.sum = self.sum - sub;
+			else
+				self.sum = 0;
+			end
+		end
+	}
+end
+
 function UpdateFrameTime(delta)
 	if not sumDeltas or not numDeltas or not frameTimeText then
 		sumDeltas = 0.0; numDeltas = 0; frameTimeText = "";
@@ -43,7 +71,7 @@ function UpdateFrameTime(delta)
 	if sumDeltas > 0.5 then
 		local avgDeltas = sumDeltas / numDeltas;
 		frameTimeText = string.format("%2.2fms %3.2f%%",avgDeltas * 1000,(avgDeltas * 100000) / 16.5);
-		sumDeltas = 0; numDeltas = 0;
+		sumDeltas = sumDeltas - 0.5; numDeltas = 0;
 	end
 end
 

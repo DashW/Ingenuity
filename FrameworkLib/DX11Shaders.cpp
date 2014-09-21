@@ -84,20 +84,20 @@ void DX11::Shader::UpdateConstantBuffer(ID3D11DeviceContext * context, std::vect
 //	return w;
 //}
 
-XMMATRIX DX11::ModelShader::GetView(Gpu::Camera * camera)
-{
-	const XMVECTOR pos = XMVectorSet(camera->position.x, camera->position.y, camera->position.z, 1.0f);
-	const XMVECTOR target = XMVectorSet(camera->target.x, camera->target.y, camera->target.z, 1.0f);
-	const XMVECTOR up = XMVectorSet(camera->up.x, camera->up.y, camera->up.z, 0.0f);
-	return XMMatrixLookAtLH(pos, target, up);
-}
-
-XMMATRIX DX11::ModelShader::GetProjection(Gpu::Camera * camera, float aspect)
-{
-	return camera->isOrthoCamera ?
-		XMMatrixOrthographicLH(camera->fovOrHeight * aspect, camera->fovOrHeight, camera->nearClip, camera->farClip) :
-		XMMatrixPerspectiveFovLH(camera->fovOrHeight, aspect, camera->nearClip, camera->farClip);
-}
+//XMMATRIX DX11::ModelShader::GetView(Gpu::Camera * camera)
+//{
+//	const XMVECTOR pos = XMVectorSet(camera->position.x, camera->position.y, camera->position.z, 1.0f);
+//	const XMVECTOR target = XMVectorSet(camera->target.x, camera->target.y, camera->target.z, 1.0f);
+//	const XMVECTOR up = XMVectorSet(camera->up.x, camera->up.y, camera->up.z, 0.0f);
+//	return XMMatrixLookAtLH(pos, target, up);
+//}
+//
+//XMMATRIX DX11::ModelShader::GetProjection(Gpu::Camera * camera, float aspect)
+//{
+//	return camera->isOrthoCamera ?
+//		XMMatrixOrthographicLH(camera->fovOrHeight * aspect, camera->fovOrHeight, camera->nearClip, camera->farClip) :
+//		XMMatrixPerspectiveFovLH(camera->fovOrHeight, aspect, camera->nearClip, camera->farClip);
+//}
 
 DX11::ModelShader::Technique::Technique() :
 inputLayout(0), vertexObject(0), pixelObject(0)
@@ -268,14 +268,16 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 
 	DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
 
-	//XMMATRIX world = GetWorld(model);
-
+	//XMMATRIX world = GetWorld(model
 	glm::mat4 modelMatrix = model->GetMatrix();
 	XMMATRIX world((float*)&modelMatrix);
 
 	XMStoreFloat4x4(&vertexConstData.world, world);
 
-	XMMATRIX viewProj = GetView(camera) * GetProjection(camera, aspect);
+	//XMMATRIX viewProj = GetView(camera) * GetProjection(camera, aspect);
+	glm::mat4 camMatrix = camera->GetProjMatrix(aspect) * camera->GetViewMatrix();
+	XMMATRIX viewProj((float*)&camMatrix);
+
 	XMStoreFloat4x4(&vertexConstData.viewProjection, viewProj);
 
 	XMMATRIX wit = XMMatrixInverse(0, XMMatrixTranspose(world));

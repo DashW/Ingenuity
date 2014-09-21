@@ -305,8 +305,29 @@ public:
 			"(ragdoll,index) Gets a specific bone physics object from the physics ragdoll");
 		interpreter->RegisterCallback("FinalizePhysicsRagdoll", &ScriptCallbacks::FinalizePhysicsRagdoll,
 			"(ragdoll) Performs final measurements and transformations of a physics ragdoll");
+		interpreter->RegisterCallback("PickPhysicsObject", &ScriptCallbacks::PickPhysicsObject,
+			"(world,camera,x,y[,surface]) Returns the object and world position at the view position (0.0-1.0) of the camera");
+		interpreter->RegisterCallback("DragPhysicsObject", &ScriptCallbacks::DragPhysicsObject,
+			"(world,camera,x,y[,surface]) Selects and then drags an object to the view position of the given camera");
 		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
 			"(object) Returns a debug model for the given physics object");
+
+		interpreter->RegisterCallback("CreateLeapHelper", &ScriptCallbacks::CreateLeapHelper,
+			"() Returns a new instance of a Leap Motion Helper");
+		interpreter->RegisterCallback("GetLeapFrameTime", &ScriptCallbacks::GetLeapFrameTime,
+			"(helper) Returns the frame time, in milliseconds, for the current Leap frame");
+		interpreter->RegisterCallback("GetLeapNumBones", &ScriptCallbacks::GetLeapNumBones,
+			"(helper) Returns the number of bones the Leap Motion is capable of tracking");
+		interpreter->RegisterCallback("GetLeapBoneDetails", &ScriptCallbacks::GetLeapBoneDetails,
+			"(helper,index) Returns the visibility, length and radius of the given Leap Motion bone");
+		interpreter->RegisterCallback("GetLeapBonePosition", &ScriptCallbacks::GetLeapBonePosition,
+			"(helper,index) Returns the position of the given Leap Motion bone");
+		interpreter->RegisterCallback("SetLeapPosition", &ScriptCallbacks::SetLeapPosition,
+			"(helper,x,y,z) Offsets the positions of all bones in the Leap world");
+		interpreter->RegisterCallback("SetLeapScale", &ScriptCallbacks::SetLeapScale,
+			"(helper,scale) Sets the scale of the Leap world, including bone details and matrices");
+		interpreter->RegisterCallback("SyncLeapBoneMatrix", &ScriptCallbacks::SyncLeapBoneMatrix,
+			"(helper,index,modelOrBody) Updates the given model or physics object with the bone matrix");
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -452,7 +473,18 @@ public:
 	static void AddPhysicsRagdollBone(ScriptInterpreter*);
 	static void GetPhysicsRagdollBone(ScriptInterpreter*);
 	static void FinalizePhysicsRagdoll(ScriptInterpreter*);
+	static void PickPhysicsObject(ScriptInterpreter*);
+	static void DragPhysicsObject(ScriptInterpreter*);
 	static void GetPhysicsDebugModel(ScriptInterpreter*);
+
+	static void CreateLeapHelper(ScriptInterpreter*);
+	static void GetLeapFrameTime(ScriptInterpreter*);
+	static void GetLeapNumBones(ScriptInterpreter*);
+	static void GetLeapBoneDetails(ScriptInterpreter*);
+	static void GetLeapBonePosition(ScriptInterpreter*);
+	static void SetLeapPosition(ScriptInterpreter*);
+	static void SetLeapScale(ScriptInterpreter*);
+	static void SyncLeapBoneMatrix(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity

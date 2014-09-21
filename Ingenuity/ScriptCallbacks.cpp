@@ -12,7 +12,8 @@
 #include "IsoSurface.h"
 #include "PhysicsApi.h"
 #include "WavefrontLoader.h"
-#include <HeightParser.h>
+#include "HeightParser.h"
+#include "LeapMotionHelper.h"
 #include <sstream>
 #include <vector>
 
@@ -1035,7 +1036,7 @@ void ScriptCallbacks::SetMeshPosition(ScriptInterpreter * interpreter)
 
 	Gpu::ComplexModel * gpuModel = static_cast<Gpu::ComplexModel*>(model.pvalue->ptr);
 	unsigned meshnumber = (unsigned) meshnum.nvalue;
-	gpuModel->models[meshnumber].position = glm::vec4(float(x.nvalue),float(y.nvalue),float(z.nvalue),0.0f);
+	gpuModel->models[meshnumber].position = glm::vec4(float(x.nvalue),float(y.nvalue),float(z.nvalue),1.0f);
 }
 
 void ScriptCallbacks::SetMeshRotation(ScriptInterpreter * interpreter)
@@ -2878,6 +2879,65 @@ void ScriptCallbacks::FinalizePhysicsRagdoll(ScriptInterpreter * interpreter)
 	interpreter->GetApp()->physics->FinalizeRagdoll(physicsRagdoll);
 }
 
+void ScriptCallbacks::PickPhysicsObject(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, PhysicsWorld);
+	POP_PTRPARAM(2, camera, GpuCamera);
+	POP_NUMPARAM(3, x);
+	POP_NUMPARAM(4, y);
+	ScriptParam surface = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::Camera * gpuCamera = static_cast<Gpu::Camera*>(camera.pvalue->ptr);
+
+	unsigned width, height;
+	if(surface.CheckPointer(ScriptPtrType::GpuDrawSurface))
+	{
+		Gpu::DrawSurface * gpuSurface = static_cast<Gpu::DrawSurface*>(surface.pvalue->ptr);
+		width = gpuSurface->GetTexture()->GetWidth();
+		height = gpuSurface->GetTexture()->GetHeight();
+	}
+	else
+	{
+		interpreter->GetApp()->gpu->GetBackbufferSize(width, height);
+	}
+
+	float aspect = float(width) / float(height);
+	glm::vec3 ray = gpuCamera->GetUnprojectedRay(float(x.nvalue), float(y.nvalue), aspect);
+	ray *= (gpuCamera->farClip - gpuCamera->nearClip);
+
+	PhysicsApi * physics = interpreter->GetApp()->physics;
+	PhysicsWorld * physicsWorld = static_cast<PhysicsWorld*>(world.pvalue->ptr);
+
+	float t;
+	glm::vec3 position;
+	glm::vec3 normal;
+	PhysicsObject * physicsObject = physics->PickObject(physicsWorld, gpuCamera->position, ray, t, position, normal);
+
+	if(physicsObject)
+	{
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, ScriptPtrType::PhysicsObject)));
+		interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.x)));
+		interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.y)));
+		interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.z)));
+	}
+}
+
+void ScriptCallbacks::DragPhysicsObject(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, object, PhysicsObject);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+	interpreter->ClearParams();
+
+	PhysicsApi * physics = interpreter->GetApp()->physics;
+	PhysicsObject * physicsObject = static_cast<PhysicsObject*>(object.pvalue->ptr);
+	glm::vec3 position(float(x.nvalue), float(y.nvalue), float(z.nvalue));
+
+	physics->DragObject(physicsObject, position);
+}
+
 void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, object, PhysicsObject);
@@ -2891,6 +2951,116 @@ void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 	complexModel->models[0].destructMesh = true;
 
 	interpreter->PushParam(ScriptParam(complexModel, ScriptPtrType::GpuComplexModel));
+}
+
+void ScriptCallbacks::CreateLeapHelper(ScriptInterpreter * interpreter)
+{
+	LeapMotionHelper * leapHelper = new LeapMotionHelper();
+
+	interpreter->PushParam(ScriptParam(leapHelper, ScriptPtrType::LeapHelper));
+}
+
+void ScriptCallbacks::GetLeapFrameTime(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(leapHelper->GetFrameDelta())));
+}
+
+void ScriptCallbacks::GetLeapNumBones(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	interpreter->ClearParams();
+	
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+
+	unsigned numBones = leapHelper->GetNumBones();
+
+	interpreter->PushParam(ScriptParam(ScriptParam::INT, double(numBones)));
+}
+
+void ScriptCallbacks::GetLeapBoneDetails(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	POP_NUMPARAM(2, index);
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+	
+	unsigned uIndex = unsigned(index.nvalue);
+	bool visibility = leapHelper->IsBoneVisible(uIndex);
+	float length = leapHelper->GetBoneLength(uIndex);
+	float radius = leapHelper->GetBoneRadius(uIndex);
+
+	interpreter->PushParam(ScriptParam(ScriptParam::BOOL, double(visibility)));
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(length)));
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(radius)));
+}
+
+void ScriptCallbacks::GetLeapBonePosition(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	POP_NUMPARAM(2, index);
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+
+	unsigned uIndex = unsigned(index.nvalue);
+	glm::mat4 matrix = leapHelper->GetBoneMatrix(uIndex);
+	glm::vec4 position = matrix[3];
+
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.x)));
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.y)));
+	interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, double(position.z)));
+}
+
+void ScriptCallbacks::SetLeapPosition(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	POP_NUMPARAM(4, z);
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+	
+	leapHelper->SetPosition(glm::vec3(float(x.nvalue), float(y.nvalue), float(z.nvalue)));
+}
+
+void ScriptCallbacks::SetLeapScale(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	POP_NUMPARAM(2, scale);
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+	leapHelper->SetUniformScale(float(scale.nvalue));
+}
+
+void ScriptCallbacks::SyncLeapBoneMatrix(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, LeapHelper);
+	POP_NUMPARAM(2, index);
+	ScriptParam modelOrBody = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	LeapMotionHelper * leapHelper = static_cast<LeapMotionHelper*>(helper.pvalue->ptr);
+
+	glm::mat4 matrix = leapHelper->GetBoneMatrix(unsigned(index.nvalue));
+
+	if(modelOrBody.CheckPointer(ScriptPtrType::GpuComplexModel))
+	{
+		Gpu::ComplexModel * model = static_cast<Gpu::ComplexModel*>(modelOrBody.pvalue->ptr);
+		model->models[0].SetMatrix(matrix);
+	}
+	if(modelOrBody.CheckPointer(ScriptPtrType::PhysicsObject))
+	{
+		PhysicsObject * physicsObject = static_cast<PhysicsObject*>(modelOrBody.pvalue->ptr);
+		interpreter->GetApp()->physics->SetTargetMatrix(physicsObject, matrix);
+	}
 }
 
 } // namespace Ingenuity

@@ -7,11 +7,14 @@
 #include <glm/gtc/quaternion.hpp>
 #include <map>
 
+#include <dVector.h>
+
 class NewtonWorld;
 class NewtonBody;
 class NewtonJoint;
 class NewtonMaterial;
 
+class CustomKinematicController;
 class RagDollManager;
 
 namespace Ingenuity {
@@ -85,13 +88,10 @@ struct NewtonPhysicsObject : public PhysicsObject
 {
 	NewtonPhysicsSpec * spec;
 	NewtonBody * newtonBody;
-
-	glm::vec3 curPosition;
-	glm::vec3 prevPosition;
-	glm::quat curRotation;
-	glm::quat prevRotation;
+	CustomKinematicController * controller;
 	
-	NewtonPhysicsObject(NewtonPhysicsSpec * spec) : spec(spec), newtonBody(0) {}
+	NewtonPhysicsObject(NewtonPhysicsSpec * spec) : 
+		spec(spec), newtonBody(0), controller(0) {}
 	virtual ~NewtonPhysicsObject();
 
 	void RemoveFromWorld();
@@ -107,6 +107,13 @@ struct NewtonPhysicsRagdoll : public PhysicsRagdoll
 
 class NewtonApi : public PhysicsApi
 {
+	//float m_pickedBodyParam;
+	bool m_prevMouseState;
+	static glm::vec4 m_pickedBodyDisplacement;
+	static glm::vec4 m_pickedBodyLocalAtachmentPoint;
+	static NewtonBody * m_targetPicked;
+	//static NewtonBodyDestructor m_bodyDestructor;
+
 	float physicsTime;
 	long long microseconds;
 	bool reentrantUpdate;
@@ -117,11 +124,13 @@ class NewtonApi : public PhysicsApi
 	MaterialBank materialBank;
 	MaterialPairBank materialPairBank;
 
-	static void SetTransformCallback(const NewtonBody * const body, const float * const matrix, int threadIndex);
+	//static void SetTransformCallback(const NewtonBody * const body, const float * const matrix, int threadIndex);
 	static int AABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const NewtonBody* const body1, int threadIndex);
 	//static int CompoundAABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const void* const collsionNode0, const NewtonBody* const body1, const void* const collsionNode1, int threadIndex);
 	static void ContactCollisionCallback(const NewtonJoint* contactJoint, float timestep, int threadIndex);
 	static void DebugPolygonCallback(void* userData, int vertexCount, const float* faceVertec, int id);
+	static void SpringForceCallback(const NewtonBody * const body, float timeStep, int threadIndex);
+	void UpdateSpringPosition(float timeStep);
 	
 	//int GetNewtonMaterialID(NewtonWorld * newtonWorld, PhysicsMaterial * material);
 	static void ApplyMassMatrix(NewtonPhysicsObject * physicsObject);
@@ -162,8 +171,16 @@ public:
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) override;
 	virtual void SetRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetScale(PhysicsObject * object, glm::vec3 scale) override;
+	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix) override;
 	virtual void SetMass(PhysicsObject * object, float mass) override;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) override;
+
+	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) override;
+
+	//virtual void SetDragObject(PhysicsObject * object, glm::vec3 position);
+	//virtual void SetDragDisplacement(glm::vec3 displacement);
+
+	virtual void DragObject(PhysicsObject * object, glm::vec3 position) override;
 
 	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) override;
 };

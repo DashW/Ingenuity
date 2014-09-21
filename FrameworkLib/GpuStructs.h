@@ -1,5 +1,6 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
 #include "../Third Party/glm-0.9.5.4/glm/glm.hpp"
 #include "../Third Party/glm-0.9.5.4/glm/gtx/euler_angles.hpp"
 #include "../Third Party/glm-0.9.5.4/glm/gtx/transform.hpp"
@@ -236,6 +237,33 @@ struct Camera
 
 	float fovOrHeight, nearClip, farClip;
 	bool isOrthoCamera;
+
+	inline glm::mat4 GetViewMatrix()
+	{
+		return glm::scale(glm::vec3(-1.0f, 1.0f, 1.0f)) * glm::lookAt(position, target, up);
+	}
+
+	inline glm::mat4 GetProjMatrix(float aspect)
+	{
+		const float halfY = fovOrHeight * 0.5f;
+		const float halfX = halfY * aspect;
+
+		return isOrthoCamera ?
+			glm::ortho(-halfX, halfX, -halfY, halfY, nearClip, farClip) :
+			glm::perspective(fovOrHeight, aspect, nearClip, farClip);
+	}
+
+	inline glm::vec3 GetUnprojectedRay(float x, float y, float aspect)
+	{
+		glm::mat4 viewMatrix = GetViewMatrix();
+		viewMatrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+		return glm::normalize(glm::unProject(
+			glm::vec3(x, 1.0f-y, 0.0f), 
+			glm::inverse(glm::transpose(viewMatrix)), 
+			GetProjMatrix(aspect), 
+			glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+	}
 
 	Camera() :
 		position(0.0f, 0.0f, -1.0f),

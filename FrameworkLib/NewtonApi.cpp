@@ -8,6 +8,7 @@
 #define _CUSTOM_JOINTS_STATIC_LIB
 #include <CustomArcticulatedTransformManager.h>
 #include <CustomBallAndSocket.h>
+#include <CustomKinematicController.h>
 
 #include <dVector.h>
 #include <dMatrix.h>
@@ -638,6 +639,19 @@ public:
 
 namespace Ingenuity {
 
+// SPRING STATICS - REMOVE OR REFACTOR!!!
+
+#define MOUSE_PICK_DAMP			 20.0f
+#define MOUSE_PICK_STIFFNESS	 300.0f
+
+glm::vec4 NewtonApi::m_pickedBodyDisplacement;
+glm::vec4 NewtonApi::m_pickedBodyLocalAtachmentPoint;
+//dVector NewtonApi::m_pickedBodyLocalAtachmentNormal;
+NewtonBody* NewtonApi::m_targetPicked = NULL;
+//NewtonBodyDestructor NewtonApi::m_bodyDestructor;
+
+// END OF SPRING STATICS
+
 NewtonPhysicsWorld::~NewtonPhysicsWorld()
 {
 	if(newtonWorld)
@@ -679,7 +693,9 @@ void NewtonPhysicsObject::RemoveFromWorld()
 NewtonApi::NewtonApi() :
 physicsTime(0.0f),
 microseconds(0),
-reentrantUpdate(false)
+reentrantUpdate(false),
+m_prevMouseState(false)
+//m_pickedBodyParam(0.0f)
 {
 	QueryPerformanceFrequency(&frequency);
 }
@@ -693,27 +709,27 @@ NewtonApi::~NewtonApi()
 	//}
 }
 
-void NewtonApi::SetTransformCallback(const NewtonBody * const body, const float * const matrix, int threadIndex)
-{
-	NewtonPhysicsObject * physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(body);
-
-	glm::vec3 position(matrix[12], matrix[13], matrix[14]);
-	glm::mat4x4 rotationMat4;
-
-	NewtonBodyGetRotation(body, (float*)&rotationMat4[0]);
-	rotationMat4 = glm::transpose(rotationMat4);
-
-	glm::quat rotation = glm::quat_cast(rotationMat4);
-
-	physicsObject->prevPosition = physicsObject->curPosition;
-	physicsObject->prevRotation = physicsObject->curRotation;
-	if(glm::dot(physicsObject->curRotation, rotation) < 0.0f) {
-		physicsObject->prevRotation *= -1.0f;
-	}
-
-	physicsObject->curPosition = position;
-	physicsObject->curRotation = rotation;
-}
+//void NewtonApi::SetTransformCallback(const NewtonBody * const body, const float * const matrix, int threadIndex)
+//{
+//	NewtonPhysicsObject * physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(body);
+//
+//	glm::vec3 position(matrix[12], matrix[13], matrix[14]);
+//	glm::mat4x4 rotationMat4;
+//
+//	NewtonBodyGetRotation(body, (float*)&rotationMat4[0]);
+//	rotationMat4 = glm::transpose(rotationMat4);
+//
+//	glm::quat rotation = glm::quat_cast(rotationMat4);
+//
+//	physicsObject->prevPosition = physicsObject->curPosition;
+//	physicsObject->prevRotation = physicsObject->curRotation;
+//	if(glm::dot(physicsObject->curRotation, rotation) < 0.0f) {
+//		physicsObject->prevRotation *= -1.0f;
+//	}
+//
+//	physicsObject->curPosition = position;
+//	physicsObject->curRotation = rotation;
+//}
 
 
 void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timestep, int threadIndex)
@@ -824,6 +840,200 @@ void NewtonApi::DebugPolygonCallback(void* userData, int vertexCount, const floa
 	}
 }
 
+void NewtonApi::SpringForceCallback(const NewtonBody * const body, float timestep, int threadIndex)
+{
+	glm::vec4 com;
+	glm::mat4 matrix;
+
+	// apply the the body forces
+	//if(m_chainPickBodyForceCallback) {
+	//	m_chainPickBodyForceCallback(body, timestep, threadIndex);
+	//}
+	ApplyForceAndTorqueCallback(body, timestep, threadIndex);
+
+	// add the mouse pick penalty force and torque
+	NewtonBodyGetMatrix(body, &matrix[0][0]);
+	NewtonBodyGetCentreOfMass(body, &com[0]);
+
+	if(NewtonBodyGetType(body) == NEWTON_KINEMATIC_BODY) 
+	{
+		// mouse pick a kinematic body, simply update the position to the mouse delta
+
+		// calculate the displacement
+		matrix[3] = matrix * (m_pickedBodyDisplacement * 0.3f);
+		NewtonBodySetMatrix(body, &matrix[0][0]);
+
+	}
+	else 
+	{
+		// we pick a dynamics body, update by applying forces
+		dFloat mass;
+		dFloat Ixx;
+		dFloat Iyy;
+		dFloat Izz;
+
+		glm::vec4 veloc;
+
+		NewtonBodyGetVelocity(body, &veloc[0]);
+		NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
+
+		glm::vec4 force(m_pickedBodyDisplacement * mass * MOUSE_PICK_STIFFNESS);
+		glm::vec4 dampForce(veloc * mass * MOUSE_PICK_DAMP);
+		force -= dampForce;
+
+		matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, matrix[3][3]);
+
+		// calculate local point relative to center of mass
+		//glm::vec4 point(matrix * (m_pickedBodyLocalAtachmentPoint - com));
+		//glm::vec4 point(glm::inverse(glm::transpose(matrix)) * (m_pickedBodyLocalAtachmentPoint - com));
+		//glm::vec4 torque(point * force);
+
+		NewtonBodyAddForce(body, &force.x);
+		//NewtonBodyAddTorque(body, &torque.x);
+
+		// make sure the body is unfrozen, if it is picked
+		NewtonBodySetFreezeState(body, 0);
+	}
+}
+
+void NewtonApi::DragObject(PhysicsObject * object, glm::vec3 position)
+{
+	// handle pick body from the screen
+
+	//glm::vec4 origin4 = glm::vec4(origin, 0.0f);
+	//glm::vec4 ray4 = glm::vec4(ray, 0.0f);
+
+	bool mousePickState = true;
+	if(!m_targetPicked) 
+	{
+		// Mouse has been clicked this frame!
+		if(!m_prevMouseState && mousePickState) 
+		{
+			//dFloat param;
+			//glm::vec3 posit;
+			//glm::vec3 normal;
+
+			//PhysicsObject * object = PickObject(world, origin, ray, param, posit, normal);
+
+			if(object) {
+				NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
+
+				m_targetPicked = physicsObject->newtonBody;
+				glm::mat4 matrix;
+				NewtonBodyGetMatrix(m_targetPicked, &matrix[0][0]);
+
+				// save point local to the body matrix
+				//m_pickedBodyParam = param;
+				m_pickedBodyDisplacement = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+				m_pickedBodyLocalAtachmentPoint = glm::inverse(matrix) * glm::vec4(position, 1.0f);
+
+				// convert normal to local space
+				//m_pickedBodyLocalAtachmentNormal = matrix.UnrotateVector(normal);
+
+				// link th force and torque callback
+				//m_chainPickBodyForceCallback = NewtonBodyGetForceAndTorqueCallback(m_targetPicked);
+				//dAssert(m_chainPickBodyForceCallback != OnPickedBodyApplyForce);
+
+				// set a new call back
+				NewtonBodySetForceAndTorqueCallback(m_targetPicked, SpringForceCallback);
+
+				// save the destructor call back
+				//m_bodyDestructor = NewtonBodyGetDestructorCallback(m_targetPicked);
+				//NewtonBodySetDestructorCallback(m_targetPicked, OnPickedBodyDestroyedNotify);
+			}
+		}
+	}
+	else 
+	{
+		//if(mainWin->GetMouseKeyState(0)) {
+			glm::mat4 matrix;
+			NewtonBodyGetMatrix(m_targetPicked, &matrix[0][0]);
+
+			glm::vec4 p2 = matrix * m_pickedBodyLocalAtachmentPoint;
+			//glm::vec4 p(origin4 + (ray4 * m_pickedBodyParam));
+			m_pickedBodyDisplacement = glm::vec4(position,1.0f) - p2;
+			float mag2 = glm::dot(m_pickedBodyDisplacement,m_pickedBodyDisplacement);
+			if(mag2 > dFloat(20 * 20)) {
+				m_pickedBodyDisplacement = m_pickedBodyDisplacement * (20.0f / sqrtf(glm::dot(m_pickedBodyDisplacement,m_pickedBodyDisplacement)));
+			}
+		//}
+		//else {
+		//	// unchain the callbacks
+		//	NewtonBodySetForceAndTorqueCallback(m_targetPicked, ApplyForceAndTorqueCallback);
+		//	NewtonBodySetDestructorCallback(m_targetPicked, m_bodyDestructor);
+		//	m_targetPicked = NULL;
+		//	m_bodyDestructor = NULL;
+		//}
+	}
+
+	m_prevMouseState = mousePickState;
+}
+
+PhysicsObject * NewtonApi::PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut)
+{
+	class dMousePickClass
+	{
+	public:
+		dMousePickClass() : m_param(1.0f), m_body(NULL) {}
+
+		// implement a ray cast pre-filter
+		static unsigned RayCastPrefilter(const NewtonBody* body, const NewtonCollision* const collision, void* const userData)
+		{
+			// ray cannot pick trigger volumes
+			//return NewtonCollisionIsTriggerVolume(collision) ? 0 : 1;
+
+			const NewtonCollision* const parent = NewtonCollisionGetParentInstance(collision);
+			if(parent) {
+				// you can use this to filter sub collision shapes.  
+				dAssert(NewtonCollisionGetSubCollisionHandle(collision));
+			}
+
+			return (NewtonBodyGetType(body) == NEWTON_DYNAMIC_BODY) ? 1 : 0;
+		}
+
+		static dFloat RayCastFilter(const NewtonBody* const body, const NewtonCollision* const collisionHit, const dFloat* const contact, const dFloat* const normal, dLong collisionID, void* const userData, dFloat intersectParam)
+		{
+			// check if we are hitting a sub shape
+			const NewtonCollision* const parent = NewtonCollisionGetParentInstance(collisionHit);
+			if(parent) {
+				// you can use this to filter sub collision shapes.  
+				dAssert(NewtonCollisionGetSubCollisionHandle(collisionHit));
+			}
+
+			dMousePickClass* const data = (dMousePickClass*)userData;
+			data->m_body = body;
+
+			if(intersectParam < data->m_param) {
+				data->m_param = intersectParam;
+				data->m_normal = glm::vec3(normal[0], normal[1], normal[2]);
+			}
+			return intersectParam;
+		}
+
+		glm::vec3 m_normal;
+		dFloat m_param;
+		const NewtonBody* m_body;
+	};
+
+	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(world);
+
+	glm::vec3 target = origin + dir;
+
+	dMousePickClass rayCast;
+	NewtonWorldRayCast(physicsWorld->newtonWorld, &origin[0], &target[0], dMousePickClass::RayCastFilter, &rayCast, dMousePickClass::RayCastPrefilter, 0);
+
+	NewtonPhysicsObject * physicsObject = 0;
+
+	if(rayCast.m_body) {
+		physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(rayCast.m_body);
+		posOut = origin + ( dir * (rayCast.m_param) );
+		normalOut = rayCast.m_normal;
+		tOut = rayCast.m_param;
+	}
+
+	return physicsObject;
+}
+
 //int NewtonApi::GetNewtonMaterialID(NewtonWorld * newtonWorld, PhysicsMaterial * material)
 //{
 //	int newtonMaterialID = -1;
@@ -839,7 +1049,6 @@ void NewtonApi::DebugPolygonCallback(void* userData, int vertexCount, const floa
 //	NewtonMaterialSetDefaultSoftness(newtonWorld, newtonMaterialID, newtonMaterialID, material->softness);
 //	return newtonMaterialID;
 //}
-
 
 void NewtonApi::ApplyMassMatrix(NewtonPhysicsObject * physicsObject)
 {
@@ -1095,14 +1304,14 @@ void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool is
 
 	glm::mat4 matrix;
 
-	if(physicsObject->spec->kinematic)
-	{
-		body = NewtonCreateKinematicBody(physicsWorld->newtonWorld, collision, (float*)&matrix);
-	}
-	else
-	{
+	//if(physicsObject->spec->kinematic)
+	//{
+	//	body = NewtonCreateKinematicBody(physicsWorld->newtonWorld, collision, (float*)&matrix);
+	//}
+	//else
+	//{
 		body = NewtonCreateDynamicBody(physicsWorld->newtonWorld, collision, (float*)&matrix);
-	}
+	//}
 
 	//PhysicsMaterial * material = cachedMaterials[physicsObject->spec->materialKey];
 	//if(material)
@@ -1118,7 +1327,7 @@ void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool is
 	}
 
 	NewtonBodySetUserData(body, (void*)physicsObject);
-	NewtonBodySetTransformCallback(body, NewtonApi::SetTransformCallback);
+	//NewtonBodySetTransformCallback(body, NewtonApi::SetTransformCallback);
 	NewtonBodySetForceAndTorqueCallback(body, NewtonApi::ApplyForceAndTorqueCallback);
 
 	NewtonDestroyCollision(collision);
@@ -1272,7 +1481,14 @@ glm::mat4 NewtonApi::GetMatrix(PhysicsObject * object)
 	glm::mat4 localMatrix;
 	NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), (float*)&localMatrix);
 
-	return matrix * localMatrix;
+	// HACK to orientate capsule collisions consistently with their graphics and Leap Motion counterparts
+	glm::mat4 correctionMatrix;
+	if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
+	{
+		correctionMatrix = glm::eulerAngleY(float(M_PI / 2.0));
+	}
+
+	return matrix * localMatrix * correctionMatrix;
 }
 
 PhysicsObject * NewtonApi::GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index)
@@ -1361,6 +1577,31 @@ void NewtonApi::SetScale(PhysicsObject * object, glm::vec3 scale)
 	NewtonBodySetCollisionScale(physicsObject->newtonBody, scale.x, scale.y, scale.z);
 
 	//ApplyMassMatrix(physicsObject);
+}
+
+void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix)
+{
+	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
+
+	if(!physicsObject->newtonBody) return;
+
+	// HACK to orientate capsule collisions consistently with their graphics and Leap Motion counterparts
+	if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
+	{
+		glm::mat4 correctionMatrix = glm::eulerAngleY(float(M_PI / -2.0));
+		matrix = matrix * correctionMatrix;
+	}
+
+	for(unsigned i = 0; i < 3; i++)
+	{
+		float basisVectorLength = glm::length(matrix[i]);
+		if(fabs(basisVectorLength - 1.0f) > 1.0e-4f)
+		{
+			__debugbreak();
+		}
+	}
+
+	NewtonBodySetMatrix(physicsObject->newtonBody, (float*)&matrix);
 }
 
 void NewtonApi::SetMass(PhysicsObject * object, float mass)

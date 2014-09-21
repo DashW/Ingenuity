@@ -209,11 +209,24 @@ function Begin()
 	FinalizePhysicsRagdoll(physicsRagdoll);
 	
 	-- END PHYSICS RAGDOLL --
+	
+	leapModels = {};
+	leapVisibilities = {};
+	leapPhysicals = {};
+	leapHelper = CreateLeapHelper();
+	SetLeapPosition(leapHelper,0,-4.5,0);
+	SetLeapScale(leapHelper,0.01);
+	
+	pickModel = CreateModel("PosNor",CreateSphere());
+	SetModelScale(pickModel,0.1);
+	SetMeshColor(pickModel,0,1,0,0);
 
 	debugFont = GetFont(40,"Arial");
 	
 	light = CreateLight("directional");
 	SetLightDirection(light,math.sin(2.5),0.75,math.cos(2.5));
+	
+	dragEnabled = false;
 end
 
 function Update(delta)
@@ -260,6 +273,35 @@ function Update(delta)
 
 		assetTicket = -1;
 	end
+	
+	for i = 1,GetLeapNumBones(leapHelper) do
+		visible, length, radius = GetLeapBoneDetails(leapHelper, i-1);
+		leapVisibilities[i] = visible;
+		if visible then
+			if leapModels[i] == nil then
+				leapPhysicals[i] = CreatePhysicsCapsule(radius, length, false);
+				AddToPhysicsWorld(physicsWorld,leapPhysicals[i],true);
+				
+				local vtx, idx = CreateCapsule(length / (radius * 2.0));
+				local boneModel = CreateModel("PosNor",vtx,idx);
+				SetModelScale(boneModel, radius * 2.0);
+				leapModels[i] = boneModel;
+				print("Created Leap Model " .. i-1);
+			end
+			SyncLeapBoneMatrix(leapHelper, i-1, leapPhysicals[i]);
+			--SyncLeapBoneMatrix(leapHelper, i-1, leapModels[i]);
+			SyncPhysicsMatrix(leapPhysicals[i],leapModels[i]);
+		end
+	end
+	--if not leapAccum then
+	--	leapAccum = CreateAccumulator();
+	--	leapFrameTime = 0;
+	--end
+	--leapAccum:Add(GetLeapFrameTime(leapHelper));
+	--if leapAccum:Sum() > 0.5 then
+	--	leapFrameTime = leapAccum:Average();
+	--	leapAccum:Clear(0.5);
+	--end
 
 	UpdatePhysicsWorld(physicsWorld,delta);
 	for i,bone in pairs(ragdollBones) do
@@ -280,8 +322,39 @@ function Update(delta)
 		--SetPhysicsPosition(physicsVase,0,8,0);
 		--SetPhysicsRotation(physicsVase,0,0,0);
 	end
-
-	UpdateFlyCamera(delta);
+	
+	local sWidth, sHeight = GetScreenSize();
+	local x, y = GetMousePosition();
+	
+	--down,pressed,released = GetMouseLeft();
+	--if pickedObject and down then
+	--	DragPhysicsObject(physicsWorld,camera,x/sWidth,y/sHeight);
+	--else
+		UpdateFlyCamera(delta);
+	--end
+	
+	--down,pressed,released = GetKeyState('p');
+	--if pressed then
+		pickedObject, pickedX, pickedY, pickedZ = PickPhysicsObject(physicsWorld,camera,x/sWidth,y/sHeight);
+		if pickedObject then
+			SetModelPosition(pickModel,pickedX,pickedY,pickedZ);
+		end
+	--end
+	
+	down,pressed,released = GetKeyState('g');
+	if pressed then
+		dragEnabled = not dragEnabled;
+	end
+	
+	if dragEnabled then
+		physicsHead = ragdollBones[12];
+		if leapVisibilities[42] then
+			print("PALM VISIBLE!");
+			
+			DragPhysicsObject(physicsHead, GetLeapBonePosition(leapHelper, 41));
+		end
+	end
+	
 	UpdateFrameTime(delta);
 end
 
@@ -293,6 +366,16 @@ function Draw()
 		DrawComplexModel(model,camera,light);
 		--DrawComplexModel(debugModels[i],camera);
 	end
+	
+	for i,leapModel in pairs(leapModels) do
+		if leapModel and leapVisibilities[i] then
+			DrawComplexModel(leapModel,camera,light);
+		end
+	end
+	
+	if pickedObject then
+		DrawComplexModel(pickModel,camera,light);
+	end
 
 	if assetTicket == -1 then
 		--DrawComplexModel(vaseModel,camera);
@@ -300,7 +383,8 @@ function Draw()
 		DrawComplexModel(skyModel,camera);
 	end
 
-	--DrawText(debugFont,frameTimeText,0,0,0);
+	--debugText = string.format("%s Leap: %2.2fms", frameTimeText, leapFrameTime * 1000);
+	DrawText(debugFont,frameTimeText,0,0,0);
 end
 
 function End()

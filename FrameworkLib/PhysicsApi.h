@@ -97,8 +97,13 @@ public:
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) = 0;
 	virtual void SetRotation(PhysicsObject * object, glm::vec3 rotation) = 0;
 	virtual void SetScale(PhysicsObject * object, glm::vec3 scale) = 0;
+	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix) = 0;
 	virtual void SetMass(PhysicsObject * object, float mass) = 0;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) = 0;
+
+	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) = 0;
+
+	virtual void DragObject(PhysicsObject * object, glm::vec3 position) = 0;
 
 	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) = 0;
 };
