@@ -91,7 +91,7 @@ public:
 	{		
 		gpu->DrawGpuModel(cube, &camera, 0, 0);
 
-		gpu->DrawGpuText(font,L"Direct3D", 0.0f, 0.0f, false);
+		gpu->DrawGpuText(font, L"Ingenuity", 0.0f, 0.0f, false);
 	}
 };
 

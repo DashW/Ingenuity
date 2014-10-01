@@ -40,6 +40,12 @@
     <Filter Include="Scripting">
       <UniqueIdentifier>{a1a0063c-0794-43c0-8a3f-dcb731dc08f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Graphics\GL">
+      <UniqueIdentifier>{e3963dc2-9e40-4513-a147-7253f1aef74c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\GL">
+      <UniqueIdentifier>{cea2f567-0cab-4d12-a4fb-798818c75e1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -179,6 +185,12 @@
     <ClInclude Include="PhysicsApi.h" />
     <ClInclude Include="NewtonApi.h" />
     <ClInclude Include="LeapMotionHelper.h" />
+    <ClInclude Include="GLApi.h">
+      <Filter>Graphics\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="GLShaders.h">
+      <Filter>Graphics\GL</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -273,6 +285,12 @@
     </ClCompile>
     <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="LeapMotionHelper.cpp" />
+    <ClCompile Include="GLApi.cpp">
+      <Filter>Graphics\GL</Filter>
+    </ClCompile>
+    <ClCompile Include="GLShaders.cpp">
+      <Filter>Graphics\GL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -464,6 +482,12 @@
     </None>
     <None Include="Shaders\DX11\ModelShader.inl">
       <Filter>Shaders\DX11</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderPixPosCol.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderVtxPosCol.vert">
+      <Filter>Shaders\GL</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

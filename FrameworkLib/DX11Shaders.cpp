@@ -266,7 +266,7 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 		return false;
 	}
 
-	DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
+	//DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
 
 	//XMMATRIX world = GetWorld(model
 	glm::mat4 modelMatrix = model->GetMatrix();

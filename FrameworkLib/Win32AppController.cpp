@@ -19,6 +19,9 @@
 #ifdef USE_DX11_GPUAPI
 #include "DX11Api.h"
 #endif
+#ifdef USE_GL_GPUAPI
+#include "GLApi.h"
+#endif
 
 #ifdef USE_FREE_IMAGEAPI
 #include "FreeImageApi.h"
@@ -96,7 +99,11 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 #ifdef USE_DX11_GPUAPI
 	app->gpu = new DX11::Api(app->files, window->getHandle());
 #else
+#ifdef USE_GL_GPUAPI
+	app->gpu = new GL::Api(app->files, window->getHandle());
+#else
 #error "Gpu API not defined!"
+#endif
 #endif
 #endif
 

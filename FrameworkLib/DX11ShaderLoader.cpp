@@ -1,3 +1,5 @@
+#ifdef USE_DX11_GPUAPI
+
 #include "DX11ShaderLoader.h"
 #include "DX11Api.h"
 
@@ -306,3 +308,5 @@ DX11::TextureShader * DX11::ShaderLoader::ParseTextureShaderXML(tinyxml2::XMLEle
 }
 
 } // namespace Ingenuity
+
+#endif // USE_DX11_GPUAPI

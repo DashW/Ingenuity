@@ -4,23 +4,29 @@
 Framework Projects/**/Debug/
 Framework Projects/**/Debug DX9/
 Framework Projects/**/Debug DX11/
+Framework Projects/**/Debug GL/
 Framework Projects/**/Release/
 Framework Projects/**/Release DX9/
 Framework Projects/**/Release DX11/
+Framework Projects/**/Release GL/
 
 FrameworkLib/Debug/
 FrameworkLib/Debug DX9/
 FrameworkLib/Debug DX11/
+FrameworkLib/Debug GL/
 FrameworkLib/Release/
 FrameworkLib/Release DX9/
 FrameworkLib/Release DX11/
+FrameworkLib/Release GL/
 
 Ingenuity/Debug/
 Ingenuity/Debug DX9/
 Ingenuity/Debug DX11/
+Ingenuity/Debug GL/
 Ingenuity/Release/
 Ingenuity/Release DX9/
 Ingenuity/Release DX11/
+Ingenuity/Release GL/
 
 Ingenuity/Deploy/*
 !Ingenuity/Deploy/Common

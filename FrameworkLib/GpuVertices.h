@@ -253,7 +253,7 @@ struct Instance_PosSca
 class VertApi {
 public:
 
-	static unsigned GetVertexSize(VertexType type)
+	inline static unsigned GetVertexSize(VertexType type)
 	{
 		switch(type)
 		{
@@ -273,7 +273,7 @@ public:
 		return 0;
 	}
 
-	static const char * GetVertexName(VertexType type)
+	inline static const char * GetVertexName(VertexType type)
 	{
 		switch(type)
 		{
@@ -287,7 +287,7 @@ public:
 		}
 	}
 
-	static unsigned GetInstanceSize(InstanceType type)
+	inline static unsigned GetInstanceSize(InstanceType type)
 	{
 		switch(type)
 		{

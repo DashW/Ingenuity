@@ -5,7 +5,7 @@ Ingenuity Game Engine and Real-Time Applicaiton Framework
 
 Ingenuity Framework is a lightweight collection of C++ libraries and API wrappers for the development of realtime, hardware-accelerated applications such as games, visualisations and tools. Current features include:
 - Entrypoints for Win32 and Windows Store applications
-- GPU abstraction for DirectX11 and DirectX9 (deprecated)
+- GPU abstraction for DirectX11, OpenGL (experimental), and DirectX9 (deprecated)
 - Audio abstraction for XAudio2
 - Scripting abstraction for Lua
 - Image processing abstraction for FreeImage and WIC
@@ -16,7 +16,7 @@ Ingenuity Framework is a lightweight collection of C++ libraries and API wrapper
 - An experimental vector graphics library with SVG parser & path triangulator
 
 Planned features include:
-Geometry Shaders, Culling, OpenGL, Runtime Libraries, Multithreading, and support for more asset formats (OGG, COLLADA)
+Geometry Shaders, Culling, Runtime Libraries, Multithreading, and support for more asset formats (OGG, COLLADA)
 
 Ingenuity Game Engine is a scripting frontend for the Ingenuity Framework, intended for rapid development without sacrificing quality. Features include development on target platform, runtime script reloading, and a basic console.
 
