@@ -489,6 +489,21 @@
     <None Include="Shaders\GL\BaseShaderVtxPosCol.vert">
       <Filter>Shaders\GL</Filter>
     </None>
+    <None Include="Shaders\GL\BaseShaderVtxPosNorTex.vert">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderPixPosNorTex.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderVtxPosNor.vert">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderPixPosNor.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\ModelShaderCommon.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="BaseShader.xml">

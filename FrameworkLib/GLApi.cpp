@@ -9,6 +9,8 @@
 #include <GL/glew.h>
 #include <GL/wglew.h>
 
+#include <SOIL.h>
+
 #define WGL_CONTEXT_MAJOR_VERSION_ARB   0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB   0x2092
 #define WGL_CONTEXT_LAYER_PLANE_ARB     0x2093
@@ -19,14 +21,74 @@
 namespace Ingenuity {
 namespace GL {
 
+struct VertexAttribDesc
+{
+	unsigned numFloats;
+	VertexComponent::Type component;
+	unsigned interval;
+	unsigned offset;
+};
+
+VertexAttribDesc posDesc[2] = {
+		{ 3, VertexComponent::Pos, 0, 0 },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posColDesc[3] = {
+		{ 3, VertexComponent::Pos, 6 * sizeof(float), 0 },
+		{ 3, VertexComponent::Col, 6 * sizeof(float), 3 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posNorDesc[3] = {
+		{ 3, VertexComponent::Pos, 6 * sizeof(float), 0 },
+		{ 3, VertexComponent::Nor, 6 * sizeof(float), 3 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posTexDesc[3] = {
+		{ 3, VertexComponent::Pos, 5 * sizeof(float), 0 },
+		{ 2, VertexComponent::Tex, 5 * sizeof(float), 3 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posNorTexDesc[4] = {
+		{ 3, VertexComponent::Pos, 8 * sizeof(float), 0 },
+		{ 3, VertexComponent::Nor, 8 * sizeof(float), 3 * sizeof(float) },
+		{ 2, VertexComponent::Tex, 8 * sizeof(float), 6 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posNorTanTexDesc[5] = {
+		{ 3, VertexComponent::Pos, 11 * sizeof(float), 0 },
+		{ 3, VertexComponent::Nor, 11 * sizeof(float), 3 * sizeof(float) },
+		{ 3, VertexComponent::Tan, 11 * sizeof(float), 6 * sizeof(float) },
+		{ 2, VertexComponent::Tex, 11 * sizeof(float), 9 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+
+VertexAttribDesc * vertexDescs[VertexType_Count] = {
+	posDesc,
+	posColDesc,
+	posNorDesc,
+	posTexDesc,
+	posNorTexDesc,
+	posNorTanTexDesc
+};
+
 Mesh::~Mesh()
 {
-	glDeleteVertexArrays(1, &vertexArrayObject);
-	glDeleteBuffers(1, &vertexBufferObject);
-	if(indexBufferObject)
+	glDeleteVertexArrays(1, &vertexArrayId);
+	glDeleteBuffers(1, &vertexBufferId);
+	if(indexBufferId)
 	{
-		glDeleteBuffers(1, &indexBufferObject);
+		glDeleteBuffers(1, &indexBufferId);
 	}
+}
+
+Texture::~Texture()
+{
+	glDeleteTextures(1, &textureId);
+}
+
+CubeMap::~CubeMap()
+{
+	glDeleteTextures(1, &cubeMapId);
 }
 
 Api::Api(Files::Api * files, HWND handle) :
@@ -211,8 +273,8 @@ void Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** l
 	//	model->effect ? &model->effect->samplerParams : 0,
 	//	true);
 
-	glBindVertexArray(glMesh->vertexArrayObject);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh->indexBufferObject);
+	glBindVertexArray(glMesh->vertexArrayId);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh->indexBufferId);
 
 	//if(dx11surface) dx11surface->Begin();
 	if(glMesh->IsIndexed())
@@ -253,12 +315,31 @@ Gpu::Font * Api::CreateGpuFont(int height, const wchar_t * facename, Gpu::FontSt
 
 Gpu::Texture * Api::CreateGpuTexture(char * data, unsigned dataSize, bool isDDS)
 {
-	return 0;
+	GL::Texture * texture = new GL::Texture();
+
+	texture->textureId = SOIL_load_OGL_texture_from_memory((const unsigned char*) data, dataSize, 4, 0, SOIL_FLAG_MIPMAPS);
+
+	glBindTexture(GL_TEXTURE_2D, texture->textureId);
+
+	int width, height;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	texture->width = (unsigned)width;
+	texture->height = (unsigned)height;
+	
+	return texture;
 }
 
 Gpu::CubeMap * Api::CreateGpuCubeMap(char * data, unsigned dataSize)
 {
-	return 0;
+	GL::CubeMap * cubeMap = new GL::CubeMap();
+
+	cubeMap->cubeMapId = SOIL_load_OGL_single_cubemap_from_memory((const unsigned char*) data, dataSize, "NSWEUD", 4, 0, 0);
+
+	return cubeMap;
 }
 
 Gpu::VolumeTexture * Api::CreateGpuVolumeTexture(char * data, unsigned dataSize)
@@ -275,20 +356,20 @@ Gpu::Mesh * Api::CreateGpuMesh(unsigned numVertices, void * vertexData, VertexTy
 {
 	GL::Mesh * createdMesh = new GL::Mesh();
 
-	glGenVertexArrays(1, &(createdMesh->vertexArrayObject));
-	glBindVertexArray(createdMesh->vertexArrayObject);
+	glGenVertexArrays(1, &(createdMesh->vertexArrayId));
+	glBindVertexArray(createdMesh->vertexArrayId);
 
-	glGenBuffers(1, &(createdMesh->vertexBufferObject));
-	glBindBuffer(GL_ARRAY_BUFFER, createdMesh->vertexBufferObject);
+	glGenBuffers(1, &(createdMesh->vertexBufferId));
+	glBindBuffer(GL_ARRAY_BUFFER, createdMesh->vertexBufferId);
 	glBufferData(GL_ARRAY_BUFFER, VertApi::GetVertexSize(type) * numVertices, vertexData, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
-	// Vertex specification for "PosCol" 
-	// TODO: Add vertex attrib pointers for more vertex types!
-	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
-	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (char*)(3 * sizeof(float)));
+	VertexAttribDesc * desc = vertexDescs[type];
+	for(unsigned i = 0; desc[i].component != VertexComponent::Nil; ++i)
+	{
+		glVertexAttribPointer(desc[i].component, desc[i].numFloats, GL_FLOAT, GL_FALSE, desc[i].interval, (char*)desc[i].offset);
+		glEnableVertexAttribArray(desc[i].component);
+	}
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
 	glBindVertexArray(0); 
 	// This shouldn't work? GL_ELEMENT_ARRAY_BUFFER (index buffer) should not be allowed unless a VAO is bound
 
@@ -305,8 +386,8 @@ Gpu::Mesh * Api::CreateGpuMesh(unsigned numVertices, void * vertexData,
 {
 	GL::Mesh * createdMesh = static_cast<GL::Mesh*>(CreateGpuMesh(numVertices, vertexData, type, dynamic));
 
-	glGenBuffers(1, &(createdMesh->indexBufferObject));
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, createdMesh->indexBufferObject);
+	glGenBuffers(1, &(createdMesh->indexBufferId));
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, createdMesh->indexBufferId);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numTriangles * 3 * sizeof(unsigned), indexData, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
 	createdMesh->numTriangles = numTriangles;

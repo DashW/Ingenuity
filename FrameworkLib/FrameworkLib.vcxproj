@@ -174,7 +174,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>USE_GL_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\glew-1.11.0\include;$(ProjectDir)..\Third Party\LeapSDK\include;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dContainers;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dMath;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dCustomJoints;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\glm-0.9.5.4;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\glew-1.11.0\include;$(ProjectDir)..\Third Party\LeapSDK\include;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dContainers;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dMath;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dCustomJoints;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\glm-0.9.5.4;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\Simple-OpenGL-Image-Library-master\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>-D_SCL_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -184,8 +184,8 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;opengl32.lib;glew32s.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;$(ProjectDir)..\Third Party\glew-1.11.0\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;opengl32.lib;glew32s.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;$(ProjectDir)..\Third Party\glew-1.11.0\lib\Release\Win32;$(ProjectDir)..\Third Party\Simple-OpenGL-Image-Library-master\projects\VC12\Debug MT;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Lib>
     <ProjectReference>
@@ -1001,7 +1001,12 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
     </None>
     <None Include="Shaders\GL\BaseShaderPixPosCol.frag" />
+    <None Include="Shaders\GL\BaseShaderPixPosNor.frag" />
+    <None Include="Shaders\GL\BaseShaderPixPosNorTex.frag" />
     <None Include="Shaders\GL\BaseShaderVtxPosCol.vert" />
+    <None Include="Shaders\GL\BaseShaderVtxPosNor.vert" />
+    <None Include="Shaders\GL\BaseShaderVtxPosNorTex.vert" />
+    <None Include="Shaders\GL\ModelShaderCommon.frag" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="BaseShader.xml">

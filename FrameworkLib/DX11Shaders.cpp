@@ -320,7 +320,7 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 	pixelConstData.numLights = numLights;
 	if(numLights > 0)
 	{
-		pixelConstData.ambient = 0.1f;
+		pixelConstData.ambient = 0.0f;
 		pixelConstData.cameraPosition = XMFLOAT3(camera->position.x, camera->position.y, camera->position.z);
 		pixelConstData.specularPower = model->specPower;
 		pixelConstData.specularFactor = model->specFactor;

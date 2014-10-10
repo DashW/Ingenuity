@@ -21,10 +21,10 @@ struct TextureShader;
 
 struct Mesh : public Gpu::Mesh
 {
-	unsigned vertexArrayObject;
-	unsigned vertexBufferObject;
+	unsigned vertexArrayId;
+	unsigned vertexBufferId;
 
-	unsigned indexBufferObject;
+	unsigned indexBufferId;
 
 	//unsigned vertexSize;
 	unsigned numVertices;
@@ -34,9 +34,9 @@ struct Mesh : public Gpu::Mesh
 	bool dynamic;
 
 	Mesh() :
-		vertexArrayObject(0),
-		vertexBufferObject(0),
-		indexBufferObject(0),
+		vertexArrayId(0),
+		vertexBufferId(0),
+		indexBufferId(0),
 		//vertexSize(0),
 		numVertices(0),
 		numTriangles(0),
@@ -44,7 +44,41 @@ struct Mesh : public Gpu::Mesh
 		dynamic(false) {}
 	virtual ~Mesh();
 
-	virtual bool IsIndexed() { return indexBufferObject != 0; }
+	virtual bool IsIndexed() { return indexBufferId != 0; }
+};
+
+struct Texture : public Gpu::Texture
+{
+	unsigned textureId;
+	unsigned width;
+	unsigned height;
+
+	virtual unsigned GetWidth() override { return width;  }
+	virtual unsigned GetHeight() override { return height; }
+
+	Texture() : textureId(0), width(0), height(0) {}
+	virtual ~Texture();
+};
+
+struct CubeMap : public Gpu::CubeMap
+{
+	unsigned cubeMapId;
+	
+	CubeMap() : cubeMapId(0) {}
+	virtual ~CubeMap();
+};
+
+struct VertexComponent
+{
+	enum Type
+	{
+		Nil = -1,
+		Pos = 0,
+		Col,
+		Nor,
+		Tex,
+		Tan
+	};
 };
 
 class Api : public Gpu::Api

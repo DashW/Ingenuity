@@ -46,6 +46,7 @@ public:
 		cameraAngle = 0.0f;
 
 		light = new Gpu::DirectionalLight();
+		light->color = glm::vec3(1.0f, 1.0f, 1.0f);
 
 		textPos.top = textPos.left = 0.0f;
 		textPos.right = 200.0f;

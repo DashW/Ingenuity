@@ -37,6 +37,17 @@ bool GL::ModelShader::OnShaderCompiled()
 {
 	bool techniqueFailed = false;
 
+	// If any of the required vertex or pixel shaders have not
+	// yet loaded, bail out!
+	for(unsigned i = 0; i < requiredVertexShaders.size(); ++i)
+	{
+		if(requiredVertexShaders[i] == 0) return false;
+	}
+	for(unsigned i = 0; i < requiredPixelShaders.size(); ++i)
+	{
+		if(requiredPixelShaders[i] == 0) return false;
+	}
+
 	for(unsigned i = 0; i < techniques.size(); ++i)
 	{
 		Technique & technique = techniques[i];
@@ -46,11 +57,26 @@ bool GL::ModelShader::OnShaderCompiled()
 		if(technique.vertexShader && technique.pixelShader && !technique.shaderProgram)
 		{
 			technique.shaderProgram = glCreateProgram(); // Create a GLSL program
-			glAttachShader(technique.shaderProgram, technique.vertexShader); // Attach a vertex shader to the program
-			glAttachShader(technique.shaderProgram, technique.pixelShader); // Attach the fragment shader to the program
 
-			glBindAttribLocation(technique.shaderProgram, 0, "in_Position"); // Bind a constant attribute location for positions of vertices
-			glBindAttribLocation(technique.shaderProgram, 1, "in_Color"); // Bind another constant attribute location, this time for color
+			// Attach the required vertex and pixel shaders
+			for(unsigned i = 0; i < requiredVertexShaders.size(); ++i)
+			{
+				glAttachShader(technique.shaderProgram, requiredVertexShaders[i]);
+			}
+			for(unsigned i = 0; i < requiredPixelShaders.size(); ++i)
+			{
+				glAttachShader(technique.shaderProgram, requiredPixelShaders[i]);
+			}
+
+			// Attach the main() shaders
+			glAttachShader(technique.shaderProgram, technique.vertexShader);
+			glAttachShader(technique.shaderProgram, technique.pixelShader); 
+
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::Pos, "in_Position");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::Col, "in_Color"); 
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::Nor, "in_Normal");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::Tex, "in_TexCoord");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::Tan, "in_Tangent");
 
 			glLinkProgram(technique.shaderProgram); // Link the vertex and fragment shaders in the program
 			
@@ -64,6 +90,18 @@ bool GL::ModelShader::OnShaderCompiled()
 				technique.projMatrixLocation = glGetUniformLocation(technique.shaderProgram, "projectionMatrix"); // Get the location of our projection matrix in the shader
 				technique.viewMatrixLocation = glGetUniformLocation(technique.shaderProgram, "viewMatrix"); // Get the location of our view matrix in the shader
 				technique.modelMatrixLocation = glGetUniformLocation(technique.shaderProgram, "modelMatrix"); // Get the location of our model matrix in the shader
+				technique.inverseTransMatrixLocation = glGetUniformLocation(technique.shaderProgram, "inverseTransposeMatrix");
+
+				technique.textureLocation = glGetUniformLocation(technique.shaderProgram, "textureSampler");
+
+				technique.materialColorLocation = glGetUniformLocation(technique.shaderProgram, "materialColor");
+
+				technique.lightPositionsLocation = glGetUniformLocation(technique.shaderProgram, "lightPositions");
+				technique.lightColorsLocation = glGetUniformLocation(technique.shaderProgram, "lightColors");
+				technique.lightSpotDirPowersLocation = glGetUniformLocation(technique.shaderProgram, "lightSpotDirPowers");
+				technique.numLightsLocation = glGetUniformLocation(technique.shaderProgram, "numLights");
+
+				technique.cameraPositionLocation = glGetUniformLocation(technique.shaderProgram, "cameraPosition");
 
 				//if(technique.projMatrixLocation < 0 || technique.viewMatrixLocation < 0 || technique.modelMatrixLocation < 0)
 				//{
@@ -106,10 +144,65 @@ bool GL::ModelShader::SetParameters(Gpu::Model * model, Gpu::Camera * camera, Gp
 	glm::mat4 modelMatrix = model->GetMatrix();
 	glm::mat4 viewMatrix = camera->GetViewMatrix();
 	glm::mat4 projMatrix = camera->GetProjMatrix(aspect);
+	glm::mat4 inverseTransposeMatrix = glm::inverse(glm::transpose(modelMatrix));
 
 	glUniformMatrix4fv(currentTechnique->projMatrixLocation, 1, GL_FALSE, &projMatrix[0][0]); // Send our projection matrix to the shader
 	glUniformMatrix4fv(currentTechnique->viewMatrixLocation, 1, GL_FALSE, &viewMatrix[0][0]); // Send our view matrix to the shader
 	glUniformMatrix4fv(currentTechnique->modelMatrixLocation, 1, GL_FALSE, &modelMatrix[0][0]); // Send our model matrix to the shader
+	glUniformMatrix4fv(currentTechnique->inverseTransMatrixLocation, 1, GL_FALSE, &inverseTransposeMatrix[0][0]);
+
+	if(currentTechnique->materialColorLocation > -1) 
+		glUniform4fv(currentTechnique->materialColorLocation, 1, &model->color[0]);
+
+	if(model->texture)
+	{
+		GL::Texture * glTexture = static_cast<GL::Texture*>(model->texture);
+
+		// Bind our texture in Texture Unit 0
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, glTexture->textureId);
+		// Set our "textureSampler" to use Texture Unit 0
+		glUniform1i(currentTechnique->textureLocation, 0);
+	}
+
+	glm::vec3 lightPositions[MAX_LIGHTS];
+	glm::vec3 lightColors[MAX_LIGHTS];
+	glm::vec4 lightSpotDirPowers[MAX_LIGHTS];
+
+	for(unsigned i = 0; i < numLights; i++)
+	{
+		Gpu::LightType lightType = lights[i]->GetType();
+
+		lightColors[i] = lights[i]->color;
+
+		if(lightType == Gpu::LightType_Point)
+		{
+			Gpu::PointLight* pointLight = static_cast<Gpu::PointLight*>(lights[i]);
+			lightPositions[i] = pointLight->position;
+			//shaderObject->SetFloat(attenuation, pointLight->atten);
+		}
+		else if(lightType == Gpu::LightType_Spot)
+		{
+			Gpu::SpotLight* spotLight = static_cast<Gpu::SpotLight*>(lights[i]);
+			lightPositions[i] = spotLight->position;
+			lightSpotDirPowers[i] = glm::vec4(spotLight->direction, spotLight->power);
+			//shaderObject->SetFloat(attenuation, spotLight->atten);
+		}
+		else // Gpu::LightType_Directional
+		{
+			Gpu::DirectionalLight* dirLight = static_cast<Gpu::DirectionalLight*>(lights[i]);
+			const float scale = 10.0e+10f;
+			lightPositions[i] = dirLight->direction * scale;
+			//shaderObject->SetFloat(attenuation, DEFAULT_ATTEN);
+		}
+	}
+
+	glUniform3fv(currentTechnique->lightPositionsLocation, MAX_LIGHTS, &lightPositions[0][0]);
+	glUniform3fv(currentTechnique->lightColorsLocation, MAX_LIGHTS, &lightColors[0][0]);
+	glUniform4fv(currentTechnique->lightSpotDirPowersLocation, MAX_LIGHTS, &lightSpotDirPowers[0][0]);
+	glUniform1ui(currentTechnique->numLightsLocation, numLights);
+
+	glUniform3fv(currentTechnique->cameraPositionLocation, 1, &camera->position[0]);
 
 	return true;
 }
@@ -120,8 +213,11 @@ bool GL::TextureShader::OnShaderCompiled()
 	glAttachShader(shaderProgram, vertexShader); // Attach a vertex shader to the program
 	glAttachShader(shaderProgram, pixelShader); // Attach the fragment shader to the program
 
-	glBindAttribLocation(shaderProgram, 0, "in_Position"); // Bind a constant attribute location for positions of vertices
-	glBindAttribLocation(shaderProgram, 1, "in_Color"); // Bind another constant attribute location, this time for color
+	glBindAttribLocation(shaderProgram, VertexComponent::Pos, "in_Position"); // Bind a constant attribute location for positions of vertices
+	glBindAttribLocation(shaderProgram, VertexComponent::Col, "in_Color"); // Bind another constant attribute location, this time for color
+	glBindAttribLocation(shaderProgram, VertexComponent::Nor, "in_Normal");
+	glBindAttribLocation(shaderProgram, VertexComponent::Tex, "in_TexCoord");
+	glBindAttribLocation(shaderProgram, VertexComponent::Tan, "in_Tangent");
 
 	glLinkProgram(shaderProgram); // Link the vertex and fragment shaders in the program
 
@@ -215,7 +311,7 @@ struct GL::ShaderLoader::ShaderResponse : public Files::Response
 			glShaderSource(shader, 1, &buffer, 0); // Set the source for the vertex shader to the loaded text
 			glCompileShader(shader); // Compile the vertex shader
 
-			if(ShaderLoader::ValidateShader(shader) && loader->GetShader()->OnShaderCompiled())
+			if(ShaderLoader::ValidateShader(shader))
 			{
 				if(pixelShader)
 				{
@@ -225,6 +321,8 @@ struct GL::ShaderLoader::ShaderResponse : public Files::Response
 				{
 					loader->vertexShadersLoaded++;
 				}
+
+				loader->GetShader()->OnShaderCompiled();
 			}
 			else
 			{
@@ -251,6 +349,54 @@ GL::ModelShader * GL::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement * e
 	{
 		shader->defaultSamplerParams.push_back(parser->GetSamplerParam(i));
 	}
+
+	// First, process all the 'required' shaders
+
+	tinyxml2::XMLElement * requireElement = element->FirstChildElement("require");
+	while(requireElement)
+	{
+		const char * shaderTypeChars = requireElement->Attribute("shaderType");
+		const char * shaderName = requireElement->Attribute("shader");
+
+		if(!shaderName)
+		{
+			OutputDebugString(L"Could not include required GL shader, no shader name!");
+			continue;
+		}
+
+		std::string shaderFilename(shaderName);
+		unsigned * shaderIdPtr = 0;
+		bool isPixelShader = false;
+
+		if(strcmp(shaderTypeChars, "vertex") == 0)
+		{
+			shader->requiredVertexShaders.push_back(0);
+			shaderIdPtr = &shader->requiredVertexShaders.back();
+			shaderFilename += ".vert";
+		}
+		if(strcmp(shaderTypeChars, "pixel") == 0)
+		{
+			shader->requiredPixelShaders.push_back(0);
+			shaderIdPtr = &shader->requiredPixelShaders.back();
+			shaderFilename += ".frag";
+			isPixelShader = true;
+		}
+
+		Files::Directory * rootDir = files->GetKnownDirectory(Files::FrameworkDir);
+
+		std::wstring wideShaderFilename(shaderFilename.begin(), shaderFilename.end());
+
+		files->OpenAndRead(rootDir, wideShaderFilename.c_str(), new ShaderResponse(this, *shaderIdPtr, isPixelShader));
+
+		if(isPixelShader)
+			numPixelShaders++;
+		else
+			numVertexShaders++;
+
+		requireElement = element->NextSiblingElement("require");
+	}
+
+	// Process all the 'main()' shaders
 
 	tinyxml2::XMLElement * techniqueElement = element->FirstChildElement("technique");
 	while(techniqueElement)
@@ -318,15 +464,15 @@ GL::ModelShader * GL::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement * e
 		vertexShaderFilename += ".vert";
 		pixelShaderFilename += ".frag";
 
-		std::wstring vertexShaderPath(vertexShaderFilename.begin(), vertexShaderFilename.end());
-		std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
+		std::wstring wideVertexShaderFilename(vertexShaderFilename.begin(), vertexShaderFilename.end());
+		std::wstring widePixelShaderFilename(pixelShaderFilename.begin(), pixelShaderFilename.end());
 
 		Files::Directory * rootDir = files->GetKnownDirectory(Files::FrameworkDir);
 
-		files->OpenAndRead(rootDir, vertexShaderPath.c_str(),
+		files->OpenAndRead(rootDir, wideVertexShaderFilename.c_str(),
 			new ShaderResponse(this, technique.vertexShader, false));
 
-		files->OpenAndRead(rootDir, pixelShaderPath.c_str(),
+		files->OpenAndRead(rootDir, widePixelShaderFilename.c_str(),
 			new ShaderResponse(this, technique.pixelShader, true));
 
 		numVertexShaders++;

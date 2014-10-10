@@ -40,9 +40,10 @@ struct Shader : public Gpu::Shader
 
 struct ModelShader : public Shader
 {
-	//static const unsigned NUM_STANDARD_BUFFERS = 2;
-	//static const unsigned NUM_PARAM_BUFFERS = D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - NUM_STANDARD_BUFFERS;
 	static const unsigned MAX_LIGHTS = 6;
+
+	std::vector<unsigned> requiredVertexShaders;
+	std::vector<unsigned> requiredPixelShaders;
 
 	struct Technique
 	{
@@ -56,6 +57,14 @@ struct ModelShader : public Shader
 		int projMatrixLocation;
 		int viewMatrixLocation;
 		int modelMatrixLocation;
+		int inverseTransMatrixLocation;
+		int materialColorLocation;
+		int textureLocation;
+		int lightPositionsLocation;
+		int lightColorsLocation;
+		int lightSpotDirPowersLocation;
+		int numLightsLocation;
+		int cameraPositionLocation;
 
 		Technique() : 
 			vertexShader(0), 
@@ -63,7 +72,13 @@ struct ModelShader : public Shader
 			shaderProgram(0), 
 			projMatrixLocation(-1), 
 			viewMatrixLocation(-1),
-			modelMatrixLocation(-1)
+			modelMatrixLocation(-1),
+			inverseTransMatrixLocation(-1),
+			materialColorLocation(-1),
+			textureLocation(-1),
+			lightPositionsLocation(-1),
+			lightColorsLocation(-1),
+			numLightsLocation(-1)
 		{}
 		~Technique() {}
 
