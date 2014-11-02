@@ -13,8 +13,39 @@ class ScriptCallbacks
 {
 	ScriptCallbacks();
 
+	enum PtrType
+	{
+		TypeGpuComplexModel,
+		TypeGpuEffect,
+		TypeGpuTexture,
+		TypeGpuCubeMap,
+		TypeGpuVolumeTexture,
+		TypeGpuCamera,
+		TypeGpuFont,
+		TypeGpuLight,
+		TypeGpuDrawSurface,
+		TypeGpuScene,
+		TypeGpuShader,
+		TypeGpuInstanceBuffer,
+		
+		TypeFloatArray,
+		TypeHeightParser,
+		TypeImageBuffer,
+		TypeAudioItem,
+		TypeIsoSurface,
+		TypeSVGParser,
+		TypePhysicsWorld,
+		TypePhysicsObject,
+		TypePhysicsMaterial,
+		TypePhysicsRagdoll,
+		TypeLeapHelper,
+		
+		TypeCount
+	};
+	static unsigned typeHandles[TypeCount];
 	static std::wstring projectDirPath;
 
+	static inline bool CheckPtrType(ScriptParam & param, PtrType type) { return param.CheckPointer(typeHandles[type]); }
 	static Files::Directory * GetDirectory(Files::Api * files, const char * name);
 	static void LoadAsset(AssetMgr * assets, AssetBatch & batch, const char * directory, const char * file, const char * type, const char * name);
 	//static ScriptParam VertexBufferToMap(ScriptInterpreter * interpreter, IVertexBuffer * vertexBuffer);
@@ -28,6 +59,32 @@ public:
 
 	static void RegisterWith(ScriptInterpreter * interpreter)
 	{
+		// Types
+		typeHandles[TypeGpuComplexModel] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuEffect] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuTexture] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuCubeMap] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuVolumeTexture] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuCamera] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuFont] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuLight] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuDrawSurface] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuScene] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuShader] = interpreter->RegisterPointerType();
+		typeHandles[TypeGpuInstanceBuffer] = interpreter->RegisterPointerType();
+		
+		typeHandles[TypeFloatArray] = interpreter->RegisterPointerType();
+		typeHandles[TypeHeightParser] = interpreter->RegisterPointerType();
+		typeHandles[TypeImageBuffer] = interpreter->RegisterPointerType();
+		typeHandles[TypeAudioItem] = interpreter->RegisterPointerType();
+		typeHandles[TypeIsoSurface] = interpreter->RegisterPointerType();
+		typeHandles[TypeSVGParser] = interpreter->RegisterPointerType();
+		typeHandles[TypePhysicsWorld] = interpreter->RegisterPointerType();
+		typeHandles[TypePhysicsObject] = interpreter->RegisterPointerType();
+		typeHandles[TypePhysicsMaterial] = interpreter->RegisterPointerType();
+		typeHandles[TypePhysicsRagdoll] = interpreter->RegisterPointerType();
+		typeHandles[TypeLeapHelper] = interpreter->RegisterPointerType();
+
 		// GPU
 		interpreter->RegisterCallback("DrawSprite", &ScriptCallbacks::DrawSprite,
 			"(texture,x,y[,scale=1]) Draws a texture at the given screen location");
@@ -86,6 +143,8 @@ public:
 			"([tex]) Returns vertex and index buffers [with texture coordinates] for a 2x2x2 cube at (0,0,0)");
 		interpreter->RegisterCallback("CreateSphere", &ScriptCallbacks::CreateSphere,
 			"(texture,tangent) Returns vertex and index buffers for a sphere");
+		interpreter->RegisterCallback("CreateCylinder", &ScriptCallbacks::CreateCylinder,
+			"(length) Returns vertex and index buffers for a cylinder");
 		interpreter->RegisterCallback("CreateCapsule", &ScriptCallbacks::CreateCapsule,
 			"(length) Returns vertex and index buffers for a capsule (round-ended cylinder)");
 
@@ -99,6 +158,8 @@ public:
 			"(model,meshnum,x,y,z) Sets the position of a mesh relative to its parent model");
 		interpreter->RegisterCallback("SetMeshRotation", &ScriptCallbacks::SetMeshRotation,
 			"(model,meshnum,x,y,z) Sets the rotation of a mesh relative to its parent model");
+		interpreter->RegisterCallback("SetMeshMatrix", &ScriptCallbacks::SetMeshMatrix,
+			"(model,meshnum,matrix) Sets the transform matrix to the given mesh of the model");
 		interpreter->RegisterCallback("SetMeshEffect", &ScriptCallbacks::SetMeshEffect,
 			"(model,meshnum,effect) Sets an effect to a specific mesh in a complex model");
 		interpreter->RegisterCallback("SetMeshTexture", &ScriptCallbacks::SetMeshTexture,
@@ -294,8 +355,10 @@ public:
 			"(object) Gets the x,y,z position of the physics object");
 		//interpreter->RegisterCallback("GetPhysicsRotation", &ScriptCallbacks::GetPhysicsRotation,
 		//	"(object) Gets the x,y,z rotation of the physics object");
-		interpreter->RegisterCallback("SyncPhysicsMatrix", &ScriptCallbacks::SyncPhysicsMatrix,
-			"(object,model) Updates the given GpuComplexModel with the given PhysicsObject matrix");
+		interpreter->RegisterCallback("GetPhysicsMatrix", &ScriptCallbacks::GetPhysicsMatrix,
+			"(object) Returns the transformation matrix of the given physics object");
+		interpreter->RegisterCallback("SetPhysicsMatrix", &ScriptCallbacks::SetPhysicsMatrix,
+			"(object,matrix) Sets the transformation matrix of the physics object if possible");
 
 		interpreter->RegisterCallback("CreatePhysicsRagdoll", &ScriptCallbacks::CreatePhysicsRagdoll,
 			"(world) Creates a physical ragdoll in the given physics world");
@@ -326,8 +389,8 @@ public:
 			"(helper,x,y,z) Offsets the positions of all bones in the Leap world");
 		interpreter->RegisterCallback("SetLeapScale", &ScriptCallbacks::SetLeapScale,
 			"(helper,scale) Sets the scale of the Leap world, including bone details and matrices");
-		interpreter->RegisterCallback("SyncLeapBoneMatrix", &ScriptCallbacks::SyncLeapBoneMatrix,
-			"(helper,index,modelOrBody) Updates the given model or physics object with the bone matrix");
+		interpreter->RegisterCallback("GetLeapBoneMatrix", &ScriptCallbacks::GetLeapBoneMatrix,
+			"(helper,index) Returns the transformation matrix of the indexed Leap Motion bone");
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -345,6 +408,7 @@ public:
 	static void CreateGrid(ScriptInterpreter*);
 	static void CreateCube(ScriptInterpreter*);
 	static void CreateSphere(ScriptInterpreter*);
+	static void CreateCylinder(ScriptInterpreter*);
 	static void CreateCapsule(ScriptInterpreter*);
 
 	static void SetModelPosition(ScriptInterpreter*);
@@ -364,6 +428,7 @@ public:
 
 	static void SetMeshPosition(ScriptInterpreter*);
 	static void SetMeshRotation(ScriptInterpreter*);
+	static void SetMeshMatrix(ScriptInterpreter*);
 	static void SetMeshTexture(ScriptInterpreter*);
 	static void SetMeshNormal(ScriptInterpreter*);
 	static void SetMeshCubeMap(ScriptInterpreter*);
@@ -467,7 +532,8 @@ public:
 	static void SetPhysicsMaterial(ScriptInterpreter*);
 	static void GetPhysicsPosition(ScriptInterpreter*);
 	//static void GetPhysicsRotation(ScriptInterpreter*);
-	static void SyncPhysicsMatrix(ScriptInterpreter*);
+	static void GetPhysicsMatrix(ScriptInterpreter*);
+	static void SetPhysicsMatrix(ScriptInterpreter*);
 
 	static void CreatePhysicsRagdoll(ScriptInterpreter*);
 	static void AddPhysicsRagdollBone(ScriptInterpreter*);
@@ -484,23 +550,32 @@ public:
 	static void GetLeapBonePosition(ScriptInterpreter*);
 	static void SetLeapPosition(ScriptInterpreter*);
 	static void SetLeapScale(ScriptInterpreter*);
-	static void SyncLeapBoneMatrix(ScriptInterpreter*);
+	static void GetLeapBoneMatrix(ScriptInterpreter*);
 };
 
 } // namespace Ingenuity
 
+// Generic Parameter
 #define POP_PARAM(NUM,NAME,TYPE) ScriptParam NAME = interpreter->PopParam();\
 	if(NAME.type != ScriptParam::TYPE) { \
 	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not of type " #TYPE); \
 	return; \
 	}
 
+// Numeric Parameter
 #define POP_NUMPARAM(NUM,NAME) ScriptParam NAME = interpreter->PopParam();\
 	if(!NAME.IsNumber() && NAME.type != ScriptParam::BOOL) {\
 	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a number");\
 	return; }
 
+// Pointer Parameter
 #define POP_PTRPARAM(NUM,NAME,PTRTYPE) ScriptParam NAME = interpreter->PopParam();\
-	if(!NAME.CheckPointer(ScriptPtrType::PTRTYPE)) {\
+	if(!NAME.CheckPointer(typeHandles[PTRTYPE])) {\
+	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a pointer of type " #PTRTYPE);\
+	return; }
+
+// Special Pointer Parameter
+#define POP_SPTRPARAM(NUM,NAME,PTRTYPE) ScriptParam NAME = interpreter->PopParam();\
+	if(!NAME.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::PTRTYPE))) {\
 	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a pointer of type " #PTRTYPE);\
 	return; }

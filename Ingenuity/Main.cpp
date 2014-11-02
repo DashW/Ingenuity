@@ -174,6 +174,7 @@ class Engine : public RealtimeApp
 		if(!interpreter) interpreter = new LuaInterpreter(this);
 
 		ScriptCallbacks::RegisterWith(interpreter);
+		interpreter->RegisterMathObjects();
 		interpreter->GetLogger().SetLogFile(L"log.txt");
 		console = new ScriptConsole(interpreter, gpu);
 
@@ -277,7 +278,7 @@ class Engine : public RealtimeApp
 		if(!showConsole && !interpreter->IsInError())
 		{
 			interpreter->ClearParams();
-			interpreter->PushParam(ScriptParam(ScriptParam::FLOAT, delta));
+			interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(delta)));
 			interpreter->CallFunction("Update");
 		}
 

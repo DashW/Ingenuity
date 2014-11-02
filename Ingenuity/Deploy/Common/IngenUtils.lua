@@ -129,3 +129,35 @@ function UpdateFlyCamera(delta)
 	SetCameraPosition(flyCamera, flyCamX, flyCamY, flyCamZ);
 	SetCameraTarget(flyCamera, flyCamX+dirX, flyCamY+dirY, flyCamZ+dirZ);
 end
+
+-- Stretches a model between two points along its Z-axis
+-- Useful for drawing debug geometry
+function StretchModelBetween(model,startX,startY,startZ,endX,endY,endZ)
+	local dispX = startX - endX;
+	local dispY = startY - endY;
+	local dispZ = startZ - endZ;
+	
+	-- position is halfway along the displacement vector
+	
+	local midX = startX - (dispX/2);
+	local midY = startY - (dispY/2);
+	local midZ = startZ - (dispZ/2);
+	
+	SetModelPosition(model,midX,midY,midZ);
+	
+	-- now, we need to figure out the rotation
+	-- in the case of a cylinder, if displacement is (0,0,1), no rotation is needed
+	-- GLM applies rotations Y, then X, then Z
+	
+	local length = math.sqrt((dispX*dispX) + (dispY*dispY) + (dispZ*dispZ));
+	local xzRad = math.sqrt((dispX*dispX) + (dispZ*dispZ))
+	local yRot = math.atan2(dispX/xzRad,dispZ/xzRad);
+	local xRot = math.acos(xzRad/length);
+	
+	SetModelRotation(model,xRot,yRot,0);
+	
+	-- finally, the easy part, the length
+	-- TODO: Make the overall scale an additional parameter
+	
+	SetModelScale(model,0.1,0.1,length);
+end

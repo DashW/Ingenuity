@@ -5,46 +5,13 @@
 
 namespace Ingenuity {
 
-struct ScriptPtrType
-{
-	enum Value
-	{
-		Unknown,
-
-		GpuComplexModel,
-		GpuEffect,
-		GpuTexture,
-		GpuCubeMap,
-		GpuVolumeTexture,
-		GpuCamera,
-		GpuFont,
-		GpuLight,
-		GpuDrawSurface,
-		GpuScene,
-		GpuShader,
-		GpuInstanceBuffer,
-
-		FloatArray,
-		HeightParser,
-		ImageBuffer,
-		AudioItem,
-		IsoSurface,
-		SVGParser,
-		PhysicsWorld,
-		PhysicsObject,
-		PhysicsMaterial,
-		PhysicsRagdoll,
-		LeapHelper
-	};
-};
-
 struct IDeletingPtr
 {
 	void * ptr;
 	unsigned refs;
-	ScriptPtrType::Value type;
+	unsigned type;
 
-	IDeletingPtr(void * ptr) : ptr(ptr), refs(0), type(ScriptPtrType::Unknown) {}
+	IDeletingPtr(void * ptr) : ptr(ptr), refs(0), type(0) {}
 	virtual ~IDeletingPtr() {}
 	void IncRef() { refs++; };
 	void DecRef() { if(--refs < 1){ Delete(); delete this; } }
@@ -60,9 +27,17 @@ struct DeletingPtr : public IDeletingPtr
 struct NonDeletingPtr : public IDeletingPtr
 {
 	NonDeletingPtr(void * ptr) : IDeletingPtr(ptr) {}
-	NonDeletingPtr(void * ptr, ScriptPtrType::Value type) : IDeletingPtr(ptr) { this->type = type; }
+	NonDeletingPtr(void * ptr, unsigned type) : IDeletingPtr(ptr) { this->type = type; }
 	virtual ~NonDeletingPtr() {}
 	virtual void Delete() override {}
+};
+struct BufferCopyPtr : public IDeletingPtr
+{
+	unsigned size;
+	BufferCopyPtr(void * ptr, unsigned size) : IDeletingPtr(new char[size]), size(size) { memcpy(this->ptr, ptr, size); }
+	BufferCopyPtr(void * ptr, unsigned size, unsigned type) : BufferCopyPtr(ptr, size) { this->type = type; }
+	virtual ~BufferCopyPtr() {}
+	virtual void Delete() override { delete[] static_cast<char*>(ptr); }
 };
 
 struct ScriptParam
@@ -72,7 +47,6 @@ struct ScriptParam
 		NONE = 0,
 		BOOL,
 		INT,
-		FLOAT,
 		DOUBLE,
 		STRING,
 		POINTER,
@@ -93,7 +67,7 @@ struct ScriptParam
 		: type(t), svalue(s)
 	{}
 	template<class CLASS>
-	ScriptParam(CLASS * p, ScriptPtrType::Value ptrType)
+	ScriptParam(CLASS * p, unsigned ptrType)
 		: type(p != 0 ? POINTER : NONE)
 	{
 		if(p)
@@ -145,33 +119,6 @@ struct ScriptParam
 
 		return *this;
 	}
-	//const bool operator< (const ScriptParam & other) const
-	//{
-	//	if(type < other.type)
-	//	{
-	//		return true;
-	//	}
-	//	if(type > other.type)
-	//	{
-	//		return false;
-	//	}
-	//	switch(type)
-	//	{
-	//	case NONE:
-	//		return false;
-	//	case BOOL:
-	//	case INT:
-	//	case FLOAT:
-	//	case DOUBLE:
-	//		return nvalue < other.nvalue;
-	//	case STRING:
-	//		return bool(-strcmp(svalue, other.svalue));
-	//	case POINTER:
-	//		return pvalue < other.pvalue;
-	//	default:
-	//		return true;
-	//	}
-	//}
 	~ScriptParam()
 	{
 		if(type == POINTER)
@@ -180,13 +127,17 @@ struct ScriptParam
 		}
 	}
 
-	bool CheckPointer(ScriptPtrType::Value ptrType) const
+	bool CheckPointer(unsigned ptrType) const
 	{
 		return type == POINTER && pvalue->type == ptrType;
 	}
 	bool IsNumber() const
 	{
-		return type == INT || type == FLOAT || type == DOUBLE;
+		return type == INT || type == DOUBLE;
+	}
+	template <class CLASS> CLASS * GetPointer()
+	{
+		return static_cast<CLASS*>(pvalue->ptr);
 	}
 };
 

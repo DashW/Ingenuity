@@ -9,24 +9,24 @@ namespace Ingenuity {
 
 class ScriptInterpreter;
 
-struct ScriptCallback
+struct ScriptCallbackMeta
 {
 	const char * name;
-	void(*call)(ScriptInterpreter*);
+	//void(*call)(ScriptInterpreter*);
 	const char * help;
 
-	ScriptCallback(const char * name, void(*callback)(ScriptInterpreter*), const char * help = "")
-		: name(name), call(callback), help(help) {}
-};
-
-struct ScriptModule
-{
-	const char * name;
-	const char * help;
-
-	ScriptModule(const char * name, const char * help)
+	ScriptCallbackMeta(const char * name, const char * help = "")
 		: name(name), help(help) {}
 };
+
+//struct ScriptModule
+//{
+//	const char * name;
+//	const char * help;
+//
+//	ScriptModule(const char * name, const char * help)
+//		: name(name), help(help) {}
+//};
 
 class RealtimeApp;
 
@@ -85,12 +85,35 @@ protected:
 	void SetInitialised() { initialised = true; }
 
 public:
-	std::vector<ScriptCallback> callbacks;
-	std::vector<ScriptModule> modules; // I'm not quite sure where I'm going with this...
+	typedef void(*ScriptCallback)(ScriptInterpreter*);
+
+	std::vector<ScriptCallbackMeta> callbackMeta;
+	//std::vector<ScriptModule> modules; // I'm not quite sure where I'm going with this...
 
 	virtual ~ScriptInterpreter() {}
 
-	virtual bool LoadScript(const char * data, unsigned dataSize, const char * filename) = 0;
+	enum Operator
+	{
+		Call,
+		IndexGet,
+		IndexSet,
+		Add,
+		Sub,
+		Mul,
+		Div,
+		Pow,
+		Neg,
+		Equals,
+		ToString
+	};
+
+	enum SpecialPtrType
+	{
+		TypeVector4,
+		TypeMatrix4
+	};
+
+	virtual bool LoadScript(const char * data, unsigned dataSize, const char * filename, const char * moduleName = 0) = 0;
 	virtual void ThrowError(const char * error) = 0;
 	virtual void RunCommand(const char * command) = 0; // This and LoadScript now do the same thing, should be merged?
 	//virtual void ReloadScript(const wchar_t * filename) = 0;
@@ -140,17 +163,23 @@ public:
 	inline ScriptLogger & GetLogger() { return logger; }
 	inline RealtimeApp * GetApp() { return app; }
 
-	virtual void RegisterCallback(ScriptCallback & callback) = 0;
-	virtual void RegisterCallback(const char * name, void(*callback)(ScriptInterpreter*), const char * help)
+	virtual unsigned RegisterPointerType(unsigned structSize = 0) = 0;
+	virtual void RegisterCallback(const char * name, ScriptCallback callback) = 0;
+	virtual void RegisterCallback(const char * name, ScriptCallback callback, const char * help)
 	{
-		RegisterCallback(ScriptCallback(name, callback, help));
+		callbackMeta.push_back(ScriptCallbackMeta(name, help));
+		RegisterCallback(name, callback);
 	}
-	virtual void RegisterModule(ScriptModule & module) = 0;
+	//virtual void RegisterModule(ScriptModule & module) = 0;
+	virtual void RegisterMathObjects() = 0;
+	virtual void RegisterOperator(unsigned ptrType, Operator op, ScriptCallback callback) = 0;
 
 	virtual ScriptParam CreateMap() = 0;
 	virtual void SetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) = 0;
 	virtual bool GetMapNext(ScriptParam mapref, ScriptParam & key, ScriptParam & value) = 0;
 	virtual unsigned GetMapLength(ScriptParam mapref) = 0;
+
+	virtual unsigned GetSpecialPtrType(SpecialPtrType type) = 0;
 
 	void incDependencies() { dependencies++; }
 	void decDependencies() { dependencies--; }

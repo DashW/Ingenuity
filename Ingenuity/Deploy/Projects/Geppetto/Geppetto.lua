@@ -81,16 +81,9 @@ end
 function Begin()
 	assetTicket = LoadAssets(
 		{"FrameworkDir","SkyShader.xml","Shader","skyshader"},
-		--{"FrameworkDir","MultiTextureAnimY.xml","Shader","landshader"},
 		{"ProjectDir","grassCubeMap.dds","CubeMap","skymap"},
 		{"ProjectDir","crate.jpg","Texture","cratetex"},
 		{"ProjectDir","stonefloor.bmp","Texture","floortex"}
-		--{"ProjectDir","vase.obj","WavefrontModel","vasemodel"}
-		--{"ProjectDir","hmblend.dds","Tex2D","blendtex"},
-		--{"ProjectDir","dirt.dds","Tex2D","dirttex"},
-		--{"ProjectDir","stone.dds","Tex2D","stonetex"},
-		--{"ProjectDir","grass.dds","Tex2D","grasstex"},
-		--{"ProjectDir","hmheight.raw","RawHeightMap","hmheight"}
 	);
 
 	camera = CreateCamera();
@@ -220,6 +213,11 @@ function Begin()
 	pickModel = CreateModel("PosNor",CreateSphere());
 	SetModelScale(pickModel,0.1);
 	SetMeshColor(pickModel,0,1,0,0);
+	
+	springModel = CreateModel("PosNor",CreateCylinder(1));
+	SetModelScale(springModel,0.1);
+	SetMeshColor(springModel,0,0,0,0);
+	springVisible = false;
 
 	debugFont = GetFont(40,"Arial");
 	
@@ -235,33 +233,6 @@ function Update(delta)
 		skyMap = GetAsset("skymap");
 		crateTex = GetAsset("cratetex");
 		floorTex = GetAsset("floortex");
-
-		--vaseModel = GetAsset("vasemodel");
-		--SetModelScale(vaseModel,0.02);
-
-		--physicsVase = CreatePhysicsMesh(GetWavefrontMesh("vasemodel",0));
-		--AddToPhysicsWorld(physicsWorld,physicsVase,false);
-		--SetPhysicsScale(physicsVase,0.02);
-		--SetPhysicsPosition(physicsVase,2,2,0);
-
-		--landEffect = CreateEffect("landshader");
-		--SetEffectParam(landEffect,0,GetAsset("grasstex"));  --tex1
-		--SetEffectParam(landEffect,1,GetAsset("dirttex")); --tex2
-		--SetEffectParam(landEffect,2,GetAsset("stonetex")); --tex3
-		--SetEffectParam(landEffect,3,0.0);               --yStart
-		--SetEffectParam(landEffect,4,1.0);               --yProgress
-
-		--heightmap = GetAsset("hmheight");
-		--SetHeightmapScale(heightmap,30,0.04,30);
-
-		--landModel = GetHeightmapModel(heightmap);
-		--SetMeshTexture(landModel,0,GetAsset("blendtex"));
-		--SetMeshEffect(landModel,0,landEffect);
-		--SetModelPosition(landModel,0,-8,0);
-
-		--physicsLand = CreatePhysicsHeightmap(heightmap);
-		--AddToPhysicsWorld(physicsWorld,physicsLand,true);
-		--SetPhysicsPosition(physicsLand,0,-8,0);
 
 		if skyEffect then
 			SetMeshCubeMap(skyModel,0,skyMap);
@@ -288,9 +259,9 @@ function Update(delta)
 				leapModels[i] = boneModel;
 				print("Created Leap Model " .. i-1);
 			end
-			SyncLeapBoneMatrix(leapHelper, i-1, leapPhysicals[i]);
-			--SyncLeapBoneMatrix(leapHelper, i-1, leapModels[i]);
-			SyncPhysicsMatrix(leapPhysicals[i],leapModels[i]);
+			local leapBoneMatrix = GetLeapBoneMatrix(leapHelper, i-1);
+			SetPhysicsMatrix(leapPhysicals[i], leapBoneMatrix);
+			SetMeshMatrix(leapModels[i], 0, leapBoneMatrix);
 		end
 	end
 	--if not leapAccum then
@@ -303,10 +274,11 @@ function Update(delta)
 	--	leapAccum:Clear(0.5);
 	--end
 
-	UpdatePhysicsWorld(physicsWorld,delta);
+	--UpdatePhysicsWorld(physicsWorld,delta);
 	for i,bone in pairs(ragdollBones) do
-		SyncPhysicsMatrix(bone,boneModels[i]);
-		SyncPhysicsMatrix(bone,debugModels[i]);
+		local boneMatrix = GetPhysicsMatrix(bone);
+		SetMeshMatrix(boneModels[i],0,boneMatrix);
+		SetMeshMatrix(debugModels[i],0,boneMatrix);
 	end
 
 	--SyncPhysicsMatrix(physicsCube,cubeModel);
@@ -346,13 +318,29 @@ function Update(delta)
 		dragEnabled = not dragEnabled;
 	end
 	
-	if dragEnabled then
-		physicsHead = ragdollBones[12];
-		if leapVisibilities[42] then
-			print("PALM VISIBLE!");
+	springVisible = false;
+	
+	physicsHead = ragdollBones[12];
+	if leapVisibilities[42] then
+		print("PALM VISIBLE!");
+		local palmX, palmY, palmZ = GetLeapBonePosition(leapHelper, 41);
+		local headX, headY, headZ = GetPhysicsPosition(ragdollBones[12]);
+		if dragEnabled then
+			DragPhysicsObject(physicsHead, palmX,palmY,palmZ);
 			
-			DragPhysicsObject(physicsHead, GetLeapBonePosition(leapHelper, 41));
+			if not dragStartX then
+				dragStartX = palmX-headX;
+				dragStartY = palmY-headY;
+				dragStartZ = palmZ-headZ;
+			end
 		end
+		
+		if dragStartX then
+			-- Not accurate! Head rotation! GRRRR!!
+			StretchModelBetween(springModel, headX+dragStartX,headY+dragStartY,headZ+dragStartZ, palmX,palmY,palmZ);
+			springVisible = true;
+		end
+		
 	end
 	
 	UpdateFrameTime(delta);
@@ -376,10 +364,15 @@ function Draw()
 	if pickedObject then
 		DrawComplexModel(pickModel,camera,light);
 	end
+	
+	SetModelPosition(pickModel,-0.02,1.65,0.0);
+	DrawComplexModel(pickModel,camera,light);
+	
+	if springVisible then
+		DrawComplexModel(springModel,camera,light);
+	end
 
 	if assetTicket == -1 then
-		--DrawComplexModel(vaseModel,camera);
-		--DrawComplexModel(landModel,camera);
 		DrawComplexModel(skyModel,camera);
 	end
 
