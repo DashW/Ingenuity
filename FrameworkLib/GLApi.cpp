@@ -71,6 +71,31 @@ VertexAttribDesc * vertexDescs[VertexType_Count] = {
 	posNorTanTexDesc
 };
 
+VertexAttribDesc noneInstDesc[1] = {
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posInstDesc[2] = {
+		{ 3, VertexComponent::InstPos, 0, 0 },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posColInstDesc[3] = {
+		{ 3, VertexComponent::InstPos, 7 * sizeof(float), 0 },
+		{ 4, VertexComponent::InstCol, 7 * sizeof(float), 3 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+VertexAttribDesc posScaInstDesc[3] = {
+		{ 3, VertexComponent::InstPos, 6 * sizeof(float), 0 },
+		{ 3, VertexComponent::InstSca, 6 * sizeof(float), 3 * sizeof(float) },
+		{ 0, VertexComponent::Nil, 0, 0 }
+};
+
+VertexAttribDesc * instanceDescs[InstanceType_Count] = {
+	0,
+	posInstDesc,
+	posColInstDesc,
+	posScaInstDesc,
+};
+
 Mesh::~Mesh()
 {
 	glDeleteVertexArrays(1, &vertexArrayId);
@@ -79,6 +104,11 @@ Mesh::~Mesh()
 	{
 		glDeleteBuffers(1, &indexBufferId);
 	}
+}
+
+InstanceBuffer::~InstanceBuffer()
+{
+	glDeleteBuffers(1, &instanceBufferId);
 }
 
 Texture::~Texture()
@@ -129,11 +159,19 @@ Api::Api(Files::Api * files, HWND handle) :
 		0
 	};
 
-	if(wglewIsSupported("WGL_ARB_create_context") == 1) {
+	if(wglewIsSupported("WGL_ARB_create_context") == 1) 
+	{
 		glContext = wglCreateContextAttribsARB(deviceContext, 0, attributes);
 		wglMakeCurrent(0, 0);
 		wglDeleteContext(tempContext);
 		wglMakeCurrent(deviceContext, glContext);
+
+		const char * currentVersion = (const char*) glGetString(GL_VERSION);
+		const char * currentExtensions = (const char*) glGetString(GL_EXTENSIONS);
+		OutputDebugStringA(currentVersion);
+		OutputDebugStringA("\n");
+		OutputDebugStringA(currentExtensions);
+		OutputDebugStringA("\n");
 	}
 	else
 	{
@@ -231,7 +269,7 @@ void Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** l
 
 	GL::Mesh * glMesh = static_cast<GL::Mesh*>(model->mesh);
 
-	bool wireframe = model->wireframe || drawEverythingWireframe;
+	bool wireframe = drawEverythingWireframe || model->wireframe;
 	glPolygonMode(GL_FRONT_AND_BACK , wireframe ? GL_LINE : GL_FILL);
 
 	if(model->backFaceCull || model->frontFaceCull)
@@ -247,6 +285,12 @@ void Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** l
 
 	VertexType vertexType = glMesh->vertexType;
 	InstanceType instanceType = InstanceType_None;
+	unsigned instanceBufferId = 0;
+	if(instances)
+	{
+		instanceType = instances->GetType();
+		instanceBufferId = static_cast<GL::InstanceBuffer*>(instances)->instanceBufferId;
+	}
 
 	GL::ModelShader * shader = baseShader;
 	if(model->effect && model->effect->shader && model->effect->shader->IsModelShader())
@@ -276,28 +320,63 @@ void Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** l
 	glBindVertexArray(glMesh->vertexArrayId);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh->indexBufferId);
 
+	// Since the VertexArray contains bindings for both the vertex and index buffers,
+	// it should be recreated for the mesh if the instance buffer changes...
+
+	if(glMesh->lastInstanceBufferId != instanceBufferId)
+	{
+		for(unsigned i = 0; i < VertexComponent::Count; ++i)
+		{
+			glDisableVertexAttribArray(i);
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, glMesh->vertexBufferId);
+		VertexAttribDesc * desc = vertexDescs[glMesh->vertexType];
+		for(unsigned i = 0; desc[i].component != VertexComponent::Nil; ++i)
+		{
+			glVertexAttribPointer(desc[i].component, desc[i].numFloats, GL_FLOAT, GL_FALSE, desc[i].interval, (char*)desc[i].offset);
+			glVertexAttribDivisor(desc[i].component, 0);
+			glEnableVertexAttribArray(desc[i].component);
+		}
+
+		if(instances)
+		{
+			GL::InstanceBuffer * glInstances = static_cast<GL::InstanceBuffer*>(instances);
+			glBindBuffer(GL_ARRAY_BUFFER, glInstances->instanceBufferId);
+			VertexAttribDesc * desc = instanceDescs[glInstances->type];
+			for(unsigned i = 0; desc[i].component != VertexComponent::Nil; ++i)
+			{
+				glVertexAttribPointer(desc[i].component, desc[i].numFloats, GL_FLOAT, GL_FALSE, desc[i].interval, (char*)desc[i].offset);
+				glVertexAttribDivisor(desc[i].component, 1);
+				glEnableVertexAttribArray(desc[i].component);
+			}
+		}
+
+		glMesh->lastInstanceBufferId = instanceBufferId;
+	}
+
 	//if(dx11surface) dx11surface->Begin();
 	if(glMesh->IsIndexed())
 	{
-		//if(instances)
-		//{
-		//	direct3Dcontext->DrawIndexedInstanced(dx11mesh->numTriangles * 3, instances->GetLength(), 0, 0, 0);
-		//}
-		//else
-		//{
+		if(instances)
+		{
+			glDrawElementsInstanced(GL_TRIANGLES, glMesh->numTriangles * 3, GL_UNSIGNED_INT, 0, instances->GetLength());
+		}
+		else
+		{
 			glDrawElements(GL_TRIANGLES, glMesh->numTriangles * 3, GL_UNSIGNED_INT, 0);
-		//}
+		}
 	}
 	else
 	{
-		//if(instances)
-		//{
-		//	direct3Dcontext->DrawInstanced(dx11mesh->numVertices, instances->GetLength(), 0, 0);
-		//}
-		//else
-		//{
+		if(instances)
+		{
+			glDrawArraysInstanced(GL_TRIANGLES, 0, glMesh->numVertices, instances->GetLength());
+		}
+		else
+		{
 			glDrawArrays(GL_TRIANGLES, 0, glMesh->numVertices);
-		//}
+		}
 	}
 	//if(dx11surface) dx11surface->End();
 
@@ -337,7 +416,7 @@ Gpu::CubeMap * Api::CreateGpuCubeMap(char * data, unsigned dataSize)
 {
 	GL::CubeMap * cubeMap = new GL::CubeMap();
 
-	cubeMap->cubeMapId = SOIL_load_OGL_single_cubemap_from_memory((const unsigned char*) data, dataSize, "NSWEUD", 4, 0, 0);
+	cubeMap->cubeMapId = SOIL_load_OGL_single_cubemap_from_memory((const unsigned char*) data, dataSize, "EWUDNS", 4, 0, 0);
 
 	return cubeMap;
 }
@@ -367,11 +446,11 @@ Gpu::Mesh * Api::CreateGpuMesh(unsigned numVertices, void * vertexData, VertexTy
 	for(unsigned i = 0; desc[i].component != VertexComponent::Nil; ++i)
 	{
 		glVertexAttribPointer(desc[i].component, desc[i].numFloats, GL_FLOAT, GL_FALSE, desc[i].interval, (char*)desc[i].offset);
+		glVertexAttribDivisor(desc[i].component, 0);
 		glEnableVertexAttribArray(desc[i].component);
 	}
 
-	glBindVertexArray(0); 
-	// This shouldn't work? GL_ELEMENT_ARRAY_BUFFER (index buffer) should not be allowed unless a VAO is bound
+	glBindVertexArray(0);
 
 	//createdMesh->vertexSize = VertApi::GetVertexSize(type);
 	createdMesh->numVertices = numVertices;
@@ -397,22 +476,53 @@ Gpu::Mesh * Api::CreateGpuMesh(unsigned numVertices, void * vertexData,
 
 Gpu::InstanceBuffer * Api::CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type)
 {
-	return 0;
+	GL::InstanceBuffer * instanceBuffer = new GL::InstanceBuffer(type);
+
+	glGenBuffers(1, &(instanceBuffer->instanceBufferId));
+	glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer->instanceBufferId);
+	glBufferData(GL_ARRAY_BUFFER, VertApi::GetInstanceSize(type) * numInstances, instanceData, GL_DYNAMIC_DRAW);
+
+	//instanceBuffer->numVertices = numVertices;
+	instanceBuffer->length = numInstances;
+	instanceBuffer->capacity = numInstances;
+
+	return instanceBuffer;
 }
 
 void Api::UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer)
 {
+	GL::Mesh * glMesh = static_cast<GL::Mesh*>(dynamicMesh);
 
+	// Need to fix this so that the mesh has vertex/index capacities?
+	if(glMesh->dynamic &&
+		buffer->GetVertexType() == glMesh->vertexType &&
+		buffer->GetLength() <= glMesh->numVertices)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, glMesh->vertexBufferId);
+		glBufferData(GL_ARRAY_BUFFER, buffer->GetElementSize() * buffer->GetLength(), buffer->GetData(), GL_DYNAMIC_DRAW);
+	}
 }
 
 void Api::UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData)
 {
+	GL::Mesh * glMesh = static_cast<GL::Mesh*>(dynamicMesh);
 
+	if(glMesh->dynamic &&
+		numTriangles <= glMesh->numTriangles)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh->indexBufferId);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned) * numTriangles * 3, indexData, GL_DYNAMIC_DRAW);
+	}
 }
 
 void Api::UpdateInstanceBuffer(Gpu::InstanceBuffer * instanceBuffer, unsigned numInstances, void * instanceData)
 {
+	GL::InstanceBuffer * glInstances = static_cast<GL::InstanceBuffer*>(instanceBuffer);
 
+	if(glInstances->capacity < numInstances) return;
+
+	glBindBuffer(GL_ARRAY_BUFFER, glInstances->instanceBufferId);
+	glBufferData(GL_ARRAY_BUFFER, VertApi::GetInstanceSize(glInstances->GetType()) * numInstances, instanceData, GL_DYNAMIC_DRAW);
 }
 
 Gpu::DrawSurface * Api::CreateDrawSurface(unsigned width, unsigned height, Gpu::DrawSurface::Format format)
@@ -474,7 +584,26 @@ void Api::GetBackbufferSize(unsigned & width, unsigned & height)
 
 void Api::SetMultisampling(unsigned multisampleLevel)
 {
+	//int attributes[] = {
+	//	WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+	//	WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+	//	WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+	//	WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+	//	WGL_COLOR_BITS_ARB, 32,
+	//	WGL_DEPTH_BITS_ARB, 32,
+	//	WGL_STENCIL_BITS_ARB, 0,
+	//	WGL_SAMPLE_BUFFERS_ARB, 1, //Number of buffers (must be 1 at time of writing)
+	//	WGL_SAMPLES_ARB, 4,        //Number of samples
+	//	0
+	//};
+	//float fAttributes[] = { 0, 0 };
 
+	//int pixelFormat;
+	//unsigned numFormats;
+
+	//wglChoosePixelFormatARB(deviceContext, attributes, fAttributes, 1, &pixelFormat, &numFormats);
+
+	////apparently we need to recreate the window at this point, but this seems like overkill??
 }
 
 void Api::SetBlendMode(Gpu::BlendMode blendMode)

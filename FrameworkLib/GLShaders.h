@@ -47,7 +47,6 @@ struct ModelShader : public Shader
 
 	struct Technique
 	{
-		//ID3D11InputLayout * inputLayout;
 		unsigned vertexShader;
 		unsigned pixelShader; 
 		unsigned shaderProgram;
@@ -65,6 +64,7 @@ struct ModelShader : public Shader
 		int lightSpotDirPowersLocation;
 		int numLightsLocation;
 		int cameraPositionLocation;
+		int cubeMapAlphaLocation;
 
 		Technique() : 
 			vertexShader(0), 
@@ -80,7 +80,7 @@ struct ModelShader : public Shader
 			lightColorsLocation(-1),
 			numLightsLocation(-1)
 		{}
-		~Technique() {}
+		~Technique();
 
 		//bool SetExtraParameters(Gpu::Effect * effect);
 

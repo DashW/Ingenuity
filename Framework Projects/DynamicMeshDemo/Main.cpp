@@ -101,8 +101,11 @@ public:
 			model->cubeMap = cubeMap;
 
 			Gpu::Shader * skyShader = assets->GetAsset<Gpu::Shader>("skyshader");
-			skybox->effect = new Gpu::Effect(skyShader);
-			skybox->cubeMap = cubeMap;
+			if(skyShader)
+			{
+				skybox->effect = new Gpu::Effect(skyShader);
+				skybox->cubeMap = cubeMap;
+			}
 
 			cubemapTicket = -1;
 		}

@@ -33,6 +33,13 @@ bool GL::Shader::ValidateProgram(unsigned program)
 	return length == 0 && status == GL_TRUE;
 }
 
+GL::ModelShader::Technique::~Technique()
+{
+	if(shaderProgram > 0) glDeleteProgram(shaderProgram);
+	if(vertexShader > 0) glDeleteShader(vertexShader);
+	if(pixelShader > 0) glDeleteShader(pixelShader);
+}
+
 bool GL::ModelShader::OnShaderCompiled()
 {
 	bool techniqueFailed = false;
@@ -77,6 +84,9 @@ bool GL::ModelShader::OnShaderCompiled()
 			glBindAttribLocation(technique.shaderProgram, VertexComponent::Nor, "in_Normal");
 			glBindAttribLocation(technique.shaderProgram, VertexComponent::Tex, "in_TexCoord");
 			glBindAttribLocation(technique.shaderProgram, VertexComponent::Tan, "in_Tangent");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::InstPos, "in_InstPos");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::InstCol, "in_InstCol");
+			glBindAttribLocation(technique.shaderProgram, VertexComponent::InstSca, "in_InstSca");
 
 			glLinkProgram(technique.shaderProgram); // Link the vertex and fragment shaders in the program
 			
@@ -102,6 +112,7 @@ bool GL::ModelShader::OnShaderCompiled()
 				technique.numLightsLocation = glGetUniformLocation(technique.shaderProgram, "numLights");
 
 				technique.cameraPositionLocation = glGetUniformLocation(technique.shaderProgram, "cameraPosition");
+				technique.cubeMapAlphaLocation = glGetUniformLocation(technique.shaderProgram, "cubeMapAlpha");
 
 				//if(technique.projMatrixLocation < 0 || technique.viewMatrixLocation < 0 || technique.modelMatrixLocation < 0)
 				//{
@@ -119,7 +130,7 @@ bool GL::ModelShader::SetTechnique(VertexType vType, InstanceType iType)
 	unsigned key = VertApi::GetTechniqueKey(vType, iType);
 
 	std::map<unsigned, Technique>::iterator it = techniques.find(key);
-	if(it == techniques.end())
+	if(it == techniques.end() || it->second.shaderProgram == 0)
 	{
 		OutputDebugString(L"Shader does not have technique for vertex/instance type!\n");
 		return false;
@@ -203,6 +214,9 @@ bool GL::ModelShader::SetParameters(Gpu::Model * model, Gpu::Camera * camera, Gp
 	glUniform1ui(currentTechnique->numLightsLocation, numLights);
 
 	glUniform3fv(currentTechnique->cameraPositionLocation, 1, &camera->position[0]);
+
+	if(currentTechnique->cubeMapAlphaLocation > -1)
+		glUniform1f(currentTechnique->cubeMapAlphaLocation, model->cubeMap ? 1.0f : 0.0f);
 
 	return true;
 }
@@ -326,7 +340,9 @@ struct GL::ShaderLoader::ShaderResponse : public Files::Response
 			}
 			else
 			{
-				OutputDebugString(L"Failed to compile shader!\n");
+				wchar_t errorString[64];
+				swprintf_s(errorString, L"Failed to compile shader '%ls'!", loader->path.data());
+				OutputDebugString(errorString);
 				loader->failed = true;
 			}
 		}

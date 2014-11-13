@@ -23,8 +23,8 @@ struct Mesh : public Gpu::Mesh
 {
 	unsigned vertexArrayId;
 	unsigned vertexBufferId;
-
 	unsigned indexBufferId;
+	unsigned lastInstanceBufferId;
 
 	//unsigned vertexSize;
 	unsigned numVertices;
@@ -37,6 +37,7 @@ struct Mesh : public Gpu::Mesh
 		vertexArrayId(0),
 		vertexBufferId(0),
 		indexBufferId(0),
+		lastInstanceBufferId(0),
 		//vertexSize(0),
 		numVertices(0),
 		numTriangles(0),
@@ -45,6 +46,23 @@ struct Mesh : public Gpu::Mesh
 	virtual ~Mesh();
 
 	virtual bool IsIndexed() { return indexBufferId != 0; }
+};
+
+struct InstanceBuffer : public Gpu::InstanceBuffer
+{
+	unsigned instanceBufferId;
+	unsigned length;
+	unsigned capacity;
+
+	InstanceBuffer(InstanceType type) :
+		Gpu::InstanceBuffer(type),
+		instanceBufferId(0),
+		length(0),
+		capacity(0) {}
+	virtual ~InstanceBuffer();
+
+	virtual unsigned GetLength() override { return length; }
+	virtual unsigned GetCapacity() override { return capacity; }
 };
 
 struct Texture : public Gpu::Texture
@@ -68,16 +86,33 @@ struct CubeMap : public Gpu::CubeMap
 	virtual ~CubeMap();
 };
 
+struct DrawSurface : public Gpu::DrawSurface
+{
+	DrawSurface() {}
+	virtual ~DrawSurface() {}
+
+	virtual Type GetSurfaceType() override;
+	virtual Texture * GetTexture() override;
+	virtual void Clear(glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+};
+
 struct VertexComponent
 {
 	enum Type
 	{
 		Nil = -1,
+
 		Pos = 0,
 		Col,
 		Nor,
 		Tex,
-		Tan
+		Tan,
+		Sca,
+		InstPos,
+		InstCol,
+		InstSca,
+		
+		Count
 	};
 };
 

@@ -100,7 +100,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <NuGetPackageImportStamp>b4a860c5</NuGetPackageImportStamp>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'" />
@@ -112,7 +114,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">
+    <Linkage-lua>static</Linkage-lua>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -1005,8 +1009,12 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <None Include="Shaders\GL\BaseShaderPixPosNorTex.frag" />
     <None Include="Shaders\GL\BaseShaderVtxPosCol.vert" />
     <None Include="Shaders\GL\BaseShaderVtxPosNor.vert" />
+    <None Include="Shaders\GL\BaseShaderVtxPosNorPos.vert" />
     <None Include="Shaders\GL\BaseShaderVtxPosNorTex.vert" />
+    <None Include="Shaders\GL\BaseShaderVtxPosNorTexPos.vert" />
     <None Include="Shaders\GL\ModelShaderCommon.frag" />
+    <None Include="Shaders\GL\SkyShaderPixPos.frag" />
+    <None Include="Shaders\GL\SkyShaderVtxPos.vert" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="BaseShader.xml">

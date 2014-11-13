@@ -13,7 +13,7 @@
 
 using namespace Ingenuity;
 
-class ColoredCubeDemo : public RealtimeApp
+class ColorGridDemo : public RealtimeApp
 {
 	Gpu::Model* cell;
 	Gpu::Font* font;
@@ -150,4 +150,4 @@ public:
 	}
 };
 
-MAIN_WITH(ColoredCubeDemo)
+MAIN_WITH(ColorGridDemo)

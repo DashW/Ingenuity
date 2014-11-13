@@ -136,9 +136,6 @@
     <ClInclude Include="AssetMgr.h">
       <Filter>Application</Filter>
     </ClInclude>
-    <ClInclude Include="DX11Surfaces.h">
-      <Filter>Graphics\DX11</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderParser.h">
       <Filter>Parsers</Filter>
     </ClInclude>
@@ -190,6 +187,9 @@
     </ClInclude>
     <ClInclude Include="GLShaders.h">
       <Filter>Graphics\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="DX11Surfaces.h">
+      <Filter>Graphics\DX11</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -502,6 +502,18 @@
       <Filter>Shaders\GL</Filter>
     </None>
     <None Include="Shaders\GL\ModelShaderCommon.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderVtxPosNorTexPos.vert">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\BaseShaderVtxPosNorPos.vert">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\SkyShaderPixPos.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\SkyShaderVtxPos.vert">
       <Filter>Shaders\GL</Filter>
     </None>
   </ItemGroup>

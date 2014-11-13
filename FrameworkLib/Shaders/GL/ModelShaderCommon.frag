@@ -10,6 +10,18 @@ vec4 diffuse(vec3 normalizedNormal, vec3 lightDirection, float lightDistance, ve
 	return vec4(diffuseMagnitude * diffuseColor, color.a);
 }
 
+vec4 cubeReflect(vec3 normalizedNormal, vec3 cameraVector, vec3 worldPos, samplerCube cubeMapSampler, float cubeMapAlpha, vec4 color)
+{
+    vec3 cubeMapTheta = reflect(-cameraVector, normalizedNormal);
+    vec4 cubeMapColor = texture( cubeMapSampler, cubeMapTheta ); //cubeMap.Sample(_cubeMapSampler, _cubeMapTheta0022);
+
+    float brightestComponent = max(max(cubeMapColor.x, cubeMapColor.y), cubeMapColor.z);
+    float cubeMapIntensity = ( 0.5 + ( brightestComponent * 0.5 ) ) * cubeMapAlpha;
+
+    vec3 resultColor = ( color.rgb * ( 1.0 - cubeMapIntensity ) ) + ( cubeMapColor.xyz * cubeMapIntensity );
+    return vec4(resultColor, color.a);
+}
+
 vec4 specular(vec3 normalizedNormal, vec3 cameraVector, vec3 lightDirection, vec3 lightColor, vec4 color)
 {
 	vec3 specularReflection = normalize(reflect(-lightDirection, normalizedNormal));
