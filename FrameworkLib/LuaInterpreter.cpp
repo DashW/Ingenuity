@@ -146,7 +146,7 @@ ScriptParam LuaInterpreter::PopLuaParam()
 	case LUA_TUSERDATA:
 	{
 		resultType = ScriptParam::POINTER;
-		lua_getmetatable(state, -1);
+		lua_getmetatable(state, -1); // dangerous! lua_getmetatable could fail!
 		lua_pushstring(state, "type");
 		lua_gettable(state, -2);
 		unsigned type = unsigned(lua_tonumber(state, -1));
@@ -214,6 +214,15 @@ void LuaInterpreter::PopLuaParams(int num)
 	}
 }
 
+bool LuaInterpreter::CheckType(lua_State * state, unsigned typeIndex, int paramIndex)
+{
+	if(!lua_getmetatable(state, paramIndex)) return false;
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[typeIndex]);
+	bool isOfType = lua_rawequal(state, -1, -2) > 0;
+	lua_pop(state, 2);
+	return isOfType;
+}
+
 bool LuaInterpreter::LoadScript(const char * data, unsigned dataSize, const char * filename, const char * moduleName)
 {
 	std::string filenameString("@");
@@ -257,15 +266,6 @@ bool LuaInterpreter::HasFunction(const char * name)
 
 void LuaInterpreter::FunctionCalled(const char * function)
 {
-	// Clear all the temp tables
-	//while(numTempTables > 0)
-	//{
-	//	numTempTables--;
-	//	sprintf_s(tempTableName, "%s%d", luaTempTablePrefix, numTempTables);
-	//	lua_pushnil(state);
-	//	lua_setglobal(state, tempTableName);
-	//}
-
 	int luaStackBefore = lua_gettop(state);
 
 	lua_getglobal(state, function);
@@ -399,7 +399,7 @@ int LuaInterpreter::CreateVector(lua_State * state)
 int LuaInterpreter::GetVector(lua_State * state)
 {
 	LuaInterpreter * interpreter = GetInstance(state);
-	lua_getmetatable(state, 1);
+	if(!lua_getmetatable(state, 1)) luaL_error(state, "expected vector4");
 	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
 	if(!lua_rawequal(state, -1, -2)) luaL_error(state, "expected vector4");
 	lua_pop(state, 2);
@@ -414,6 +414,10 @@ int LuaInterpreter::GetVector(lua_State * state)
 	}
 	return 1;
 }
+//int LuaInterpreter::GetMatrix(lua_State * state)
+//{
+//
+//}
 int LuaInterpreter::RotationMatrix(lua_State * state)
 {
 	LuaInterpreter * interpreter = GetInstance(state);
@@ -423,82 +427,160 @@ int LuaInterpreter::RotationMatrix(lua_State * state)
 	(*matrix4) = glm::eulerAngleYXZ(float(luaL_optnumber(state, 2, 0)), float(luaL_optnumber(state, 1, 0)), float(luaL_optnumber(state, 3, 0)));
 	return 1;
 }
+int LuaInterpreter::AddMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
 
-//void ScriptCallbacks::MultiplyMatrix(ScriptInterpreter* interpreter)
-//{
-//	POP_PARAM(1, left, POINTER);
-//	POP_PARAM(2, right, POINTER);
-//	interpreter->ClearParams();
-//
-//	if(CheckPtrType(left,TypeMatrix4))
-//	{
-//		glm::mat4 * mat4left = left.GetPointer<glm::mat4>();
-//
-//		if(CheckPtrType(right,TypeMatrix4))
-//		{
-//			glm::mat4 * mat4right = right.GetPointer<glm::mat4>();
-//			glm::mat4 * result = new glm::mat4((*mat4left) * (*mat4right));
-//			interpreter->PushParam(ScriptParam(result, typeHandles[TypeMatrix4]));
-//		}
-//		else if(CheckPtrType(right,TypeVector4))
-//		{
-//			glm::vec4 * vec4right = right.GetPointer<glm::vec4>();
-//			glm::vec4 * result = new glm::vec4((*mat4left) * (*vec4right));
-//			//glm::vec4 * result = new glm::vec4(*vec4right);
-//			interpreter->PushParam(ScriptParam(result, typeHandles[TypeVector4]));
-//		}
-//		else
-//		{
-//			interpreter->ThrowError("Expected right param to be Vector or Matrix");
-//		}
-//	}
-//	else if(CheckPtrType(left,TypeVector4))
-//	{
-//		glm::vec4 * vec4left = left.GetPointer<glm::vec4>();
-//
-//		if(CheckPtrType(right,TypeMatrix4))
-//		{
-//			glm::mat4 * mat4right = right.GetPointer<glm::mat4>();
-//			glm::vec4 * result = new glm::vec4((*vec4left) * (*mat4right));
-//			interpreter->PushParam(ScriptParam(result, typeHandles[TypeMatrix4]));
-//		}
-//		else if(CheckPtrType(right,TypeVector4))
-//		{
-//			glm::vec4 * vec4right = right.GetPointer<glm::vec4>();
-//			glm::vec4 * result = new glm::vec4((*vec4left) * (*vec4right));
-//			interpreter->PushParam(ScriptParam(result, typeHandles[TypeVector4]));
-//		}
-//		else
-//		{
-//			interpreter->ThrowError("Expected right param to be Vector or Matrix");
-//		}
-//	}
-//	else
-//	{
-//		interpreter->ThrowError("Expected left param to be Vector or Matrix");
-//	}
-//}
+	if(interpreter->CheckType(state, interpreter->matrix4type, 1))
+	{
+		const glm::mat4 * matrix4left = (glm::mat4*) lua_touserdata(state, 1);
+
+		if(interpreter->CheckType(state, interpreter->matrix4type, 2))
+		{
+			const glm::mat4 * matrix4right = (glm::mat4*) lua_touserdata(state, 2);
+			glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+			*result = (*matrix4left) + (*matrix4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(lua_isnumber(state, 2))
+		{
+			double numberRight = lua_tonumber(state, 2);
+			glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+			*result = (*matrix4left) + float(numberRight);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+			lua_setmetatable(state, -2);
+		}
+		else
+		{
+			luaL_error(state, "expected matrix/number for parameter 2");
+		}
+	}
+	else if(interpreter->CheckType(state, interpreter->vector4type, 1))
+	{
+		const glm::vec4 * vector4left = (glm::vec4*) lua_touserdata(state, 1);
+
+		if(interpreter->CheckType(state, interpreter->vector4type, 2))
+		{
+			const glm::vec4 * vector4right = (glm::vec4*) lua_touserdata(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*vector4left) + (*vector4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(lua_isnumber(state, 2))
+		{
+			double numberRight = lua_tonumber(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*vector4left) + float(numberRight);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else
+		{
+			luaL_error(state, "expected vector/number for parameter 2");
+		}
+	}
+	else
+	{
+		luaL_error(state, "expected vector/matrix for parameter 1");
+	}
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+	lua_setmetatable(state, -2);
+	return 1;
+}
 int LuaInterpreter::MultiplyMatrix(lua_State * state)
 {
 	LuaInterpreter * interpreter = GetInstance(state);
 
-	lua_getmetatable(state, 1);
-	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
-	if(!lua_rawequal(state, -1, -2)) luaL_error(state, "expected matrix4");
-	lua_pop(state, 2);
-	glm::mat4 * matrix4 = (glm::mat4*) lua_touserdata(state, 1);
+	if(interpreter->CheckType(state, interpreter->matrix4type, 1))
+	{
+		const glm::mat4 * matrix4left = (glm::mat4*) lua_touserdata(state, 1);
 
-	lua_getmetatable(state, 2);
-	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
-	if(!lua_rawequal(state, -1, -2)) luaL_error(state, "expected vector4");
-	lua_pop(state, 2);
-	glm::vec4 * vector4 = (glm::vec4*) lua_touserdata(state, 2);
+		if(interpreter->CheckType(state, interpreter->matrix4type, 2))
+		{
+			const glm::mat4 * matrix4right = (glm::mat4*) lua_touserdata(state, 2);
+			glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+			*result = (*matrix4left) * (*matrix4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(interpreter->CheckType(state, interpreter->vector4type, 2))
+		{
+			const glm::vec4 * vector4right = (glm::vec4*) lua_touserdata(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*matrix4left) * (*vector4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(lua_isnumber(state, 2))
+		{
+			double numberRight = lua_tonumber(state, 2);
+			glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+			*result = (*matrix4left) * float(numberRight);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+			lua_setmetatable(state, -2);
+		}
+		else
+		{
+			luaL_error(state, "expected vector/matrix/number for parameter 2");
+		}
+	}
+	else if(interpreter->CheckType(state, interpreter->vector4type, 1))
+	{
+		const glm::vec4 * vector4left = (glm::vec4*) lua_touserdata(state, 1);
 
-	glm::vec4 * resultV4 = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
-	*resultV4 = (*matrix4) * (*vector4);
+		if(interpreter->CheckType(state, interpreter->matrix4type, 2))
+		{
+			const glm::mat4 * matrix4right = (glm::mat4*) lua_touserdata(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*vector4left) * (*matrix4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(interpreter->CheckType(state, interpreter->vector4type, 2))
+		{
+			const glm::vec4 * vector4right = (glm::vec4*) lua_touserdata(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*vector4left) * (*vector4right);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else if(lua_isnumber(state, 2))
+		{
+			double numberRight = lua_tonumber(state, 2);
+			glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+			*result = (*vector4left) * float(numberRight);
+			lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+			lua_setmetatable(state, -2);
+		}
+		else
+		{
+			luaL_error(state, "expected vector/matrix/number for parameter 2");
+		}
+	}
+	else
+	{
+		luaL_error(state, "expected vector/matrix for parameter 1");
+	}
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
 	lua_setmetatable(state, -2);
+	return 1;
+}
+int LuaInterpreter::InverseMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
+	
+	if(!interpreter->CheckType(state, interpreter->matrix4type, 1)) luaL_error(state, "expected matrix4");
+
+	const glm::mat4 * matrix4 = (glm::mat4*) lua_touserdata(state, 1);
+	glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+	*result = glm::inverse(*matrix4);
+	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+	lua_setmetatable(state, -2);
+
 	return 1;
 }
 
@@ -510,20 +592,52 @@ void LuaInterpreter::RegisterMathObjects()
 	lua_register(state, "CreateVector", CreateVector);
 	lua_register(state, "GetVector", GetVector);
 	lua_register(state, "RotMatrix", RotationMatrix);
+	lua_register(state, "AddMatrix", AddMatrix);
 	lua_register(state, "MulMatrix", MultiplyMatrix);
+	lua_register(state, "InvMatrix", InverseMatrix);
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::vector4type]);
 	lua_pushstring(state, "__index");
 	lua_pushcfunction(state, GetVector);
 	lua_settable(state, -3);
 
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::vector4type]);
+	lua_pushstring(state, "__mul");
+	lua_pushcfunction(state, MultiplyMatrix);
+	lua_settable(state, -3);
+
 	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::matrix4type]);
 	lua_pushstring(state, "__mul");
 	lua_pushcfunction(state, MultiplyMatrix);
 	lua_settable(state, -3);
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::vector4type]);
+	lua_pushstring(state, "__add");
+	lua_pushcfunction(state, AddMatrix);
+	lua_settable(state, -3);
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::matrix4type]);
+	lua_pushstring(state, "__add");
+	lua_pushcfunction(state, AddMatrix);
+	lua_settable(state, -3);
 }
 
-void LuaInterpreter::RegisterOperator(unsigned ptrType, Operator op, void(*callback)(ScriptInterpreter*))
+void LuaInterpreter::RegisterMethod(unsigned ptrType, const char * name, ScriptCallback callback)
+{
+	callbacks.push_back(callback);
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[ptrType]);
+
+	lua_pushstring(state, name);
+
+	lua_pushnumber(state, (lua_Number)callbacks.size() - 1);
+	lua_pushlightuserdata(state, this);
+	lua_pushcclosure(state, &LuaInterpreter::Callback, 2);
+
+	lua_settable(state, -3);
+}
+
+void LuaInterpreter::RegisterOperator(unsigned ptrType, Operator op, ScriptCallback callback)
 {
 	const char* metaFuncName = 0;
 
@@ -557,17 +671,7 @@ void LuaInterpreter::RegisterOperator(unsigned ptrType, Operator op, void(*callb
 
 	if(!metaFuncName) return;
 
-	callbacks.push_back(callback);
-
-	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[ptrType]);
-
-	lua_pushstring(state, metaFuncName);
-
-	lua_pushnumber(state, (lua_Number)callbacks.size() - 1);
-	lua_pushlightuserdata(state, this);
-	lua_pushcclosure(state, &LuaInterpreter::Callback, 2);
-
-	lua_settable(state, -3);
+	RegisterMethod(ptrType, metaFuncName, callback);
 }
 
 void LuaInterpreter::ThrowError(const char * error)

@@ -19,13 +19,17 @@ class LuaInterpreter : public ScriptInterpreter
 	static int CreateVector(lua_State * state);
 	static int GetVector(lua_State * state);
 	static int RotationMatrix(lua_State * state);
+	static int AddMatrix(lua_State * state);
 	static int MultiplyMatrix(lua_State * state);
+	static int InverseMatrix(lua_State * state);
 
 	void PushLuaParam(ScriptParam param);
 	ScriptParam PopLuaParam();
 
 	int PushLuaParams();
 	void PopLuaParams(int num);
+
+	bool CheckType(lua_State * state, unsigned typeIndex, int paramIndex);
 
 	lua_State * state;
 	std::vector<ScriptCallback> callbacks;
@@ -53,6 +57,8 @@ public:
 	//virtual void RegisterModule(ScriptModule & module) override;
 
 	virtual void RegisterMathObjects() override;
+
+	virtual void RegisterMethod(unsigned ptrType, const char * name, ScriptCallback callback);
 
 	virtual void RegisterOperator(unsigned ptrType, Operator op, ScriptCallback callback);
 

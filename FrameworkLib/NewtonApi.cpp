@@ -639,24 +639,34 @@ public:
 
 namespace Ingenuity {
 
-// SPRING STATICS - REMOVE OR REFACTOR!!!
-
-#define MOUSE_PICK_DAMP			 20.0f
-#define MOUSE_PICK_STIFFNESS	 300.0f
-
-glm::vec4 NewtonApi::m_pickedBodyDisplacement;
-glm::vec4 NewtonApi::m_pickedBodyLocalAtachmentPoint;
-//dVector NewtonApi::m_pickedBodyLocalAtachmentNormal;
-NewtonBody* NewtonApi::m_targetPicked = NULL;
-//NewtonBodyDestructor NewtonApi::m_bodyDestructor;
-
-// END OF SPRING STATICS
-
 NewtonPhysicsWorld::~NewtonPhysicsWorld()
 {
 	if(newtonWorld)
 	{
 		NewtonDestroy(newtonWorld);
+	}
+}
+
+NewtonPhysicsSpring::~NewtonPhysicsSpring()
+{
+	NewtonPhysicsObject * physicsObject1 = (NewtonPhysicsObject*)NewtonBodyGetUserData(body1);
+	NewtonPhysicsObject * physicsObject2 = (NewtonPhysicsObject*)NewtonBodyGetUserData(body2);
+
+	for(unsigned i = 0; physicsObject1 != 0 && i < physicsObject1->springs.size(); ++i)
+	{
+		if(physicsObject1->springs[i] == this)
+		{
+			physicsObject1->springs.erase(physicsObject1->springs.begin() + i);
+			break;
+		}
+	}
+	for(unsigned i = 0; physicsObject2 != 0 && i < physicsObject2->springs.size(); ++i)
+	{
+		if(physicsObject2->springs[i] == this)
+		{
+			physicsObject2->springs.erase(physicsObject2->springs.begin() + i);
+			break;
+		}
 	}
 }
 
@@ -693,8 +703,7 @@ void NewtonPhysicsObject::RemoveFromWorld()
 NewtonApi::NewtonApi() :
 physicsTime(0.0f),
 microseconds(0),
-reentrantUpdate(false),
-m_prevMouseState(false)
+reentrantUpdate(false)
 //m_pickedBodyParam(0.0f)
 {
 	QueryPerformanceFrequency(&frequency);
@@ -745,6 +754,87 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 
 	glm::vec4 gravityForce(0.0f, mass * GRAVITY, 0.0f, 1.0f);
 	NewtonBodySetForce(body, &gravityForce[0]);
+
+	// If we really want to do this properly, the following should be in a CustomJoint.
+	NewtonPhysicsObject * physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(body);
+	if(physicsObject)
+	{
+		for(unsigned i = 0; i < physicsObject->springs.size(); ++i)
+		{
+			NewtonPhysicsSpring * spring = physicsObject->springs[i];
+
+			glm::vec4 position1(spring->attachPoint1, 1.0f);
+			if(spring->body1)
+			{
+				glm::mat4 body1matrix;
+				NewtonBodyGetMatrix(spring->body1, &body1matrix[0][0]);
+				position1 = body1matrix * glm::vec4(spring->attachPoint1, 1.0f);
+			}
+			glm::vec4 position2(spring->attachPoint2, 1.0f);
+			if(spring->body2)
+			{
+				glm::mat4 body2matrix;
+				NewtonBodyGetMatrix(spring->body2, &body2matrix[0][0]);
+				position2 = body2matrix * glm::vec4(spring->attachPoint2, 1.0f);
+			}
+
+			glm::vec4 localPosition = (body == spring->body1 ? position1 : position2);
+			glm::vec4 otherPosition = (body == spring->body1 ? position2 : position1);
+
+			glm::vec4 displacement = otherPosition - localPosition;
+			glm::vec4 offsetDisplacement = displacement - (spring->length * glm::normalize(displacement));
+			float mag2 = glm::dot(displacement, displacement);
+			if(mag2 > dFloat(20 * 20)) {
+				displacement = displacement * (20.0f / sqrtf(mag2));
+			}
+
+			// add the mouse pick penalty force and torque
+			glm::vec4 com;
+			glm::mat4 matrix;
+			NewtonBodyGetMatrix(body, &matrix[0][0]);
+			NewtonBodyGetCentreOfMass(body, &com[0]);
+
+			if(NewtonBodyGetType(body) != NEWTON_KINEMATIC_BODY)
+			{
+				// we pick a dynamics body, update by applying forces
+				dFloat mass;
+				dFloat Ixx;
+				dFloat Iyy;
+				dFloat Izz;
+
+				glm::vec4 veloc;
+				glm::vec4 omega;
+
+				NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
+				NewtonBodyGetVelocity(body, &veloc[0]);
+				NewtonBodyGetOmega(body, &omega[0]);
+
+				if((spring->extension && glm::length(displacement) > spring->length) ||
+					(spring->compression && glm::length(displacement) < spring->length))
+				{
+					glm::vec4 force(offsetDisplacement * mass * spring->stiffness);
+					glm::vec4 forceDamping(veloc * mass * spring->damping);
+					force -= forceDamping;
+
+					//matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, matrix[3][3]);
+
+					// calculate local point relative to center of mass
+					glm::vec3 localAttachPoint = (body == spring->body1 ? spring->attachPoint1 : spring->attachPoint2);
+					glm::vec4 point(matrix * (glm::vec4(localAttachPoint,0.0f) - com));
+					//glm::vec4 point(glm::inverse(glm::transpose(matrix)) * (m_pickedBodyLocalAtachmentPoint - com));
+					glm::vec4 torque(glm::cross(glm::vec3(point),glm::vec3(force)), 1.0f);
+					//glm::vec4 torqueDamping(omega * mass * 0.5f);
+					//torque -= torqueDamping;
+
+					NewtonBodyAddForce(body, &force.x);
+					NewtonBodyAddTorque(body, &torque.x);
+
+					// make sure the body is unfrozen, if it is picked
+					//NewtonBodySetFreezeState(body, 0);
+				}
+			}
+		}
+	}
 }
 
 int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const NewtonBody* const body1, int threadIndex)
@@ -840,134 +930,18 @@ void NewtonApi::DebugPolygonCallback(void* userData, int vertexCount, const floa
 	}
 }
 
-void NewtonApi::SpringForceCallback(const NewtonBody * const body, float timestep, int threadIndex)
-{
-	glm::vec4 com;
-	glm::mat4 matrix;
+// Here's the real issue. We need to make sure this code only gets executed when a spring
+// is attached to this body. Okay, so how do we know where a spring is attached relative to a parent body,
+// and how do we update that every frame? The most 'correct' API would be to introduce a raft of new
+// spring specific functions: CreateSpring, AttachSpring, DetachSpring, SetSpringStiffness, SetSpringDamping
+// But this is way too complex, and we'd like any new functions to apply to any kind of "joint".
 
-	// apply the the body forces
-	//if(m_chainPickBodyForceCallback) {
-	//	m_chainPickBodyForceCallback(body, timestep, threadIndex);
-	//}
-	ApplyForceAndTorqueCallback(body, timestep, threadIndex);
-
-	// add the mouse pick penalty force and torque
-	NewtonBodyGetMatrix(body, &matrix[0][0]);
-	NewtonBodyGetCentreOfMass(body, &com[0]);
-
-	if(NewtonBodyGetType(body) == NEWTON_KINEMATIC_BODY) 
-	{
-		// mouse pick a kinematic body, simply update the position to the mouse delta
-
-		// calculate the displacement
-		matrix[3] = matrix * (m_pickedBodyDisplacement * 0.3f);
-		NewtonBodySetMatrix(body, &matrix[0][0]);
-
-	}
-	else 
-	{
-		// we pick a dynamics body, update by applying forces
-		dFloat mass;
-		dFloat Ixx;
-		dFloat Iyy;
-		dFloat Izz;
-
-		glm::vec4 veloc;
-
-		NewtonBodyGetVelocity(body, &veloc[0]);
-		NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
-
-		glm::vec4 force(m_pickedBodyDisplacement * mass * MOUSE_PICK_STIFFNESS);
-		glm::vec4 dampForce(veloc * mass * MOUSE_PICK_DAMP);
-		force -= dampForce;
-
-		matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, matrix[3][3]);
-
-		// calculate local point relative to center of mass
-		//glm::vec4 point(matrix * (m_pickedBodyLocalAtachmentPoint - com));
-		//glm::vec4 point(glm::inverse(glm::transpose(matrix)) * (m_pickedBodyLocalAtachmentPoint - com));
-		//glm::vec4 torque(point * force);
-
-		NewtonBodyAddForce(body, &force.x);
-		//NewtonBodyAddTorque(body, &torque.x);
-
-		// make sure the body is unfrozen, if it is picked
-		NewtonBodySetFreezeState(body, 0);
-	}
-}
-
-void NewtonApi::DragObject(PhysicsObject * object, glm::vec3 position)
-{
-	// handle pick body from the screen
-
-	//glm::vec4 origin4 = glm::vec4(origin, 0.0f);
-	//glm::vec4 ray4 = glm::vec4(ray, 0.0f);
-
-	bool mousePickState = true;
-	if(!m_targetPicked) 
-	{
-		// Mouse has been clicked this frame!
-		if(!m_prevMouseState && mousePickState) 
-		{
-			//dFloat param;
-			//glm::vec3 posit;
-			//glm::vec3 normal;
-
-			//PhysicsObject * object = PickObject(world, origin, ray, param, posit, normal);
-
-			if(object) {
-				NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
-
-				m_targetPicked = physicsObject->newtonBody;
-				glm::mat4 matrix;
-				NewtonBodyGetMatrix(m_targetPicked, &matrix[0][0]);
-
-				// save point local to the body matrix
-				//m_pickedBodyParam = param;
-				m_pickedBodyDisplacement = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
-				m_pickedBodyLocalAtachmentPoint = glm::inverse(matrix) * glm::vec4(position, 1.0f);
-
-				// convert normal to local space
-				//m_pickedBodyLocalAtachmentNormal = matrix.UnrotateVector(normal);
-
-				// link th force and torque callback
-				//m_chainPickBodyForceCallback = NewtonBodyGetForceAndTorqueCallback(m_targetPicked);
-				//dAssert(m_chainPickBodyForceCallback != OnPickedBodyApplyForce);
-
-				// set a new call back
-				NewtonBodySetForceAndTorqueCallback(m_targetPicked, SpringForceCallback);
-
-				// save the destructor call back
-				//m_bodyDestructor = NewtonBodyGetDestructorCallback(m_targetPicked);
-				//NewtonBodySetDestructorCallback(m_targetPicked, OnPickedBodyDestroyedNotify);
-			}
-		}
-	}
-	else 
-	{
-		//if(mainWin->GetMouseKeyState(0)) {
-			glm::mat4 matrix;
-			NewtonBodyGetMatrix(m_targetPicked, &matrix[0][0]);
-
-			glm::vec4 p2 = matrix * m_pickedBodyLocalAtachmentPoint;
-			//glm::vec4 p(origin4 + (ray4 * m_pickedBodyParam));
-			m_pickedBodyDisplacement = glm::vec4(position,1.0f) - p2;
-			float mag2 = glm::dot(m_pickedBodyDisplacement,m_pickedBodyDisplacement);
-			if(mag2 > dFloat(20 * 20)) {
-				m_pickedBodyDisplacement = m_pickedBodyDisplacement * (20.0f / sqrtf(glm::dot(m_pickedBodyDisplacement,m_pickedBodyDisplacement)));
-			}
-		//}
-		//else {
-		//	// unchain the callbacks
-		//	NewtonBodySetForceAndTorqueCallback(m_targetPicked, ApplyForceAndTorqueCallback);
-		//	NewtonBodySetDestructorCallback(m_targetPicked, m_bodyDestructor);
-		//	m_targetPicked = NULL;
-		//	m_bodyDestructor = NULL;
-		//}
-	}
-
-	m_prevMouseState = mousePickState;
-}
+// Attach a spring between point 1, which is relative to a Body, and point 2, which is relative to the world.
+// Every frame, update the position of point 2. 
+// My idea at one point was to declare a new kind of NewtonBody, a POINT, which could be moved, rotated, just
+// like any other NewtonBody, but never as part of the simulation. I tried creating this body with a NullCollision.
+// With the understanding that physics bodies cannot be parented to one-another, I have created the Anchor, purely
+// as a means to attach joints to a static point of reference which can be moved manually.
 
 PhysicsObject * NewtonApi::PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut)
 {
@@ -1115,6 +1089,13 @@ void NewtonApi::OverrideMaterialPair(PhysicsMaterial * mat1, PhysicsMaterial * m
 	materialPairBank[PairKey(index2, index1)] = properties;
 }
 
+PhysicsObject * NewtonApi::CreateAnchor()
+{
+	NewtonPhysicsAnchorSpec * spec = new NewtonPhysicsAnchorSpec();
+	spec->mass = 0.0f;
+	return new NewtonPhysicsObject(spec);
+}
+
 PhysicsObject * NewtonApi::CreateCuboid(glm::vec3 size, bool kinematic)
 {
 	NewtonPhysicsCuboidSpec * spec = new NewtonPhysicsCuboidSpec();
@@ -1184,6 +1165,11 @@ void NewtonApi::AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool is
 
 	switch(physicsObject->spec->GetType())
 	{
+	case NewtonPhysicsSpec::Anchor:
+	{
+		collision = NewtonCreateNull(physicsWorld->newtonWorld);
+		break;
+	}
 	case NewtonPhysicsSpec::Cuboid:
 	{
 		NewtonPhysicsCuboidSpec * cubeSpec = static_cast<NewtonPhysicsCuboidSpec*>(physicsObject->spec);
@@ -1441,6 +1427,31 @@ void NewtonApi::FinalizeRagdoll(PhysicsRagdoll * ragdoll)
 	physicsRagdoll->manager->FinalizeRagDoll((float*)&matrix);
 }
 
+PhysicsSpring * NewtonApi::CreateSpring(PhysicsObject * body1, PhysicsObject * body2, glm::vec3 attachPoint1, glm::vec3 attachPoint2)
+{
+	NewtonPhysicsObject * physicsObject1 = static_cast<NewtonPhysicsObject*>(body1);
+	NewtonPhysicsObject * physicsObject2 = static_cast<NewtonPhysicsObject*>(body2);
+
+	if(!physicsObject1 && !physicsObject2) return 0;
+
+	NewtonPhysicsSpring * physicsSpring = new NewtonPhysicsSpring();
+	physicsSpring->body1 = physicsObject1 ? physicsObject1->newtonBody : 0;
+	physicsSpring->body2 = physicsObject2 ? physicsObject2->newtonBody : 0;
+	physicsSpring->attachPoint1 = attachPoint1;
+	physicsSpring->attachPoint2 = attachPoint2;
+
+	if(physicsObject1)
+	{
+		physicsObject1->springs.push_back(physicsSpring);
+	}
+	if(physicsObject2)
+	{
+		physicsObject2->springs.push_back(physicsSpring);
+	}
+
+	return physicsSpring;
+}
+
 glm::vec3 NewtonApi::GetPosition(PhysicsObject * object)
 {
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
@@ -1601,6 +1612,11 @@ void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix)
 		}
 	}
 
+	// Need to check for invalid matrices and discard!
+	// But should I do it here, or in the script callback??
+	// Do it in the script callback for now. 
+	// If I find that it's needed here, I'll move it.
+
 	NewtonBodySetMatrix(physicsObject->newtonBody, (float*)&matrix);
 }
 
@@ -1618,6 +1634,31 @@ void NewtonApi::SetMaterial(PhysicsObject * object, PhysicsMaterial * material)
 	NewtonPhysicsMaterial * physicsMaterial = static_cast<NewtonPhysicsMaterial*>(material);
 
 	physicsObject->spec->materialIndex = physicsMaterial->index;
+}
+
+
+void NewtonApi::SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value)
+{
+	NewtonPhysicsSpring * physicsSpring = static_cast<NewtonPhysicsSpring*>(spring);
+
+	switch(prop)
+	{
+	case PhysicsSpring::Stiffness:
+		physicsSpring->stiffness = value;
+		break;
+	case PhysicsSpring::Damping:
+		physicsSpring->damping = value;
+		break;
+	case PhysicsSpring::Length:
+		physicsSpring->length = value;
+		break;
+	case PhysicsSpring::Extends:
+		physicsSpring->extension = value > 0.0f;
+		break;
+	case PhysicsSpring::Compresses:
+		physicsSpring->compression = value > 0.0f;
+		break;
+	}
 }
 
 LocalMesh * NewtonApi::GetDebugMesh(PhysicsObject * object)

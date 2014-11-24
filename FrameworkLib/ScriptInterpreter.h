@@ -172,6 +172,8 @@ public:
 	}
 	//virtual void RegisterModule(ScriptModule & module) = 0;
 	virtual void RegisterMathObjects() = 0;
+
+	virtual void RegisterMethod(unsigned ptrType, const char * name, ScriptCallback callback) = 0;
 	virtual void RegisterOperator(unsigned ptrType, Operator op, ScriptCallback callback) = 0;
 
 	virtual ScriptParam CreateMap() = 0;

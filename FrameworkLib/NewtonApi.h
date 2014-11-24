@@ -38,6 +38,7 @@ struct NewtonPhysicsSpec
 {
 	enum Type
 	{
+		Anchor,
 		Cuboid,
 		Sphere,
 		Capsule,
@@ -52,6 +53,10 @@ struct NewtonPhysicsSpec
 	virtual ~NewtonPhysicsSpec() {}
 };
 
+struct NewtonPhysicsAnchorSpec : public NewtonPhysicsSpec
+{
+	virtual Type GetType() override { return Anchor; }
+};
 struct NewtonPhysicsCuboidSpec : public NewtonPhysicsSpec
 {
 	virtual Type GetType() override { return Cuboid; }
@@ -84,11 +89,34 @@ struct NewtonPhysicsHeightmapSpec : public NewtonPhysicsSpec
 	HeightParser * heightParser = 0;
 };
 
+struct NewtonPhysicsSpring : public PhysicsSpring
+{
+	NewtonBody * body1;
+	NewtonBody * body2;
+	glm::vec3 attachPoint1;
+	glm::vec3 attachPoint2;
+	float stiffness;
+	float damping;
+	float length;
+	bool extension;
+	bool compression;
+
+	NewtonPhysicsSpring() :
+		body1(0), body2(0),
+		stiffness(300.0f), damping(20.0f), length(0.0f), 
+		extension(true), compression(false) {}
+	
+	// Needs to remove itself from the respective bodies!
+	// Likewise each body needs to destroy all its springs when it is destroyed.
+	virtual ~NewtonPhysicsSpring();
+};
+
 struct NewtonPhysicsObject : public PhysicsObject
 {
 	NewtonPhysicsSpec * spec;
 	NewtonBody * newtonBody;
 	CustomKinematicController * controller;
+	std::vector<NewtonPhysicsSpring*> springs;
 	
 	NewtonPhysicsObject(NewtonPhysicsSpec * spec) : 
 		spec(spec), newtonBody(0), controller(0) {}
@@ -107,13 +135,6 @@ struct NewtonPhysicsRagdoll : public PhysicsRagdoll
 
 class NewtonApi : public PhysicsApi
 {
-	//float m_pickedBodyParam;
-	bool m_prevMouseState;
-	static glm::vec4 m_pickedBodyDisplacement;
-	static glm::vec4 m_pickedBodyLocalAtachmentPoint;
-	static NewtonBody * m_targetPicked;
-	//static NewtonBodyDestructor m_bodyDestructor;
-
 	float physicsTime;
 	long long microseconds;
 	bool reentrantUpdate;
@@ -129,7 +150,6 @@ class NewtonApi : public PhysicsApi
 	//static int CompoundAABBOverlapCallback(const NewtonMaterial* const material, const NewtonBody* const body0, const void* const collsionNode0, const NewtonBody* const body1, const void* const collsionNode1, int threadIndex);
 	static void ContactCollisionCallback(const NewtonJoint* contactJoint, float timestep, int threadIndex);
 	static void DebugPolygonCallback(void* userData, int vertexCount, const float* faceVertec, int id);
-	static void SpringForceCallback(const NewtonBody * const body, float timeStep, int threadIndex);
 	void UpdateSpringPosition(float timeStep);
 	
 	//int GetNewtonMaterialID(NewtonWorld * newtonWorld, PhysicsMaterial * material);
@@ -147,12 +167,14 @@ public:
 	virtual void SetMaterial(PhysicsMaterial * material, PhysicsMaterial::Properties & properties) override;
 	virtual void OverrideMaterialPair(PhysicsMaterial * mat1, PhysicsMaterial * mat2, PhysicsMaterial::Properties & properties) override;
 
+	virtual PhysicsObject * CreateAnchor() override;
 	virtual PhysicsObject * CreateCuboid(glm::vec3 size, bool kinematic = false) override;
 	virtual PhysicsObject * CreateSphere(float radius, bool kinematic = false) override;
 	virtual PhysicsObject * CreateCapsule(float radius, float length, bool kinematic = false) override;
 	virtual PhysicsObject * CreateMesh(LocalMesh * mesh, bool kinematic = false, bool deleteLocal = false) override;
 	virtual PhysicsObject * CreateHeightmap(HeightParser * parser) override;
 	virtual PhysicsRagdoll * CreateRagdoll(PhysicsWorld * world) override;
+	virtual PhysicsSpring * CreateSpring(PhysicsObject * body1, PhysicsObject * body2, glm::vec3 attachPoint1, glm::vec3 attachPoint2) override;
 
 	virtual void AddToWorld(PhysicsWorld * world, PhysicsObject * object, bool isStatic = false) override;
 	virtual void RemoveFromWorld(PhysicsWorld * world, PhysicsObject * object) override;
@@ -174,13 +196,9 @@ public:
 	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix) override;
 	virtual void SetMass(PhysicsObject * object, float mass) override;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) override;
+	virtual void SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value) override;
 
 	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) override;
-
-	//virtual void SetDragObject(PhysicsObject * object, glm::vec3 position);
-	//virtual void SetDragDisplacement(glm::vec3 displacement);
-
-	virtual void DragObject(PhysicsObject * object, glm::vec3 position) override;
 
 	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) override;
 };

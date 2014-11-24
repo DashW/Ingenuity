@@ -650,6 +650,36 @@ void ScriptCallbacks::SetCameraClipFovOrHeight(ScriptInterpreter * interpreter)
 	gpuCamera->fovOrHeight = (float) fovOrHeight.nvalue;
 }
 
+void ScriptCallbacks::GetCameraRay(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, camera, TypeGpuCamera);
+	POP_NUMPARAM(2, x);
+	POP_NUMPARAM(3, y);
+	ScriptParam surface = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
+
+	unsigned width, height;
+	if(CheckPtrType(surface, TypeGpuDrawSurface))
+	{
+		Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
+		width = gpuSurface->GetTexture()->GetWidth();
+		height = gpuSurface->GetTexture()->GetHeight();
+	}
+	else
+	{
+		interpreter->GetApp()->gpu->GetBackbufferSize(width, height);
+	}
+
+	float aspect = float(width) / float(height);
+	glm::vec4 ray(gpuCamera->GetUnprojectedRay(float(x.nvalue), float(y.nvalue), aspect), 0.0f);
+	ray *= (gpuCamera->farClip - gpuCamera->nearClip);
+
+	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&ray, sizeof(glm::vec4), 
+		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
+}
+
 void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 {
 	POP_NUMPARAM(1, width);
@@ -2631,6 +2661,13 @@ void ScriptCallbacks::CreatePhysicsMaterial(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(material, typeHandles[TypePhysicsMaterial]));
 }
 
+void ScriptCallbacks::CreatePhysicsAnchor(ScriptInterpreter * interpreter)
+{
+	interpreter->ClearParams();
+	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateAnchor();
+	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+}
+
 void ScriptCallbacks::CreatePhysicsCuboid(ScriptInterpreter * interpreter)
 {
 	POP_NUMPARAM(1, w);
@@ -2691,6 +2728,26 @@ void ScriptCallbacks::CreatePhysicsHeightmap(ScriptInterpreter * interpreter)
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateHeightmap(heightParser);
 
 	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+}
+
+void ScriptCallbacks::CreatePhysicsSpring(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, obj1, TypePhysicsObject);
+	POP_PTRPARAM(2, obj2, TypePhysicsObject);
+	POP_SPTRPARAM(3, attach1, TypeVector4);
+	POP_SPTRPARAM(4, attach2, TypeVector4);
+
+	PhysicsObject * physObj1 = obj1.GetPointer<PhysicsObject>();
+	PhysicsObject * physObj2 = obj2.GetPointer<PhysicsObject>();
+	glm::vec4 attachVec1 = *attach1.GetPointer<glm::vec4>();
+	glm::vec4 attachVec2 = *attach2.GetPointer<glm::vec4>();
+
+	PhysicsApi * physics = interpreter->GetApp()->physics;
+
+	PhysicsSpring * spring = physics->CreateSpring(physObj1, physObj2,
+		glm::vec3(attachVec1), glm::vec3(attachVec2));
+
+	interpreter->PushParam(ScriptParam(spring, typeHandles[TypePhysicsSpring]));
 }
 
 void ScriptCallbacks::AddToPhysicsWorld(ScriptInterpreter * interpreter)
@@ -2859,6 +2916,44 @@ void ScriptCallbacks::SetPhysicsMatrix(ScriptInterpreter * interpreter)
 	interpreter->GetApp()->physics->SetTargetMatrix(physicsObject, *objectMatrix);
 }
 
+void ScriptCallbacks::SetPhysicsSpringProperty(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, spring, TypePhysicsSpring);
+	POP_PARAM(2, name, STRING);
+	POP_NUMPARAM(3, value);
+
+	int prop = -1;
+
+	if(strcmp(name.svalue, "stiffness") == 0)
+	{
+		prop = PhysicsSpring::Stiffness;
+	}
+	if(strcmp(name.svalue, "damping") == 0)
+	{
+		prop = PhysicsSpring::Damping;
+	}
+	if(strcmp(name.svalue, "length") == 0)
+	{
+		prop = PhysicsSpring::Length;
+	}
+	if(strcmp(name.svalue, "extends") == 0)
+	{
+		prop = PhysicsSpring::Extends;
+	}
+	if(strcmp(name.svalue, "compresses") == 0)
+	{
+		prop = PhysicsSpring::Compresses;
+	}
+
+	if(prop > -1)
+	{
+		interpreter->GetApp()->physics->SetSpringProperty(
+			spring.GetPointer<PhysicsSpring>(),
+			(PhysicsSpring::Property) prop,
+			float(value.nvalue));
+	}
+}
+
 void ScriptCallbacks::CreatePhysicsRagdoll(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, world, TypePhysicsWorld);
@@ -2922,60 +3017,34 @@ void ScriptCallbacks::FinalizePhysicsRagdoll(ScriptInterpreter * interpreter)
 void ScriptCallbacks::PickPhysicsObject(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, world, TypePhysicsWorld);
-	POP_PTRPARAM(2, camera, TypeGpuCamera);
-	POP_NUMPARAM(3, x);
-	POP_NUMPARAM(4, y);
-	ScriptParam surface = interpreter->PopParam();
+	POP_SPTRPARAM(2, origin, TypeVector4);
+	POP_SPTRPARAM(3, ray, TypeVector4);
 	interpreter->ClearParams();
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	unsigned width, height;
-	if(CheckPtrType(surface,TypeGpuDrawSurface))
-	{
-		Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-		width = gpuSurface->GetTexture()->GetWidth();
-		height = gpuSurface->GetTexture()->GetHeight();
-	}
-	else
-	{
-		interpreter->GetApp()->gpu->GetBackbufferSize(width, height);
-	}
-
-	float aspect = float(width) / float(height);
-	glm::vec3 ray = gpuCamera->GetUnprojectedRay(float(x.nvalue), float(y.nvalue), aspect);
-	ray *= (gpuCamera->farClip - gpuCamera->nearClip);
 
 	PhysicsApi * physics = interpreter->GetApp()->physics;
 	PhysicsWorld * physicsWorld = world.GetPointer<PhysicsWorld>();
 
+	glm::vec4 originVec4 = *origin.GetPointer<glm::vec4>();
+	glm::vec4 rayVec4 = *ray.GetPointer<glm::vec4>();
+
 	float t;
 	glm::vec3 position;
 	glm::vec3 normal;
-	PhysicsObject * physicsObject = physics->PickObject(physicsWorld, gpuCamera->position, ray, t, position, normal);
+	PhysicsObject * physicsObject = physics->PickObject(physicsWorld, 
+		glm::vec3(originVec4), glm::vec3(rayVec4), t, position, normal);
+
+	glm::vec4 posVec4(position, 1.0f);
+	glm::vec4 norVec4(normal, 0.0f);
 
 	if(physicsObject)
 	{
 		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, typeHandles[TypePhysicsObject])));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.x)));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.y)));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.z)));
+		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&posVec4, sizeof(glm::vec4), 
+			interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
+		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&norVec4, sizeof(glm::vec4), 
+			interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
+		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(t)));
 	}
-}
-
-void ScriptCallbacks::DragPhysicsObject(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, object, TypePhysicsObject);
-	POP_NUMPARAM(2, x);
-	POP_NUMPARAM(3, y);
-	POP_NUMPARAM(4, z);
-	interpreter->ClearParams();
-
-	PhysicsApi * physics = interpreter->GetApp()->physics;
-	PhysicsObject * physicsObject = object.GetPointer<PhysicsObject>();
-	glm::vec3 position(float(x.nvalue), float(y.nvalue), float(z.nvalue));
-
-	physics->DragObject(physicsObject, position);
 }
 
 void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)

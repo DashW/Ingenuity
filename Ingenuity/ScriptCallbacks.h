@@ -38,6 +38,7 @@ class ScriptCallbacks
 		TypePhysicsObject,
 		TypePhysicsMaterial,
 		TypePhysicsRagdoll,
+		TypePhysicsSpring,
 		TypeLeapHelper,
 		
 		TypeCount
@@ -79,10 +80,13 @@ public:
 		typeHandles[TypeAudioItem] = interpreter->RegisterPointerType();
 		typeHandles[TypeIsoSurface] = interpreter->RegisterPointerType();
 		typeHandles[TypeSVGParser] = interpreter->RegisterPointerType();
+
 		typeHandles[TypePhysicsWorld] = interpreter->RegisterPointerType();
 		typeHandles[TypePhysicsObject] = interpreter->RegisterPointerType();
 		typeHandles[TypePhysicsMaterial] = interpreter->RegisterPointerType();
 		typeHandles[TypePhysicsRagdoll] = interpreter->RegisterPointerType();
+		typeHandles[TypePhysicsSpring] = interpreter->RegisterPointerType();
+
 		typeHandles[TypeLeapHelper] = interpreter->RegisterPointerType();
 
 		// GPU
@@ -126,6 +130,9 @@ public:
 			"(camera,nearclip,farclip,fov) Sets the near and far clip panes and fov of a perspective camera");
 		interpreter->RegisterCallback("SetCameraClipHeight", &ScriptCallbacks::SetCameraClipFovOrHeight,
 			"(camera,nearclip,farclip,height) Sets the near and far clip panes and height of an orthographic camera");
+		interpreter->RegisterCallback("GetCameraRay", &ScriptCallbacks::GetCameraRay,
+			"(camera,x,y[,surface]) Returns the vector4 ray from the camera for the given point [on the surface]");
+
 		interpreter->RegisterCallback("CreateLight", &ScriptCallbacks::CreateLight,
 			"(type) Creates a new light of type \"directional\", \"point\", or \"spot\"");
 		interpreter->RegisterCallback("SetLightColor", &ScriptCallbacks::SetLightColor,
@@ -325,6 +332,8 @@ public:
 			"() Creates an empty physics world");
 		interpreter->RegisterCallback("CreatePhysicsMaterial", &ScriptCallbacks::CreatePhysicsMaterial,
 			"(elasticity,sfriction,kfriction,softness) Creates a physics material");
+		interpreter->RegisterCallback("CreatePhysicsAnchor", &ScriptCallbacks::CreatePhysicsAnchor,
+			"() Creates a static, zero-sized physics anchor for joint attachment");
 		interpreter->RegisterCallback("CreatePhysicsCuboid", &ScriptCallbacks::CreatePhysicsCuboid,
 			"(w,h,d,kinematic) Creates a physics cuboid with the given dimenstions and control method");
 		interpreter->RegisterCallback("CreatePhysicsSphere", &ScriptCallbacks::CreatePhysicsSphere,
@@ -335,6 +344,8 @@ public:
 			"(type,vtx,idx) Creates a physics mesh from the given vertex type, vertex and index buffers");
 		interpreter->RegisterCallback("CreatePhysicsHeightmap", &ScriptCallbacks::CreatePhysicsHeightmap,
 			"(heightmap) Creates a physics heightmap from the given heightmap parser");
+		interpreter->RegisterCallback("CreatePhysicsSpring", &ScriptCallbacks::CreatePhysicsSpring,
+			"(obj1,obj2,attach1,attach2) Creates a physics spring between two objects");
 		interpreter->RegisterCallback("AddToPhysicsWorld", &ScriptCallbacks::AddToPhysicsWorld,
 			"(world,object[,static]) Adds the given physics object to the given physics world");
 		interpreter->RegisterCallback("RemoveFromPhysicsWorld", &ScriptCallbacks::RemoveFromPhysicsWorld,
@@ -359,6 +370,8 @@ public:
 			"(object) Returns the transformation matrix of the given physics object");
 		interpreter->RegisterCallback("SetPhysicsMatrix", &ScriptCallbacks::SetPhysicsMatrix,
 			"(object,matrix) Sets the transformation matrix of the physics object if possible");
+		interpreter->RegisterCallback("SetPhysicsSpringProperty", &ScriptCallbacks::SetPhysicsSpringProperty,
+			"(spring,name,value) Applies a property change to a spring, e.g. 'stiffness', 'damping', 'length'");
 
 		interpreter->RegisterCallback("CreatePhysicsRagdoll", &ScriptCallbacks::CreatePhysicsRagdoll,
 			"(world) Creates a physical ragdoll in the given physics world");
@@ -369,9 +382,7 @@ public:
 		interpreter->RegisterCallback("FinalizePhysicsRagdoll", &ScriptCallbacks::FinalizePhysicsRagdoll,
 			"(ragdoll) Performs final measurements and transformations of a physics ragdoll");
 		interpreter->RegisterCallback("PickPhysicsObject", &ScriptCallbacks::PickPhysicsObject,
-			"(world,camera,x,y[,surface]) Returns the object and world position at the view position (0.0-1.0) of the camera");
-		interpreter->RegisterCallback("DragPhysicsObject", &ScriptCallbacks::DragPhysicsObject,
-			"(world,camera,x,y[,surface]) Selects and then drags an object to the view position of the given camera");
+			"(world,origin,ray) Returns the first object, position, normal and distance intersected by the ray vector4s");
 		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
 			"(object) Returns a debug model for the given physics object");
 
@@ -391,6 +402,9 @@ public:
 			"(helper,scale) Sets the scale of the Leap world, including bone details and matrices");
 		interpreter->RegisterCallback("GetLeapBoneMatrix", &ScriptCallbacks::GetLeapBoneMatrix,
 			"(helper,index) Returns the transformation matrix of the indexed Leap Motion bone");
+
+		interpreter->RegisterOperator(typeHandles[TypePhysicsSpring], 
+			ScriptInterpreter::IndexSet, ScriptCallbacks::SetPhysicsSpringProperty);
 	}
 
 	static void ClearConsole(ScriptInterpreter*);
@@ -404,6 +418,7 @@ public:
 	static void SetCameraTarget(ScriptInterpreter*);
 	static void SetCameraUp(ScriptInterpreter*);
 	static void SetCameraClipFovOrHeight(ScriptInterpreter*);
+	static void GetCameraRay(ScriptInterpreter*);
 
 	static void CreateGrid(ScriptInterpreter*);
 	static void CreateCube(ScriptInterpreter*);
@@ -518,11 +533,13 @@ public:
 	static void CreatePhysicsWorld(ScriptInterpreter*);
 	static void UpdatePhysicsWorld(ScriptInterpreter*);
 	static void CreatePhysicsMaterial(ScriptInterpreter*);
+	static void CreatePhysicsAnchor(ScriptInterpreter*);
 	static void CreatePhysicsCuboid(ScriptInterpreter*);
 	static void CreatePhysicsSphere(ScriptInterpreter*);
 	static void CreatePhysicsCapsule(ScriptInterpreter*);
 	static void CreatePhysicsMesh(ScriptInterpreter*);
 	static void CreatePhysicsHeightmap(ScriptInterpreter*);
+	static void CreatePhysicsSpring(ScriptInterpreter*);
 	static void AddToPhysicsWorld(ScriptInterpreter*);
 	static void RemoveFromPhysicsWorld(ScriptInterpreter*);
 	static void SetPhysicsPosition(ScriptInterpreter*);
@@ -534,13 +551,13 @@ public:
 	//static void GetPhysicsRotation(ScriptInterpreter*);
 	static void GetPhysicsMatrix(ScriptInterpreter*);
 	static void SetPhysicsMatrix(ScriptInterpreter*);
+	static void SetPhysicsSpringProperty(ScriptInterpreter*);
 
 	static void CreatePhysicsRagdoll(ScriptInterpreter*);
 	static void AddPhysicsRagdollBone(ScriptInterpreter*);
 	static void GetPhysicsRagdollBone(ScriptInterpreter*);
 	static void FinalizePhysicsRagdoll(ScriptInterpreter*);
 	static void PickPhysicsObject(ScriptInterpreter*);
-	static void DragPhysicsObject(ScriptInterpreter*);
 	static void GetPhysicsDebugModel(ScriptInterpreter*);
 
 	static void CreateLeapHelper(ScriptInterpreter*);

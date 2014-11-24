@@ -1,25 +1,6 @@
 
 Require("ProjectDir","../../Common/IngenUtils.lua");
 
-function CreateSkyCube()
-	local vtx = {
-		{-1,-1,-1}, {-1, 1,-1}, { 1,-1,-1}, { 1, 1,-1},
-		{-1,-1, 1}, {-1,-1,-1}, { 1,-1, 1}, { 1,-1,-1},
-		{-1, 1,-1}, {-1, 1, 1}, { 1, 1,-1}, { 1, 1, 1},
-		{ 1,-1, 1}, { 1, 1, 1}, {-1,-1, 1}, {-1, 1, 1},
-		{-1,-1, 1}, {-1, 1, 1}, {-1,-1,-1}, {-1, 1,-1},
-		{ 1,-1,-1}, { 1, 1,-1}, { 1,-1, 1}, { 1, 1, 1}
-	};
-	local idx = {
-		 0, 1, 2,   1, 3, 2,   4, 5, 6,   5, 7, 6,
-		 8, 9,10,   9,11,10,  12,13,14,  13,15,14,
-		16,17,18,  17,19,18,  20,21,22,  21,23,22
-	};
-	local skyCube = CreateModel("Pos",vtx,idx);
-	SetModelScale(skyCube,50);
-	return skyCube;
-end
-
 function Begin()
 	assetTicket = LoadAssets(
 		{"FrameworkDir","SkyShader.xml","Shader","skyshader"},
@@ -69,10 +50,30 @@ function Begin()
 	AddToPhysicsWorld(physicsWorld,physicsCapsule,false);
 	
 	SetPhysicsPosition(physicsCube,0,4,0);
-	SetPhysicsRotation(physicsCube,0,0,1);
+	--SetPhysicsRotation(physicsCube,0,0,1);
 	
 	SetPhysicsPosition(physicsCapsule, 2, 4, 2);
 	SetPhysicsRotation(physicsCapsule, 0, 0, 1);
+	
+	physicsAnchor = CreatePhysicsAnchor();
+	AddToPhysicsWorld(physicsWorld,physicsAnchor);
+	SetPhysicsPosition(physicsAnchor, 0, 10, 0);
+	physicsSpring = CreatePhysicsSpring(physicsAnchor, physicsCube, CreateVector(0,0,0,1), CreateVector(1,-1,0,1));
+	physicsSpring.stiffness = 10;
+	physicsSpring.damping = 0;
+	physicsSpring.length = 2;
+	
+	springModel = CreateModel("PosNor",CreateCylinder(1));
+	SetModelScale(springModel,0.1);
+	SetMeshColor(springModel,0,0,0,0);
+		
+	dragModel = CreateModel("PosNor",CreateCylinder(1));
+	SetModelScale(dragModel,0.1);
+	SetMeshColor(dragModel,0,0,0,0);
+
+	pickModel = CreateModel("PosNor",CreateSphere());
+	SetModelScale(pickModel,0.1);
+	SetMeshColor(pickModel,0,1,0,0);
 	
 	debugFont = GetFont(40,"Arial");
 end
@@ -124,10 +125,15 @@ function Update(delta)
 	
 	UpdatePhysicsWorld(physicsWorld,delta);
 	
-	SyncPhysicsMatrix(physicsCube,cubeModel);
+	cubeMatrix = GetPhysicsMatrix(physicsCube);
+	SetMeshMatrix(cubeModel,0,cubeMatrix);
+	
+	springCubePoint = cubeMatrix * CreateVector(1,-1,0,1);
+	StretchModelBetween(springModel, 0.1, springCubePoint.x, springCubePoint.y, springCubePoint.z, 0, 10, 0);
+	
 	--SyncPhysicsMatrix(physicsCapsule,capsuleModel);
 	if assetTicket == -1 then
-		SyncPhysicsMatrix(physicsVase,vaseModel);
+		SetMeshMatrix(vaseModel,0,GetPhysicsMatrix(physicsVase));
 	end
 	
 	local down,pressed,released = GetKeyState('r');
@@ -142,19 +148,75 @@ function Update(delta)
 		--SetPhysicsRotation(physicsCapsule, 0, 0, 0);
 	end
 	
-	UpdateFlyCamera(delta);
+	UpdateFlyCamera(delta, dragSpring);
 	UpdateFrameTime(delta);
+	
+	local sWidth, sHeight = GetScreenSize();
+	local mouseX, mouseY = GetMousePosition();
+	local leftDown, leftPressed, leftReleased = GetMouseLeft();
+	
+	pickRay = GetCameraRay(camera,mouseX/sWidth,mouseY/sHeight);
+	cameraPos = CreateVector(flyCamX,flyCamY,flyCamZ,1);
+	
+	pickedObject, pickedPos, pickedNormal, pickedDistance = PickPhysicsObject(physicsWorld,
+		CreateVector(flyCamX,flyCamY,flyCamZ,1), pickRay);
+	
+	if pickedObject then
+		SetModelPosition(pickModel,pickedPos.x,pickedPos.y,pickedPos.z);
+		
+		if leftPressed then
+			dragObject = pickedObject;
+			dragDistance = pickedDistance * 1.05;
+			dragPoint = InvMatrix(GetPhysicsMatrix(dragObject)) * pickedPos;
+			
+			if not dragAnchor then
+				dragAnchor = CreatePhysicsAnchor();
+			end
+			
+			AddToPhysicsWorld(physicsWorld, dragAnchor);
+			SetPhysicsPosition(dragAnchor, pickedPos.x, pickedPos.y, pickedPos.z);
+			
+			dragSpring = CreatePhysicsSpring(dragObject, dragAnchor, dragPoint, CreateVector(0,0,0,0));
+			dragSpring.stiffness = 100;
+			dragSpring.damping = 50;
+		end
+	end
+	
+	if dragSpring then
+		local dragAnchorPos = cameraPos + (pickRay * dragDistance);
+		SetPhysicsPosition(dragAnchor, dragAnchorPos.x, dragAnchorPos.y, dragAnchorPos.z);
+		
+		local dragAttachPos = GetPhysicsMatrix(dragObject) * dragPoint;
+		
+		StretchModelBetween(dragModel, 0.1,
+			dragAttachPos.x, dragAttachPos.y, dragAttachPos.z,
+			dragAnchorPos.x, dragAnchorPos.y, dragAnchorPos.z);
+		
+		if leftReleased then
+			dragSpring = nil;
+			dragObject = nil
+		end
+	end
 end
 
 function Draw()
 	DrawComplexModel(floorModel,camera);
 	DrawComplexModel(cubeModel,camera);
+	DrawComplexModel(springModel,camera);
 	--DrawComplexModel(capsuleModel,camera);
 	
 	if assetTicket == -1 then
 		DrawComplexModel(vaseModel,camera);
 		--DrawComplexModel(landModel,camera);
 		DrawComplexModel(skyModel,camera);
+	end
+	
+	if pickedObject then
+		DrawComplexModel(pickModel,camera);
+	end
+	
+	if dragSpring then
+		DrawComplexModel(dragModel,camera);
 	end
 	
 	DrawText(debugFont,frameTimeText,0,0,0);

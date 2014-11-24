@@ -34,8 +34,14 @@ struct NonDeletingPtr : public IDeletingPtr
 struct BufferCopyPtr : public IDeletingPtr
 {
 	unsigned size;
-	BufferCopyPtr(void * ptr, unsigned size) : IDeletingPtr(new char[size]), size(size) { memcpy(this->ptr, ptr, size); }
-	BufferCopyPtr(void * ptr, unsigned size, unsigned type) : BufferCopyPtr(ptr, size) { this->type = type; }
+	//BufferCopyPtr(void * ptr, unsigned size) : IDeletingPtr(new char[size]), size(size) { memcpy(this->ptr, ptr, size); }
+	//BufferCopyPtr(void * ptr, unsigned size, unsigned type) : BufferCopyPtr(ptr, size) { this->type = type; }
+	BufferCopyPtr(void * ptr, unsigned size, unsigned type) : 
+		IDeletingPtr(new char[size]), size(size) 
+	{ 
+		memcpy(this->ptr, ptr, size); 
+		this->type = type; 
+	}
 	virtual ~BufferCopyPtr() {}
 	virtual void Delete() override { delete[] static_cast<char*>(ptr); }
 };

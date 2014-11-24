@@ -86,8 +86,8 @@ function SetupFlyCamera(camera,x,y,z,sens,speed)
 	flyCamY = y;
 	flyCamZ = z;
 end	
-function UpdateFlyCamera(delta)
-	if GetMouseLeft() then
+function UpdateFlyCamera(delta,lookDisabled)
+	if GetMouseLeft() and not lookDisabled then
 		local dx, dy = GetMouseDelta();
 		
 		flyCamYAngle = flyCamYAngle + (dx * flyCamSensitivity);
@@ -132,7 +132,7 @@ end
 
 -- Stretches a model between two points along its Z-axis
 -- Useful for drawing debug geometry
-function StretchModelBetween(model,startX,startY,startZ,endX,endY,endZ)
+function StretchModelBetween(model,scale,startX,startY,startZ,endX,endY,endZ)
 	local dispX = startX - endX;
 	local dispY = startY - endY;
 	local dispZ = startZ - endZ;
@@ -150,14 +150,36 @@ function StretchModelBetween(model,startX,startY,startZ,endX,endY,endZ)
 	-- GLM applies rotations Y, then X, then Z
 	
 	local length = math.sqrt((dispX*dispX) + (dispY*dispY) + (dispZ*dispZ));
-	local xzRad = math.sqrt((dispX*dispX) + (dispZ*dispZ))
-	local yRot = math.atan2(dispX/xzRad,dispZ/xzRad);
-	local xRot = math.acos(xzRad/length);
-	
+	local xzRad = math.sqrt((dispX*dispX) + (dispZ*dispZ));
+	local yRot = 0;
+	if xzRad ~= 0 then
+		yRot = math.atan2(dispX/xzRad,dispZ/xzRad);
+	end
+	local xRot = 0;
+	if dispY > 0 then
+		xRot = -math.acos(xzRad/length);
+	else
+		xRot = math.acos(xzRad/length);
+	end
 	SetModelRotation(model,xRot,yRot,0);
 	
 	-- finally, the easy part, the length
 	-- TODO: Make the overall scale an additional parameter
 	
-	SetModelScale(model,0.1,0.1,length);
+	SetModelScale(model,scale,scale,length);
+end
+
+function CreateSkyCube()
+	local vtx = {
+		{-1,-1,-1}, {-1, 1,-1}, { 1,-1,-1}, { 1, 1,-1},
+		{ 1,-1, 1}, { 1, 1, 1}, {-1,-1, 1}, {-1, 1, 1}
+	};
+	local idx = {
+		 0, 1, 2,   1, 3, 2,   6, 0, 4,   0, 2, 4,
+		 1, 7, 3,   7, 5, 3,   4, 5, 6,   5, 7, 6,
+		 6, 7, 0,   7, 1, 0,   2, 3, 4,   3, 5, 4
+	};
+	local skyCube = CreateModel("Pos",vtx,idx);
+	SetModelScale(skyCube,50);
+	return skyCube;
 end

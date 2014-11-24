@@ -59,25 +59,6 @@ definitions = {
 	{ "capsule", 16, 0.05, 0.05,  2.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00, 0.00, PI_2, 0.00, 0.00, 0.24,  0.00,-PI_4, PI_4, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2 }, --rhand
 };
 
-function CreateSkyCube()
-	local vtx = {
-		{-1,-1,-1}, {-1, 1,-1}, { 1,-1,-1}, { 1, 1,-1},
-		{-1,-1, 1}, {-1,-1,-1}, { 1,-1, 1}, { 1,-1,-1},
-		{-1, 1,-1}, {-1, 1, 1}, { 1, 1,-1}, { 1, 1, 1},
-		{ 1,-1, 1}, { 1, 1, 1}, {-1,-1, 1}, {-1, 1, 1},
-		{-1,-1, 1}, {-1, 1, 1}, {-1,-1,-1}, {-1, 1,-1},
-		{ 1,-1,-1}, { 1, 1,-1}, { 1,-1, 1}, { 1, 1, 1}
-	};
-	local idx = {
-		 0, 1, 2,   1, 3, 2,   4, 5, 6,   5, 7, 6,
-		 8, 9,10,   9,11,10,  12,13,14,  13,15,14,
-		16,17,18,  17,19,18,  20,21,22,  21,23,22
-	};
-	local skyCube = CreateModel("Pos",vtx,idx);
-	SetModelScale(skyCube,50);
-	return skyCube;
-end
-
 function Begin()
 	assetTicket = LoadAssets(
 		{"FrameworkDir","SkyShader.xml","Shader","skyshader"},
@@ -190,7 +171,7 @@ function Begin()
 		SetPhysicsRotation(currentBone,definition[BODY_PITCH],definition[BODY_YAW],definition[BODY_ROLL],false);
 		debugModels[i] = GetPhysicsDebugModel(currentBone);
 		
-		print("Adding Ragdoll Bone Number "..numRagdollBones);
+		--print("Adding Ragdoll Bone Number "..numRagdollBones);
 		AddPhysicsRagdollBone(physicsRagdoll,currentBone,definition[BONE_PARENT],
 			definition[JOINT_CONE],definition[JOINT_MIN],definition[JOINT_MAX],
 			definition[CHILD_PITCH],definition[CHILD_YAW],definition[CHILD_ROLL],
@@ -208,7 +189,7 @@ function Begin()
 	leapPhysicals = {};
 	leapHelper = CreateLeapHelper();
 	SetLeapPosition(leapHelper,0,-4.5,0);
-	SetLeapScale(leapHelper,0.01);
+	SetLeapScale(leapHelper,0.008);
 	
 	pickModel = CreateModel("PosNor",CreateSphere());
 	SetModelScale(pickModel,0.1);
@@ -217,6 +198,15 @@ function Begin()
 	springModel = CreateModel("PosNor",CreateCylinder(1));
 	SetModelScale(springModel,0.1);
 	SetMeshColor(springModel,0,0,0,0);
+	
+	arm1SpringModel = CreateModel("PosNor",CreateCylinder(1));
+	SetModelScale(arm1SpringModel,0.1);
+	SetMeshColor(arm1SpringModel,0,0,0,0);
+	
+	arm2SpringModel = CreateModel("PosNor",CreateCylinder(1));
+	SetModelScale(arm2SpringModel,0.1);
+	SetMeshColor(arm2SpringModel,0,0,0,0);
+	
 	springVisible = false;
 
 	debugFont = GetFont(40,"Arial");
@@ -225,6 +215,10 @@ function Begin()
 	SetLightDirection(light,math.sin(2.5),0.75,math.cos(2.5));
 	
 	dragEnabled = false;
+	
+	headAnchor = CreateVector(0,0,0,1);
+	arm1Anchor = CreateVector(0,0,0,1);
+	arm2Anchor = CreateVector(0,0,0,1);
 end
 
 function Update(delta)
@@ -274,9 +268,18 @@ function Update(delta)
 	--	leapAccum:Clear(0.5);
 	--end
 
-	--UpdatePhysicsWorld(physicsWorld,delta);
+	UpdatePhysicsWorld(physicsWorld,delta);
 	for i,bone in pairs(ragdollBones) do
 		local boneMatrix = GetPhysicsMatrix(bone);
+		if i == 12 then
+			headAnchor = boneMatrix * CreateVector(-0.09,0.0,0.0,1.0);
+		end
+		if i == 14 then
+			arm1Anchor = boneMatrix * CreateVector(0.030, 0.0, -0.035, 1.0);
+		end
+		if i == 17 then
+			arm2Anchor = boneMatrix * CreateVector(0.030, 0.0, -0.035, 1.0);
+		end
 		SetMeshMatrix(boneModels[i],0,boneMatrix);
 		SetMeshMatrix(debugModels[i],0,boneMatrix);
 	end
@@ -296,7 +299,7 @@ function Update(delta)
 	end
 	
 	local sWidth, sHeight = GetScreenSize();
-	local x, y = GetMousePosition();
+	local mouseX, mouseY = GetMousePosition();
 	
 	--down,pressed,released = GetMouseLeft();
 	--if pickedObject and down then
@@ -307,9 +310,12 @@ function Update(delta)
 	
 	--down,pressed,released = GetKeyState('p');
 	--if pressed then
-		pickedObject, pickedX, pickedY, pickedZ = PickPhysicsObject(physicsWorld,camera,x/sWidth,y/sHeight);
+		pickedObject, pickedPos = PickPhysicsObject(physicsWorld,
+			CreateVector(flyCamX,flyCamY,flyCamZ,1),
+			GetCameraRay(camera,mouseX/sWidth,mouseY/sHeight));
+		
 		if pickedObject then
-			SetModelPosition(pickModel,pickedX,pickedY,pickedZ);
+			SetModelPosition(pickModel,pickedPos.x,pickedPos.y,pickedPos.z);
 		end
 	--end
 	
@@ -322,25 +328,55 @@ function Update(delta)
 	
 	physicsHead = ragdollBones[12];
 	if leapVisibilities[42] then
-		print("PALM VISIBLE!");
+		--print("PALM VISIBLE!");
 		local palmX, palmY, palmZ = GetLeapBonePosition(leapHelper, 41);
-		local headX, headY, headZ = GetPhysicsPosition(ragdollBones[12]);
+		local thumbX, thumbY, thumbZ = GetLeapBonePosition(leapHelper, 24);
+		local pinkyX, pinkyY, pinkyZ = GetLeapBonePosition(leapHelper, 40);
+		local palmPoint = CreateVector(palmX, palmY, palmZ, 1.0);
+		local headMatrix = GetPhysicsMatrix(ragdollBones[12]);
+		
 		if dragEnabled then
-			DragPhysicsObject(physicsHead, palmX,palmY,palmZ);
-			
-			if not dragStartX then
-				dragStartX = palmX-headX;
-				dragStartY = palmY-headY;
-				dragStartZ = palmZ-headZ;
+			if not physicsAnchor then
+				physicsAnchor = CreatePhysicsAnchor();
+				AddToPhysicsWorld(physicsWorld, physicsAnchor);
+				--dragStart = InvMatrix(headMatrix) * palmPoint;
+				
+				physicsSpring = CreatePhysicsSpring(ragdollBones[12],physicsAnchor,CreateVector(-0.09,0.0,0.0,1.0),CreateVector(0,0,0,0));
+				physicsSpring.stiffness = 1500;
+				physicsSpring.damping = 20;
+				physicsSpring.length = 1;
+				
+				-- 24 - leap thumb tip
+				-- 40 - leap pinky tip
+				-- 14 - ragdoll right arm
+				-- 17 - ragdoll left arm
+				
+				arm1Spring = CreatePhysicsSpring(ragdollBones[14],leapPhysicals[24],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
+				arm1Spring.stiffness = 1500;
+				arm1Spring.damping = 20;
+				arm1Spring.length = 1.4;
+				
+				arm2Spring = CreatePhysicsSpring(ragdollBones[17],leapPhysicals[40],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
+				arm2Spring.stiffness = 1500;
+				arm2Spring.damping = 20;
+				arm2Spring.length = 1.4;
 			end
-		end
-		
-		if dragStartX then
-			-- Not accurate! Head rotation! GRRRR!!
-			StretchModelBetween(springModel, headX+dragStartX,headY+dragStartY,headZ+dragStartZ, palmX,palmY,palmZ);
+			
+			SetPhysicsPosition(physicsAnchor, palmPoint.x, palmPoint.y, palmPoint.z);
+			
+			StretchModelBetween(springModel, 0.05, headAnchor.x, headAnchor.y, headAnchor.z, palmPoint.x, palmPoint.y, palmPoint.z);
+			StretchModelBetween(arm1SpringModel, 0.05, arm1Anchor.x, arm1Anchor.y, arm1Anchor.z, thumbX, thumbY, thumbZ);
+			StretchModelBetween(arm2SpringModel, 0.05, arm2Anchor.x, arm2Anchor.y, arm2Anchor.z, pinkyX, pinkyY, pinkyZ);
 			springVisible = true;
-		end
-		
+		else
+			if physicsSpring then
+				physicsSpring = nil;
+				arm1Spring = nil;
+				arm2Spring = nil;
+				RemoveFromPhysicsWorld(physicsAnchor);
+				physicsAnchor = nil;
+			end
+		end		
 	end
 	
 	UpdateFrameTime(delta);
@@ -365,11 +401,17 @@ function Draw()
 		DrawComplexModel(pickModel,camera,light);
 	end
 	
-	SetModelPosition(pickModel,-0.02,1.65,0.0);
+	SetModelPosition(pickModel,headAnchor.x,headAnchor.y,headAnchor.z);
+	DrawComplexModel(pickModel,camera,light);
+	SetModelPosition(pickModel,arm1Anchor.x,arm1Anchor.y,arm1Anchor.z);
+	DrawComplexModel(pickModel,camera,light);
+	SetModelPosition(pickModel,arm2Anchor.x,arm2Anchor.y,arm2Anchor.z);
 	DrawComplexModel(pickModel,camera,light);
 	
 	if springVisible then
 		DrawComplexModel(springModel,camera,light);
+		DrawComplexModel(arm1SpringModel,camera,light);
+		DrawComplexModel(arm2SpringModel,camera,light);
 	end
 
 	if assetTicket == -1 then
