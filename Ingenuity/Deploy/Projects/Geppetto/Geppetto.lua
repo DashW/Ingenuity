@@ -351,12 +351,12 @@ function Update(delta)
 				-- 14 - ragdoll right arm
 				-- 17 - ragdoll left arm
 				
-				arm1Spring = CreatePhysicsSpring(ragdollBones[14],leapPhysicals[24],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
+				arm1Spring = CreatePhysicsSpring(ragdollBones[17],leapPhysicals[24],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
 				arm1Spring.stiffness = 1500;
 				arm1Spring.damping = 20;
 				arm1Spring.length = 1.4;
 				
-				arm2Spring = CreatePhysicsSpring(ragdollBones[17],leapPhysicals[40],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
+				arm2Spring = CreatePhysicsSpring(ragdollBones[14],leapPhysicals[40],CreateVector(0.030, 0.0, -0.035, 1.0),CreateVector(0,0,0,0));
 				arm2Spring.stiffness = 1500;
 				arm2Spring.damping = 20;
 				arm2Spring.length = 1.4;
@@ -365,15 +365,15 @@ function Update(delta)
 			SetPhysicsPosition(physicsAnchor, palmPoint.x, palmPoint.y, palmPoint.z);
 			
 			StretchModelBetween(springModel, 0.05, headAnchor.x, headAnchor.y, headAnchor.z, palmPoint.x, palmPoint.y, palmPoint.z);
-			StretchModelBetween(arm1SpringModel, 0.05, arm1Anchor.x, arm1Anchor.y, arm1Anchor.z, thumbX, thumbY, thumbZ);
-			StretchModelBetween(arm2SpringModel, 0.05, arm2Anchor.x, arm2Anchor.y, arm2Anchor.z, pinkyX, pinkyY, pinkyZ);
+			StretchModelBetween(arm1SpringModel, 0.05, arm1Anchor.x, arm1Anchor.y, arm1Anchor.z, pinkyX, pinkyY, pinkyZ);
+			StretchModelBetween(arm2SpringModel, 0.05, arm2Anchor.x, arm2Anchor.y, arm2Anchor.z, thumbX, thumbY, thumbZ);
 			springVisible = true;
 		else
 			if physicsSpring then
 				physicsSpring = nil;
 				arm1Spring = nil;
 				arm2Spring = nil;
-				RemoveFromPhysicsWorld(physicsAnchor);
+				RemoveFromPhysicsWorld(physicsWorld,physicsAnchor);
 				physicsAnchor = nil;
 			end
 		end		

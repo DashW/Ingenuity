@@ -19,304 +19,7 @@
 #include "GpuVertices.h"
 
 #define MAX_PHYSICS_FPS 120.0f
-#define MAX_PHYSICS_LOOPS 1
-
-typedef long long unsigned64;
-
-const float TICKS2SEC = 1.0e-6f;
-
-static unsigned64 m_prevTime = 0;
-
-#ifdef _MSC_VER
-static LARGE_INTEGER frequency;
-static LARGE_INTEGER baseCount;
-#else 
-static unsigned64 baseCount;
-#endif
-
-unsigned64 dGetTimeInMicroseconds()
-{
-#ifdef _MSC_VER
-	LARGE_INTEGER count;
-	QueryPerformanceCounter(&count);
-	count.QuadPart -= baseCount.QuadPart;
-	unsigned64 ticks = unsigned64(count.QuadPart * LONGLONG(1000000) / frequency.QuadPart);
-	return ticks;
-
-#endif
-
-#if (defined (_POSIX_VER) || defined (_POSIX_VER_64))
-	timespec ts;
-	clock_gettime(CLOCK_REALTIME, &ts); // Works on Linux
-	//return unsigned64 (ts.tv_nsec / 1000) - baseCount;
-
-	return unsigned64(ts.tv_sec) * 1000000 + ts.tv_nsec / 1000 - baseCount;
-#endif
-
-
-#ifdef _MACOSX_VER
-	timeval tp;
-	gettimeofday(&tp, NULL);
-	unsigned64 microsecunds = unsigned64(tp.tv_sec) * 1000000 + tp.tv_usec;
-	return microsecunds - baseCount;
-#endif
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// NEWTON EXAMPLE DATA - REMOVE WHEN CONFIDENT THAT EXTERNAL API IS WORKING //
-//////////////////////////////////////////////////////////////////////////////
-
-struct RAGDOLL_BONE_DEFINITION
-{
-	char m_boneName[32];
-	char m_shapeType[32];
-	int m_parent;
-
-	dFloat m_shapePitch;
-	dFloat m_shapeYaw;
-	dFloat m_shapeRoll;
-
-	dFloat m_shape_x;
-	dFloat m_shape_y;
-	dFloat m_shape_z;
-
-	dFloat m_radius;
-	dFloat m_height;
-	dFloat m_mass;
-
-	// JOINT PROPERTIES:
-
-	dFloat m_coneAngle;
-	dFloat m_minTwistAngle;
-	dFloat m_maxTwistAngle;
-
-	dFloat m_childPitch;
-	dFloat m_childYaw;
-	dFloat m_childRoll;
-
-	dFloat m_parentPitch;
-	dFloat m_parentYaw;
-	dFloat m_parentRoll;
-
-	// TRANSFORM:
-
-	dFloat m_position_x;
-	dFloat m_position_y;
-	dFloat m_position_z;
-
-	dFloat m_rotation_x;
-	dFloat m_rotation_y;
-	dFloat m_rotation_z;
-};
-
-static RAGDOLL_BONE_DEFINITION skeletonRagDoll[] =
-{
-	{ "Bip01_Pelvis", "capsule", -1,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.01f,
-	0.07f, 0.16f, 30.0f,
-	0.0f, -0.0f, 0.0f,
-	0.0f, 0.0f, 0.0f,
-	0.0f, 0.0f, 0.0f,
-	-0.02f, 0.89f, 0.0f,
-	1.57f, 0.0f, 3.14f },
-	// -- transform position="-0.020121 0.887429 0.000003 1.000000" eulerAngles="1.570796 -0.000001 3.141593 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_Spine", "capsule", 0,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.06f,
-	0.07f, 0.14f, 20.0f,
-	30.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.1f,
-	0.0f, 0.0f, 0.0f },
-	// transform position="-0.000110 0.000000 0.091558 1.000000" eulerAngles="-0.000000 0.000796 0.000073 0.000000" localScale="1.000001 1.320000 1.000000 1.000000"
-
-	{ "Bip01_Spine1", "capsule", 1,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.06f,
-	0.07f, 0.12f, 20.0f,
-	30.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.14f,
-	0.0f, 0.0f, 0.0f },
-	// transform position="-0.000110 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_Spine2", "capsule", 2,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.06f,
-	0.07f, 0.08f, 20.0f,
-	30.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.14f,
-	0.0f, 0.0f, 0.0f },
-	// transform position="-0.000110 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_L_Thigh", "capsule", 0,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.19f,
-	0.05f, 0.34f, 10.0f,
-	80.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	90.0f, -30.0f, -90.0f,
-	0.0f, 0.1f, 0.0f,
-	3.14f, -0.1f, 0.0f },
-	// transform position="-0.000007 0.105093 0.000000 1.000000" eulerAngles="3.141591 -0.100000 0.000076 0.000000" localScale="1.000000 1.320000 1.000000 1.000000"
-
-	{ "Bip01_L_Calf", "capsule", 4,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.19f,
-	0.05f, 0.34f, 5.0f,
-	0.0f, -150.0f, 0.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.4f,
-	0.0f, -0.2f, 0.0f },
-	// transform position="0.000000 0.000000 0.398078 1.000000" eulerAngles="-0.000000 -0.200000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_L_Foot", "capsule", 5,
-	90.0f, 00.0f, 0.0f,
-	0.05f, 0.00f, 0.05f,
-	0.05f, 0.13f, 3.0f,
-	0.0f, -45.0f, 45.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.4f,
-	0.0f, 0.1f, 0.0f },
-	// transform position="-0.000000 -0.000000 0.398078 1.000000" eulerAngles="-0.000000 0.100000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_R_Thigh", "capsule", 0,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.19f,
-	0.05f, 0.34f, 10.0f,
-	80.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	90.0f, -30.0f, 90.0f,
-	0.0f, -0.1f, 0.0f,
-	3.14f, -0.1f, 0.0f },
-	// transform position="0.000007 -0.105093 0.000000 1.000000" eulerAngles="3.141591 -0.100000 0.000076 0.000000" localScale="1.000000 1.320000 1.000000 1.000000"
-
-	{ "Bip01_R_Calf", "capsule", 7,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.19f,
-	0.05f, 0.34f, 5.0f,
-	0.0f, 0.0f, 150.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.4f,
-	0.0f, -0.2f, 0.0f },
-	// transform position="0.000000 0.000000 0.398078 1.000000" eulerAngles="-0.000000 -0.200000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_R_Foot", "capsule", 8,
-	90.0f, 00.0f, 0.0f,
-	0.05f, 0.00f, 0.05f,
-	0.05f, 0.13f, 3.0f,
-	0.0f, -45.0f, 45.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.4f,
-	0.0f, 0.1f, 0.0f },
-	// transform position="-0.000000 -0.000000 0.398078 1.000000" eulerAngles="-0.000000 0.100000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_Neck", "capsule", 3,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.05f,
-	0.03f, 0.04f, 5.0f,
-	30.0f, -30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.14f,
-	0.0f, 0.0f, 0.0f },
-	// transform position="-0.000048 -0.000000 0.138000 1.000000" eulerAngles="-0.000000 -0.000000 -0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_Head", "sphere", 10,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.09f,
-	0.09f, 0.0f, 5.0f,
-	30.0f, -60.0f, 60.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, -90.0f, 0.0f,
-	0.0f, 0.0f, 0.06f,
-	0.0f, 0.0f, 0.0f },
-	// transform position="0.000000 -0.000000 0.059712 1.000000" eulerAngles="0.000000 -0.000798 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_L_UpperArm", "capsule", 3,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.12f,
-	0.03f, 0.23f, 10.0f,
-	80.0f, 30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	90.0f, -30.0f, 90.0f,
-	0.0f, 0.14f, 0.10f,
-	3.04f, 0.0f, 3.24f },
-	// transform position="0.000000 0.000000 0.103500 1.000000" eulerAngles="1.470797 -0.000003 0.099998 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	// CLAVICLE:
-	// transform position="-0.000001 0.027865 0.138000 1.000000" eulerAngles="1.570796 0.000796 3.141593 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_L_Forearm", "capsule", 12,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.12f,
-	0.03f, 0.23f, 7.0f,
-	0.0f, 0.0f, 150.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.24f,
-	0.0f, -0.2f, 0.0f },
-	// transform position="-0.000000 0.000000 0.238847 1.000000" eulerAngles="-0.000001 -0.200000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_L_Hand", "capsule", 13,
-	0.0f, 90.0f, 0.0f,
-	0.00f, 0.0f, 0.05f,
-	0.05f, 0.05f, 2.0f,
-	0.0f, -45.0f, 45.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 90.0f,
-	0.0f, 0.0f, 0.24f,
-	0.0f, 0.0f, -1.57f },
-	// transform position="-0.000000 -0.000000 0.238847 1.000000" eulerAngles="-0.000000 -0.000000 -1.570000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_R_UpperArm", "capsule", 3,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.12f,
-	0.03f, 0.23f, 10.0f,
-	80.0f, 30.0f, 30.0f,
-	0.0f, -90.0f, 0.0f,
-	90.0f, -30.0f, -90.0f,
-	0.0f, -0.14f, 0.10f,
-	-3.04f, 0.0f, -3.24f },
-	// transform position="0.000000 -0.000000 0.103500 1.000000" eulerAngles="-1.470796 0.000001 -0.100000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-	// CLAVICLE:
-	// transform position = "-0.000000 -0.027865 0.138000 1.000000" eulerAngles = "-1.570796 0.000797 -3.141593 0.000000" localScale = "1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_R_Forearm", "capsule", 15,
-	0.0f, 90.0f, 0.0f,
-	0.0f, 0.0f, 0.12f,
-	0.03f, 0.23f, 7.0f,
-	0.0f, -150.0f, 0.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.24f,
-	0.0f, -0.2f, 0.0f },
-	// transform position="-0.000000 0.000000 0.238847 1.000000" eulerAngles="-0.000002 -0.200000 0.000000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-
-	{ "Bip01_R_Hand", "capsule", 16,
-	0.0f, 90.0f, 0.0f,
-	0.00f, 0.0f, 0.05f,
-	0.05f, 0.05f, 2.0f,
-	0.0f, -45.0f, 45.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, -90.0f,
-	0.0f, 0.0f, 0.24f,
-	0.0f, 0.0f, 1.57f },
-	// transform position="-0.000000 0.000000 0.238846 1.000000" eulerAngles="-0.000000 -0.000000 1.570000 0.000000" localScale="1.000000 1.000000 1.000000 1.000000"
-};
-
-////////////////////////////////
-// END OF NEWTON EXAMPLE DATA //
-////////////////////////////////
+#define MAX_PHYSICS_LOOPS 5
 
 class RagDollManager : public CustomArticulaledTransformManager
 {
@@ -376,44 +79,6 @@ public:
 	//	origin.m_w = 1.0f;
 	//}
 
-
-	NewtonCollision* MakeSphere(const RAGDOLL_BONE_DEFINITION& definition) const
-	{
-		dVector size;
-		dVector origin;
-		dMatrix matrix(dGetIdentityMatrix());
-
-		matrix.m_posit.m_x = definition.m_shape_x;
-		matrix.m_posit.m_y = definition.m_shape_y;
-		matrix.m_posit.m_z = definition.m_shape_z;
-		return NewtonCreateSphere(GetWorld(), definition.m_radius, 0, &matrix[0][0]);
-
-	}
-
-	NewtonCollision* MakeCapsule(const RAGDOLL_BONE_DEFINITION& definition) const
-	{
-		dVector size;
-		dVector origin;
-		dMatrix matrix(dPitchMatrix(definition.m_shapePitch * 3.141592f / 180.0f) * dYawMatrix(definition.m_shapeYaw * 3.141592f / 180.0f) * dRollMatrix(definition.m_shapeRoll * 3.141592f / 180.0f));
-
-		matrix.m_posit.m_x = definition.m_shape_x;
-		matrix.m_posit.m_y = definition.m_shape_y;
-		matrix.m_posit.m_z = definition.m_shape_z;
-		return NewtonCreateCapsule(GetWorld(), definition.m_radius, definition.m_height, 0, &matrix[0][0]);
-	}
-
-	//NewtonCollision* MakeBox() const
-	//{
-	//	dAssert(0);
-	//	//		dVector size;
-	//	//		dVector origin;
-	//	//		dMatrix matrix (GetIdentityMatrix());
-	//	//		GetDimentions(bone, matrix.m_posit, size);
-	//	//		return NewtonCreateBox (nWorld, 2.0f * size.m_x, 2.0f * size.m_y, 2.0f * size.m_z, 0, &matrix[0][0]);
-	//	return NULL;
-	//}
-
-
 	virtual void OnUpdateTransform(const CustomArticulatedTransformController::dSkeletonBone* const bone, const dMatrix& localMatrix) const
 	{
 		//DemoEntity* const ent = (DemoEntity*)NewtonBodyGetUserData(bone->m_body);
@@ -422,86 +87,6 @@ public:
 		//dQuaternion rot(localMatrix);
 		//ent->SetMatrix(*scene, rot, localMatrix.m_posit);
 	}
-
-	//NewtonCollision* MakeConvexHull(Ingenuity::IVertexBuffer * vertexBuffer) const
-	//{
-	//	dVector points[1024 * 16];
-
-	//	dAssert(vertexBuffer->GetLength() && (int(vertexBuffer->GetLength()) < int(sizeof(points) / sizeof(points[0]))));
-
-	//	// go over the vertex array and find and collect all vertices's weighted by this bone.
-	//	dFloat* const array = (float*)vertexBuffer->GetData();
-	//	for(unsigned i = 0; i < vertexBuffer->GetLength(); i++) {
-	//		unsigned offset = i * (vertexBuffer->GetElementSize() / sizeof(float));
-	//		points[i].m_x = array[offset + 0];
-	//		points[i].m_y = array[offset + 1];
-	//		points[i].m_z = array[offset + 2];
-	//	}
-
-	//	return NewtonCreateConvexHull(GetWorld(), vertexBuffer->GetLength(), &points[0].m_x, sizeof(dVector), 1.0e-3f, 0, NULL);
-	//}
-
-
-	Ingenuity::NewtonPhysicsObject * CreateRagDollBodyPart(const RAGDOLL_BONE_DEFINITION* definitions, int index)
-	{
-		const RAGDOLL_BONE_DEFINITION& definition = definitions[index];
-		NewtonCollision* shape = NULL;
-		Ingenuity::NewtonPhysicsObject * physicsObject = 0;
-
-		if(!strcmp(definition.m_shapeType, "sphere")) {
-			Ingenuity::NewtonPhysicsSphereSpec * sphereSpec = new Ingenuity::NewtonPhysicsSphereSpec();
-			sphereSpec->mass = definition.m_mass;
-			sphereSpec->radius = definition.m_radius;
-			physicsObject = new Ingenuity::NewtonPhysicsObject(sphereSpec);
-			shape = MakeSphere(definition);
-		}
-		else if(!strcmp(definition.m_shapeType, "capsule")) {
-			Ingenuity::NewtonPhysicsCapsuleSpec * capsuleSpec = new Ingenuity::NewtonPhysicsCapsuleSpec();
-			capsuleSpec->mass = definition.m_mass;
-			capsuleSpec->radius = definition.m_radius;
-			capsuleSpec->length = definition.m_height;
-			physicsObject = new Ingenuity::NewtonPhysicsObject(capsuleSpec);
-			shape = MakeCapsule(definition);
-		}
-		else
-		{
-			return 0;
-		}
-		//else if(!strcmp(definition.m_shapeType, "box")) {
-		//	shape = MakeBox();
-		//}
-		//else {
-		//	shape = MakeConvexHull(vertexBuffer);
-		//}
-
-		// calculate the bone matrix
-		glm::mat4 matrix = CalculateBoneMatrix(definitions, index);
-
-		NewtonWorld* const world = GetWorld();
-
-		// create the rigid body that will make this bone
-		NewtonBody* const bone = NewtonCreateDynamicBody(world, shape, &matrix[0][0]);
-
-		// calculate the moment of inertia and the relative center of mass of the solid
-		NewtonBodySetMassProperties(bone, definition.m_mass, shape);
-
-		// save the user data with the bone body (usually the visual geometry)
-		//NewtonBodySetUserData(bone, bodyPart);
-
-		// assign the material for early collision culling
-		NewtonBodySetMaterialGroupID(bone, m_material);
-
-		// set the bod part force and torque call back to the gravity force, skip the transform callback
-		NewtonBodySetForceAndTorqueCallback(bone, Ingenuity::NewtonApi::ApplyForceAndTorqueCallback);
-
-		// destroy the collision helper shape 
-		NewtonDestroyCollision(shape);
-
-		physicsObject->newtonBody = bone;
-
-		return physicsObject;
-	}
-
 
 	void ConnectBodyParts(NewtonBody* const bone, NewtonBody* const parent, glm::vec3 jointInfo, glm::vec3 childRot, glm::vec3 parentRot) const
 	{
@@ -520,36 +105,9 @@ public:
 		joint->SetTwistAngle(jointInfo.y, jointInfo.z);
 	}
 
-	glm::mat4 CalculateBoneMatrix(const RAGDOLL_BONE_DEFINITION* const definitions, int index)
-	{
-		glm::mat4 matrix =
-			glm::eulerAngleZ(definitions[index].m_rotation_z) *
-			glm::eulerAngleY(definitions[index].m_rotation_y) *
-			glm::eulerAngleX(definitions[index].m_rotation_x);
-
-		matrix[3] = glm::vec4(
-			definitions[index].m_position_x,
-			definitions[index].m_position_y,
-			definitions[index].m_position_z, 1.0f);
-
-		int parentIndex = definitions[index].m_parent;
-		glm::mat4 parentMatrix(1.0f);
-		if(parentIndex > -1)
-		{
-			parentMatrix = CalculateBoneMatrix(definitions, parentIndex);
-		}
-
-		return parentMatrix * matrix;
-	}
-
 	void CreateRagDoll()
 	{
 		NewtonWorld* const world = GetWorld();
-		//DemoEntityManager* const scene = (DemoEntityManager*)NewtonWorldGetUserData(world);
-
-		// make a clone of the mesh 
-		//DemoEntity* const ragDollEntity = (DemoEntity*)model->CreateClone();
-		//scene->Append(ragDollEntity);
 
 		// build the ragdoll with rigid bodies connected by joints
 		// create a transform controller
@@ -566,52 +124,6 @@ public:
 		}
 
 		//numPhysicsObjects = (unsigned)definitionCount;
-	}
-
-	void CreateDemoRagDoll(RAGDOLL_BONE_DEFINITION* const definitions, int definitionCount)
-	{
-		// add the root bone
-		physicsObjects[0] = CreateRagDollBodyPart(definitions, 0);
-
-		NewtonBody * rootBone = physicsObjects[0]->newtonBody;
-
-		CustomArticulatedTransformController::dSkeletonBone* const skelBone = controller->AddBone(rootBone, dGetIdentityMatrix());
-		// save the controller as the collision user data, for collision culling
-		NewtonCollisionSetUserData(NewtonBodyGetCollision(rootBone), skelBone);
-
-		int stackIndex = 0;
-		skelBones[0] = skelBone;
-
-		// walk model hierarchic adding all children designed as rigid body bones. 
-		for(int j = 1; j < definitionCount; j++) {
-			stackIndex--;
-			//DemoEntity* const entity = childEntities[stackIndex];
-
-			int parentIndex = definitions[j].m_parent;
-
-			physicsObjects[j] = CreateRagDollBodyPart(definitions, j);
-
-			NewtonBody * bone = physicsObjects[j]->newtonBody;
-
-			CustomArticulatedTransformController::dSkeletonBone* parentBone = skelBones[parentIndex];
-
-			// connect this body part to its parent with a ragdoll joint
-			glm::vec3 joint(definitions[j].m_coneAngle * 3.141592f / 180.0f, definitions[j].m_minTwistAngle * 3.141592f / 180.0f, definitions[j].m_maxTwistAngle * 3.141592f / 180.0f);
-			glm::vec3 childRot(definitions[j].m_childPitch * 3.141592f / 180.0f, definitions[j].m_childYaw * 3.141592f / 180.0f, definitions[j].m_childRoll * 3.141592f / 180.0f);
-			glm::vec3 parentRot(definitions[j].m_parentPitch * 3.141592f / 180.0f, definitions[j].m_parentYaw * 3.141592f / 180.0f, definitions[j].m_parentRoll * 3.141592f / 180.0f);
-			ConnectBodyParts(bone, parentBone->m_body, joint, childRot, parentRot);
-
-			// This is used to add extra waypoint matrices for bones that might not be directly parented (e.g. clavicle)
-			glm::mat4 bindMatrix(1.0f);
-			parentBone = controller->AddBone(bone, (dMatrix&) bindMatrix, parentBone);
-
-			// save the controller as the collision user data, for collision culling
-			NewtonCollisionSetUserData(NewtonBodyGetCollision(bone), parentBone);
-
-			skelBones[j] = parentBone;
-		}
-
-		numPhysicsObjects = definitionCount;
 	}
 
 	void FinalizeRagDoll(const dMatrix& location)
@@ -701,12 +213,9 @@ void NewtonPhysicsObject::RemoveFromWorld()
 }
 
 NewtonApi::NewtonApi() :
-physicsTime(0.0f),
-microseconds(0),
 reentrantUpdate(false)
-//m_pickedBodyParam(0.0f)
 {
-	QueryPerformanceFrequency(&frequency);
+	//QueryPerformanceFrequency(&frequency);
 }
 
 NewtonApi::~NewtonApi()
@@ -1052,8 +561,6 @@ PhysicsWorld * NewtonApi::CreateWorld(float scale, glm::vec3 gravity)
 
 	NewtonInvalidateCache(physicsWorld->newtonWorld);
 
-	microseconds = dGetTimeInMicroseconds();
-
 	int defaultMaterialId = NewtonMaterialGetDefaultGroupID(physicsWorld->newtonWorld);
 	NewtonMaterialSetCollisionCallback(physicsWorld->newtonWorld, defaultMaterialId, defaultMaterialId, this, AABBOverlapCallback, ContactCollisionCallback);
 	//NewtonMaterialSetCompoundCollisionCallback(physicsWorld->newtonWorld, defaultMaterialId, defaultMaterialId, CompoundAABBOverlapCallback);
@@ -1335,16 +842,15 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 
 	// read the controls 
 	// update the physics
-	if(physicsWorld->newtonWorld) {
-
+	if(physicsWorld->newtonWorld) 
+	{
 		dFloat timestepInSeconds = 1.0f / MAX_PHYSICS_FPS;
-		unsigned64 timestepMicroseconds = long long(timestepInSeconds * 1000000.0f);
-
-		unsigned64 currentTime = dGetTimeInMicroseconds();
-		unsigned64 nextTime = currentTime - microseconds;
 		int loops = 0;
 
-		while((nextTime >= timestepMicroseconds) && (loops < MAX_PHYSICS_LOOPS)) {
+		physicsWorld->pendingTime += deltaTime;
+
+		while(physicsWorld->pendingTime > timestepInSeconds && loops < MAX_PHYSICS_LOOPS) 
+		{
 			loops++;
 
 			// run the newton update function
@@ -1356,16 +862,12 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 				reentrantUpdate = false;
 			}
 
-			nextTime -= timestepMicroseconds;
-			microseconds += timestepMicroseconds;
+			physicsWorld->pendingTime -= timestepInSeconds;
 		}
-
-		if(loops) {
-			physicsTime = dFloat(dGetTimeInMicroseconds() - currentTime) / 1000000.0f;
-
-			if(physicsTime >= MAX_PHYSICS_LOOPS * (1.0f / MAX_PHYSICS_FPS)) {
-				microseconds = currentTime;
-			}
+		
+		if(loops >= MAX_PHYSICS_LOOPS)
+		{
+			physicsWorld->pendingTime = 0.0f;
 		}
 	}
 }
@@ -1417,11 +919,6 @@ void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object,
 void NewtonApi::FinalizeRagdoll(PhysicsRagdoll * ragdoll)
 {
 	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
-
-	if(physicsRagdoll->manager->numPhysicsObjects < 1)
-	{
-		physicsRagdoll->manager->CreateDemoRagDoll(skeletonRagDoll, sizeof(skeletonRagDoll) / sizeof(skeletonRagDoll[0]));
-	}
 
 	glm::mat4 matrix;
 	physicsRagdoll->manager->FinalizeRagDoll((float*)&matrix);

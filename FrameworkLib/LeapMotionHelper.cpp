@@ -33,6 +33,39 @@ public:
 		}
 	}
 
+	glm::mat4 ConstructMatrix(Leap::FloatArray& leapBasis, Leap::Vector& leapPosition, bool isLeft)
+	{
+		glm::mat4 boneMatrix;
+		memcpy(&boneMatrix, leapBasis.m_array, sizeof(glm::mat4));
+
+		glm::vec3 position;
+		memcpy(&position, leapPosition.toFloatPointer(), sizeof(glm::vec3));
+
+		boneMatrix[3] = glm::vec4(position, 1.0f);
+
+		// http://stackoverflow.com/questions/1263072/changing-a-matrix-from-right-handed-to-left-handed-coordinate-system
+
+		static glm::mat4 flipZ(
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, -1, 0,
+			0, 0, 0, 1);
+
+		boneMatrix = flipZ * boneMatrix;
+
+		if(!isLeft)
+		{
+			boneMatrix = boneMatrix * flipZ;
+		}
+
+		// Ensure that the matrix handedness is correct
+		glm::vec3 tmp = glm::cross(glm::vec3(boneMatrix[1]), glm::vec3(boneMatrix[2]));
+		float val = glm::dot(tmp, glm::vec3(boneMatrix[0]));
+		assert(glm::abs(val - 1.0f) < 1.0e-4f);
+
+		return boneMatrix;
+	}
+
 	virtual void onInit(const Leap::Controller&) {}
 	virtual void onConnect(const Leap::Controller&) {}
 	virtual void onDisconnect(const Leap::Controller&) {}
@@ -60,24 +93,14 @@ public:
 			const Leap::Vector direction = hand.direction();
 
 			{
-				Leap::FloatArray leapBasis = hand.basis().toArray4x4();
-				Leap::Vector leapPosition = hand.palmPosition();
+				glm::mat4 boneMatrix = ConstructMatrix(hand.basis().toArray4x4(), hand.palmPosition(), hand.isLeft());
 				unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + BONES_PER_HAND - 1;
-
-				glm::mat4 boneMatrix;
-				memcpy(&boneMatrix, leapBasis.m_array, sizeof(glm::mat4));
-
-				glm::vec3 position;
-				memcpy(&position, leapPosition.toFloatPointer(), sizeof(glm::vec3));
-
-				boneMatrix[3] = glm::vec4(position, 1.0f);
 
 				boneVisibilities[boneIndex] = true;
 				boneLengths[boneIndex] = 0.0f;
 				boneWidths[boneIndex] = hand.palmWidth() * 0.5f;
 				boneMatrices[boneIndex] = boneMatrix;
 			}
-			
 
 			// Get the Arm bone
 			//Leap::Arm arm = hand.arm();
@@ -91,25 +114,9 @@ public:
 				for(int b = 0; b < 4; ++b) {
 					Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(b);
 					Leap::Bone bone = finger.bone(boneType);
-
-					Leap::FloatArray leapBasis = bone.basis().toArray4x4();
-					Leap::Vector leapPosition = bone.center();
-
-					glm::mat4 boneMatrix;
-					memcpy(&boneMatrix, leapBasis.m_array, sizeof(glm::mat4));
-
-					glm::vec3 position;
-					memcpy(&position, leapPosition.toFloatPointer(), sizeof(glm::vec3));
-
-					boneMatrix[3] = glm::vec4(position, 1.0f);
-
-					// GAH! THIS BREAKS NEWTON!
-
-					//glm::mat4 reflectMatrix = glm::scale(glm::vec3(1.0f, 1.0f, -1.0f));
-
-					//boneMatrix = reflectMatrix * boneMatrix;
-
+					glm::mat4 boneMatrix = ConstructMatrix(bone.basis().toArray4x4(), bone.center(), hand.isLeft());
 					unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + (finger.type() * BONES_PER_FINGER) + b;
+
 					boneVisibilities[boneIndex] = true;
 					boneLengths[boneIndex] = bone.length();
 					boneWidths[boneIndex] = bone.width();

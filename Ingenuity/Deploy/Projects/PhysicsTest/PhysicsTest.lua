@@ -148,9 +148,6 @@ function Update(delta)
 		--SetPhysicsRotation(physicsCapsule, 0, 0, 0);
 	end
 	
-	UpdateFlyCamera(delta, dragSpring);
-	UpdateFrameTime(delta);
-	
 	local sWidth, sHeight = GetScreenSize();
 	local mouseX, mouseY = GetMousePosition();
 	local leftDown, leftPressed, leftReleased = GetMouseLeft();
@@ -171,9 +168,9 @@ function Update(delta)
 			
 			if not dragAnchor then
 				dragAnchor = CreatePhysicsAnchor();
+				AddToPhysicsWorld(physicsWorld, dragAnchor);
 			end
 			
-			AddToPhysicsWorld(physicsWorld, dragAnchor);
 			SetPhysicsPosition(dragAnchor, pickedPos.x, pickedPos.y, pickedPos.z);
 			
 			dragSpring = CreatePhysicsSpring(dragObject, dragAnchor, dragPoint, CreateVector(0,0,0,0));
@@ -197,6 +194,9 @@ function Update(delta)
 			dragObject = nil
 		end
 	end
+	
+	UpdateFlyCamera(delta, dragSpring);
+	UpdateFrameTime(delta);
 end
 
 function Draw()

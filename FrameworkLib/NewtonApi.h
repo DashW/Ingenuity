@@ -22,8 +22,10 @@ namespace Ingenuity {
 struct NewtonPhysicsWorld : public PhysicsWorld
 {
 	NewtonWorld * newtonWorld;
+	float pendingTime;
 
-	NewtonPhysicsWorld(NewtonWorld * newtonWorld) : newtonWorld(newtonWorld) {}
+	NewtonPhysicsWorld(NewtonWorld * newtonWorld) 
+		: newtonWorld(newtonWorld), pendingTime(0.0f) {}
 	virtual ~NewtonPhysicsWorld();
 };
 
@@ -135,8 +137,6 @@ struct NewtonPhysicsRagdoll : public PhysicsRagdoll
 
 class NewtonApi : public PhysicsApi
 {
-	float physicsTime;
-	long long microseconds;
 	bool reentrantUpdate;
 
 	typedef std::pair<int, int> PairKey;
