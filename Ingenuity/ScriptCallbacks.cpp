@@ -3062,6 +3062,8 @@ void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(complexModel, typeHandles[TypeGpuComplexModel]));
 }
 
+#ifdef USE_LEAPMOTION_HELPER
+
 void ScriptCallbacks::CreateLeapHelper(ScriptInterpreter * interpreter)
 {
 	LeapMotionHelper * leapHelper = new LeapMotionHelper();
@@ -3159,5 +3161,7 @@ void ScriptCallbacks::GetLeapBoneMatrix(ScriptInterpreter * interpreter)
 	unsigned matrixTypeHandle = interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4);
 	interpreter->PushParam(new BufferCopyPtr(&matrix, sizeof(glm::mat4), matrixTypeHandle));
 }
+
+#endif
 
 } // namespace Ingenuity

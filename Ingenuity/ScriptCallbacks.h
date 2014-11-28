@@ -386,6 +386,8 @@ public:
 		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
 			"(object) Returns a debug model for the given physics object");
 
+#ifdef USE_LEAPMOTION_HELPER
+
 		interpreter->RegisterCallback("CreateLeapHelper", &ScriptCallbacks::CreateLeapHelper,
 			"() Returns a new instance of a Leap Motion Helper");
 		interpreter->RegisterCallback("GetLeapFrameTime", &ScriptCallbacks::GetLeapFrameTime,
@@ -402,6 +404,8 @@ public:
 			"(helper,scale) Sets the scale of the Leap world, including bone details and matrices");
 		interpreter->RegisterCallback("GetLeapBoneMatrix", &ScriptCallbacks::GetLeapBoneMatrix,
 			"(helper,index) Returns the transformation matrix of the indexed Leap Motion bone");
+
+#endif
 
 		interpreter->RegisterOperator(typeHandles[TypePhysicsSpring], 
 			ScriptInterpreter::IndexSet, ScriptCallbacks::SetPhysicsSpringProperty);
@@ -560,6 +564,8 @@ public:
 	static void PickPhysicsObject(ScriptInterpreter*);
 	static void GetPhysicsDebugModel(ScriptInterpreter*);
 
+#ifdef USE_LEAPMOTION_HELPER
+
 	static void CreateLeapHelper(ScriptInterpreter*);
 	static void GetLeapFrameTime(ScriptInterpreter*);
 	static void GetLeapNumBones(ScriptInterpreter*);
@@ -568,6 +574,8 @@ public:
 	static void SetLeapPosition(ScriptInterpreter*);
 	static void SetLeapScale(ScriptInterpreter*);
 	static void GetLeapBoneMatrix(ScriptInterpreter*);
+
+#endif
 };
 
 } // namespace Ingenuity

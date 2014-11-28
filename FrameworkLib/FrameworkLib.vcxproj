@@ -156,7 +156,7 @@
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Lib>
@@ -188,7 +188,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;opengl32.lib;glew32s.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;opengl32.lib;glew32s.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;$(ProjectDir)..\Third Party\glew-1.11.0\lib\Release\Win32;$(ProjectDir)..\Third Party\Simple-OpenGL-Image-Library-master\projects\VC12\Debug MT;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Lib>
@@ -350,7 +350,10 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClCompile Include="FreeImageApi.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="IsoSurface.cpp" />
-    <ClCompile Include="LeapMotionHelper.cpp" />
+    <ClCompile Include="LeapMotionHelper.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="LuaInterpreter.cpp" />
     <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="ScriptLogger.cpp" />

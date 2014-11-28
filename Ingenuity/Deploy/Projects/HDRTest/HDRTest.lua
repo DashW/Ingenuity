@@ -1,7 +1,7 @@
 -- HDR Lighting Test
 
 Require("ProjectDir","Scene.lua");
-Require("ProjectDir","IngenHDR.lua");
+Require("ProjectDir","../../Common/IngenHDR.lua");
 Require("ProjectDir","../../Common/IngenUtils.lua");
 
 function Begin()
