@@ -18,19 +18,21 @@ public:
 	static const unsigned BONES_PER_FINGER = 4;
 	static const unsigned BONES_PER_HAND = (FINGERS_PER_HAND * BONES_PER_FINGER) + 1;
 	static const unsigned MAX_BONES = BONES_PER_HAND * 2;
+	static const unsigned VIS_BUFFER_FRAMES = 2;
+
+	struct BoneData
+	{
+		unsigned visTimeout = 0;
+		float length = 0.0f;
+		float width = 0.0f;
+		glm::mat4 matrix;
+	};
 
 	InternalListener() : frameDelta(0.0f), prevTimeStamp(0)
 	{
 		__int64 countsPerSec = 0;
 		QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
 		secsPerCount = 1.0f / (float)countsPerSec;
-
-		for(unsigned i = 0; i < MAX_BONES; i++)
-		{
-			boneVisibilities[i] = false;
-			boneLengths[i] = 0.0f;
-			boneWidths[i] = 0.0f;
-		}
 	}
 
 	glm::mat4 ConstructMatrix(Leap::FloatArray& leapBasis, Leap::Vector& leapPosition, bool isLeft)
@@ -44,6 +46,7 @@ public:
 		boneMatrix[3] = glm::vec4(position, 1.0f);
 
 		// http://stackoverflow.com/questions/1263072/changing-a-matrix-from-right-handed-to-left-handed-coordinate-system
+		// Rigid reflection: reflect * transform * reflect
 
 		static glm::mat4 flipZ(
 			1, 0, 0, 0,
@@ -84,7 +87,10 @@ public:
 		const Leap::Frame frame = controller.frame();
 		Leap::HandList hands = frame.hands();
 
-		memset(boneVisibilities, 0, sizeof(bool) * MAX_BONES);
+		for(unsigned i = 0; i < MAX_BONES; i++)
+		{
+			bones[i].visTimeout = bones[i].visTimeout > 0 ? bones[i].visTimeout - 1 : 0;
+		}
 
 		for(Leap::HandList::const_iterator hl = hands.begin(); hl != hands.end(); ++hl) 
 		{
@@ -96,10 +102,10 @@ public:
 				glm::mat4 boneMatrix = ConstructMatrix(hand.basis().toArray4x4(), hand.palmPosition(), hand.isLeft());
 				unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + BONES_PER_HAND - 1;
 
-				boneVisibilities[boneIndex] = true;
-				boneLengths[boneIndex] = 0.0f;
-				boneWidths[boneIndex] = hand.palmWidth() * 0.5f;
-				boneMatrices[boneIndex] = boneMatrix;
+				bones[boneIndex].visTimeout = VIS_BUFFER_FRAMES;
+				bones[boneIndex].length = 0.0f;
+				bones[boneIndex].width = hand.palmWidth() * 0.5f;
+				bones[boneIndex].matrix = boneMatrix;
 			}
 
 			// Get the Arm bone
@@ -117,10 +123,10 @@ public:
 					glm::mat4 boneMatrix = ConstructMatrix(bone.basis().toArray4x4(), bone.center(), hand.isLeft());
 					unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + (finger.type() * BONES_PER_FINGER) + b;
 
-					boneVisibilities[boneIndex] = true;
-					boneLengths[boneIndex] = bone.length();
-					boneWidths[boneIndex] = bone.width();
-					boneMatrices[boneIndex] = boneMatrix;
+					bones[boneIndex].visTimeout = VIS_BUFFER_FRAMES;
+					bones[boneIndex].length = bone.length();
+					bones[boneIndex].width = bone.width();
+					bones[boneIndex].matrix = boneMatrix;
 				}
 			}
 		}
@@ -132,10 +138,7 @@ public:
 	virtual void onServiceConnect(const Leap::Controller&) {}
 	virtual void onServiceDisconnect(const Leap::Controller&) {}
 
-	bool boneVisibilities[MAX_BONES];
-	float boneLengths[MAX_BONES];
-	float boneWidths[MAX_BONES];
-	glm::mat4 boneMatrices[MAX_BONES];
+	BoneData bones[MAX_BONES];
 	float frameDelta;
 
 	float secsPerCount;
@@ -168,22 +171,26 @@ unsigned LeapMotionHelper::GetNumBones()
 
 bool LeapMotionHelper::IsBoneVisible(unsigned index)
 {
-	return listener->boneVisibilities[index];
+	if(index > InternalListener::MAX_BONES) return false;
+	return listener->bones[index].visTimeout > 0;
 }
 
 float LeapMotionHelper::GetBoneLength(unsigned index) const
 {
-	return listener->boneLengths[index] * uniformScale;
+	if(index > InternalListener::MAX_BONES) return 0.0f;
+	return listener->bones[index].length * uniformScale;
 }
 
 float LeapMotionHelper::GetBoneRadius(unsigned index) const
 {
-	return listener->boneWidths[index] * 0.5f * uniformScale;
+	if(index > InternalListener::MAX_BONES) return 0.0f;
+	return listener->bones[index].width * 0.5f * uniformScale;
 }
 
 glm::mat4 LeapMotionHelper::GetBoneMatrix(unsigned index)
 {
-	glm::mat4 boneMatrix = listener->boneMatrices[index];
+	if(index > InternalListener::MAX_BONES) return glm::mat4();
+	glm::mat4 boneMatrix = listener->bones[index].matrix;
 	boneMatrix[3].x *= uniformScale;
 	boneMatrix[3].y *= uniformScale;
 	boneMatrix[3].z *= uniformScale;

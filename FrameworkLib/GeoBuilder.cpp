@@ -1,9 +1,10 @@
 #include "GeoBuilder.h"
 
+#include <glm/ext.hpp>
+
 #define _X86_
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <glm/ext.hpp>
 
 #include <algorithm>
 #include <list>

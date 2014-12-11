@@ -57,8 +57,12 @@ void DX11::SamplerMgr::UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam
 		lower = FILTER_MD;
 		break;
 	case Gpu::SamplerParam::Anisotropy:
-		upper = 16;
+		upper = COMP_FUNC;
 		lower = MAX_ANISO;
+		break;
+	case Gpu::SamplerParam::Comparison:
+		upper = MAX__BITS;
+		lower = COMP_FUNC;
 		break;
 	}
 
@@ -86,6 +90,7 @@ void DX11::SamplerMgr::ApplySamplerParams(
 			if(param.paramIndex < paramMappings.size())
 			{
 				unsigned samplerSlot = paramMappings[param.paramIndex].registerIndex;
+
 				if(samplerSlot >= D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT) continue;
 				UpdateSamplerKey(samplerKeys[samplerSlot], param);
 			}
@@ -109,6 +114,22 @@ void DX11::SamplerMgr::ApplySamplerParams(
 		D3D11_FILTER_MIN_MAG_MIP_POINT,
 		D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D11_FILTER_ANISOTROPIC
+	};
+
+	static const D3D11_FILTER GPU_FILTER_MODES_TO_DX11_COMPARISON_FILTERS[] = {
+		D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+		D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+		D3D11_FILTER_COMPARISON_ANISOTROPIC
+	};
+
+	static const D3D11_COMPARISON_FUNC GPU_COMPARISON_FUNCS_TO_DX11_COMPARISON_FUNCS[] = {
+		(D3D11_COMPARISON_FUNC)0,
+		D3D11_COMPARISON_LESS,
+		D3D11_COMPARISON_GREATER,
+		D3D11_COMPARISON_ALWAYS,
+		D3D11_COMPARISON_NEVER
 	};
 
 	for(unsigned i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; ++i)
@@ -139,11 +160,17 @@ void DX11::SamplerMgr::ApplySamplerParams(
 			unsigned addressW = (samplerKey & GetBitmask(FILTER_MD, ADDRESS_W)) >> ADDRESS_W;
 			samDesc.AddressW = GPU_TEXTURE_MODES_TO_DX11_TEXTURE_MODES[addressW];
 
-			unsigned filterMode = (samplerKey & GetBitmask(MAX_ANISO, FILTER_MD)) >> FILTER_MD;
-			samDesc.Filter = GPU_FILTER_MODES_TO_DX11_FILTERS[filterMode];
-
-			unsigned anisotropy = (samplerKey & GetBitmask(16, MAX_ANISO)) >> MAX_ANISO;
+			unsigned anisotropy = (samplerKey & GetBitmask(COMP_FUNC, MAX_ANISO)) >> MAX_ANISO;
 			samDesc.MaxAnisotropy = anisotropy;
+
+			unsigned comparisonFunc = (samplerKey & GetBitmask(MAX__BITS, COMP_FUNC)) >> COMP_FUNC;
+			samDesc.ComparisonFunc = GPU_COMPARISON_FUNCS_TO_DX11_COMPARISON_FUNCS[comparisonFunc];
+
+			unsigned filterMode = (samplerKey & GetBitmask(MAX_ANISO, FILTER_MD)) >> FILTER_MD;
+			if(comparisonFunc == Gpu::SamplerParam::ComparisonNone)
+				samDesc.Filter = GPU_FILTER_MODES_TO_DX11_FILTERS[filterMode];
+			else
+				samDesc.Filter = GPU_FILTER_MODES_TO_DX11_COMPARISON_FILTERS[filterMode];
 
 			if(SUCCEEDED(direct3Ddevice->CreateSamplerState(&samDesc, &samplerState)))
 			{

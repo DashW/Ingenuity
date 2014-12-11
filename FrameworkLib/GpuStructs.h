@@ -111,8 +111,8 @@ struct Model
 {
 	Mesh * mesh;
 	Texture * texture;
-	Texture * normalMap;
-	CubeMap * cubeMap;
+	Texture * normalMap; // LIGHTING
+	CubeMap * cubeMap;   // LIGHTING
 	Effect * effect;
 
 	glm::vec4 position;
@@ -121,7 +121,7 @@ struct Model
 	glm::vec4 matrixPadding;
 	glm::vec4 color;
 
-	inline void SetMatrix(glm::mat4 matrix) 
+	inline void SetMatrix(glm::mat4& matrix) 
 	{ 
 		position = matrix[0]; 
 		rotation = matrix[1]; 
@@ -143,9 +143,9 @@ struct Model
 		}
 	}
 
-	float diffuseFactor;
-	float specPower;
-	float specFactor;
+	float diffuseFactor; // LIGHTING
+	float specPower;     // LIGHTING
+	float specFactor;    // LIGHTING
 
 	bool useMatrix;
 	bool wireframe;
@@ -221,6 +221,13 @@ struct SpotLight : public Light
 	float atten;
 	float power;
 
+	glm::mat4 GetMatrix(float fov, glm::vec3 up = glm::vec3(0.0f,1.0f,0.0f))
+	{
+		return glm::perspective(fov, 1.0f, 1.0f, 200.0f)
+			* (glm::scale(glm::vec3(-1.0f, 1.0f, 1.0f)) 
+			*  glm::lookAt(position, position + direction, up));
+	}
+
 	SpotLight() : atten(Light::DefaultAtten()), power(0) {}
 
 	virtual LightType GetType() override
@@ -246,10 +253,14 @@ struct Camera
 	inline glm::mat4 GetProjMatrix(float aspect)
 	{
 		const float halfY = fovOrHeight * 0.5f;
-		const float halfX = halfY * aspect;
+		const float halfX = fabs(halfY) * aspect;
+
+		// glm::ortho returns Z coordinates in the range -1 to 1.
+		// This matrix will transform them to the correct range 0 to 1.
+		static const glm::mat4 orthoFixMatrix = glm::translate(glm::vec3(0.0f, 0.0f, 0.5f)) * glm::scale(glm::vec3(1.0f, 1.0f, 0.5f));
 
 		return isOrthoCamera ?
-			glm::ortho(-halfX, halfX, -halfY, halfY, nearClip, farClip) :
+			orthoFixMatrix * glm::ortho(-halfX, halfX, -halfY, halfY, nearClip, farClip) :
 			glm::perspective(fovOrHeight, aspect, nearClip, farClip);
 	}
 
@@ -290,6 +301,7 @@ struct DrawSurface
 		Format_4x16float,
 		Format_3x10float,
 		Format_1x16float,
+		Format_Typeless,
 
 		Format_Total
 	};
@@ -298,7 +310,7 @@ struct DrawSurface
 
 	virtual Type GetSurfaceType() = 0;
 	virtual Texture * GetTexture() = 0;
-	virtual void Clear(glm::vec4 color = glm::vec4(0.0f,0.0f,0.0f,1.0f)) = 0;
+	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f,0.0f,0.0f,1.0f)) = 0;
 };
 
 struct InstanceBuffer

@@ -39,5 +39,7 @@ PixelOut main(in VertexOutPosNor _vtx)
 		output.color += resultColor;
 	}
 
+	output.color = float4(output.color.rgb, inputColor.a);
+
     return output;
 }

@@ -178,12 +178,14 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 				std::vector<float> & constants = vertexParamConstants[mapping.registerIndex - NUM_STANDARD_BUFFERS];
 				constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
 				memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
+				break;
 			}
 			case ShaderStage::Pixel:
 			{
 				std::vector<float> & constants = pixelParamConstants[mapping.registerIndex - NUM_STANDARD_BUFFERS];
 				constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
 				memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
+				break;
 			}
 			default:
 				OutputDebugString(L"Non vertex/pixel shader states not yet implemented!\n");
@@ -257,7 +259,7 @@ bool DX11::ModelShader::SetTechnique(ID3D11DeviceContext * direct3Dcontext, Vert
 	return true;
 }
 
-bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect)
+bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect, Gpu::Effect * effect)
 {
 	if(!model || !camera) return false;
 	if(camera->position == camera->target)
@@ -296,6 +298,9 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 	{
 		direct3Dcontext->PSSetShaderResources(0, 1, &nullResource);
 	}
+	
+	// BEGIN LIGHTING
+
 	if(model->cubeMap)
 	{
 		DX11::CubeMap * cubeMap = static_cast<DX11::CubeMap*>(model->cubeMap);
@@ -364,15 +369,22 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 					&XMFLOAT3(spotLight->direction.x, spotLight->direction.y, spotLight->direction.z))));
 				lightConstData.spotDirPowers[i].spotPower = spotLight->power;
 
-				//XMMATRIX lightView = XMMatrixLookToLH(
-				//	XMLoadFloat3(&pixelConstData.lightPosition),
-				//	XMLoadFloat3(&pixelConstData.spotDirection),
-				//	XMLoadFloat3(&XMFLOAT3(0.0f, 1.0f, 0.0f)));
+				if(i == 0)
+				{
+					float lightFOV = XM_PI * 0.15f;
 
-				//float lightFOV = XM_PI * 0.10f;
-				//XMMATRIX lightLens = XMMatrixPerspectiveFovLH(lightFOV, 1.0f, 1.0f, 200.0f);
+					glm::mat4 lightGlmMatrix = spotLight->GetMatrix(lightFOV, glm::vec3(0.0f, 1.0f, 0.0f));
+					XMMATRIX lightXMMatrix((float*)&lightGlmMatrix);
 
-				//XMStoreFloat4x4(&vertexConstData.lightViewProjection, lightView * lightLens);
+					//XMMATRIX lightView = XMMatrixLookToLH(
+					//	XMLoadFloat3(&lightConstData.positionSpecs[i].position),
+					//	XMLoadFloat3(&lightConstData.spotDirPowers[i].direction),
+					//	XMLoadFloat3(&XMFLOAT3(0.0f, 1.0f, 0.0f)));
+
+					//XMMATRIX lightLens = XMMatrixPerspectiveFovLH(lightFOV, 1.0f, 1.0f, 200.0f);
+
+					XMStoreFloat4x4(&vertexConstData.lightViewProjection, lightXMMatrix);
+				}
 			}
 		}
 
@@ -390,15 +402,17 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 		pixelConstData.ambient = 1.0f;
 	}
 
+	// END LIGHTING
+
 	direct3Dcontext->UpdateSubresource(pixelConstBuffer, 0, 0, &pixelConstData, 0, 0);
 	direct3Dcontext->PSSetConstantBuffers(0, 1, &pixelConstBuffer);
 
 	direct3Dcontext->UpdateSubresource(vertexConstBuffer, 0, 0, &vertexConstData, 0, 0);
 	direct3Dcontext->VSSetConstantBuffers(0, 1, &vertexConstBuffer);
 
-	if(model->effect)
+	if(effect)
 	{
-		return currentTechnique->SetExtraParameters(direct3Dcontext, model->effect);
+		return currentTechnique->SetExtraParameters(direct3Dcontext, effect);
 	}
 	else
 	{

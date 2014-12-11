@@ -3,16 +3,16 @@
 #include "ModelShader.inl"
 
 struct VertexOutPosNorTex {
-    float3 _WorldPos1 : TEXCOORD0;
-    float4 _ProjPos2 : SV_Position;
-    float3 _Normal1 : TEXCOORD1;
-    float4 _Color2 : COLOR0;
+    float3 _WorldPos : TEXCOORD0;
+    float4 _ProjPos : SV_Position;
+    float3 _Normal : TEXCOORD1;
+    float4 _Color : COLOR0;
     float2 _TexCoord : TEXCOORD2;
 	float4 _ProjCoord : TEXCOORD3;
 };
 
 struct PixelOut {
-    float4 _color4 : SV_Target;
+    float4 color : SV_Target;
 };
 
 Texture2D<float4> projTex : register(t3);
@@ -34,18 +34,32 @@ float4 projection(float4 projCoord, float4 color)
 
 PixelOut main(in VertexOutPosNorTex _vtx)
 {
-    PixelOut _output;
+	PixelOut output;
+	output.color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 
-    //float3 _lightDirection3 = normalize(_lightPosition - _vtx._WorldPos1);
-    //float3 _normalizedNormal3 = normalize(_vtx._Normal1);
-	//float3 _cameraVector0022 = normalize(_cameraPosition - _vtx._WorldPos1);
+	float3 lightDirection = normalize(_lightPosition - _vtx._WorldPos);
+	float lightDistance = length(_lightPosition - _vtx._WorldPos);
+    float3 normalizedNormal = normalize(_vtx._Normal);
+	float3 cameraVector = normalize(_cameraPosition - _vtx._WorldPos);
+	float4 inputColor = _vtx._Color * tex.Sample(_textureSampler, _vtx._TexCoord);
 
-	_output._color4 = _vtx._Color2 * tex.Sample(_textureSampler, _vtx._TexCoord);
-	//_output._color4 = diffuse(_lightDirection3, _normalizedNormal3, _output._color4);
-	////_output._color4 = cubeReflect(_normalizedNormal3, _cameraVector0022, _output._color4);
-	//_output._color4 = specular(_normalizedNormal3, _cameraVector0022, _lightDirection3, _output._color4);
-	//_output._color4 = projection(_vtx._ProjCoord, _output._color4);
-	//_output._color4 = spot(_lightDirection3, _output._color4);
+	[loop]
+	for(uint i = 0; i < _numLights; ++i)
+	{
+		float3 lightDirection = normalize(lightPositionSpecs[i].xyz - _vtx._WorldPos);
+		float  lightDistance = distance(lightPositionSpecs[i].xyz, _vtx._WorldPos);
+		float4 resultColor = float4(1.0f, 1.0f, 1.0f, 0.0f);
 
-    return _output;
+		resultColor = diffuse(lightDirection, lightDistance, lightColorAttens[i], normalizedNormal, resultColor);
+		resultColor = specular(lightDirection, lightColorAttens[i], _specularPower, normalizedNormal, cameraVector, resultColor, lightDistance);
+		if(i == 0)
+		{
+			resultColor = projection(_vtx._ProjCoord, resultColor);
+		}
+		resultColor = spot(lightDirection, lightSpotDirPowers[i].xyz, lightSpotDirPowers[i].w, resultColor);
+
+		output.color += (inputColor * float4(resultColor.rgb, 0.0f));
+	}
+
+    return output;
 } 

@@ -273,7 +273,7 @@ public:
 	virtual void DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface = 0) override;
 	virtual void DrawGpuText(Gpu::Font * font, LPCWSTR text, float x, float y, bool center, Gpu::DrawSurface * surface = 0) override;
 	virtual void DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights,
-		unsigned numLights, Gpu::DrawSurface * surface = 0, Gpu::InstanceBuffer * instances = 0) override;
+		unsigned numLights, Gpu::DrawSurface * surface = 0, Gpu::InstanceBuffer * instances = 0, Gpu::Effect * overrideEffect = 0) override;
 	virtual void DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, Gpu::DrawSurface * dest) override;
 
 	virtual Gpu::Font * CreateGpuFont(int height, LPCWSTR facename, Gpu::FontStyle style = Gpu::FontStyle_Regular) override;

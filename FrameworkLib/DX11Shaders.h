@@ -154,7 +154,7 @@ struct ModelShader : public Shader
 	//DirectX::XMMATRIX GetProjection(Gpu::Camera * camera, float aspect);
 
 	bool SetTechnique(ID3D11DeviceContext * direct3Dcontext, VertexType vType, InstanceType iType);
-	bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect);
+	bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect, Gpu::Effect * effect);
 };
 
 struct TextureShader : public Shader

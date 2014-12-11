@@ -3,7 +3,7 @@
 -- Loads a model and allows the user to apply any shader
 -- effect and modify any parameter through GUI controls
 --
--- Richard Copperwaite 2013
+-- Richard Copperwaite 2013-2015
 
 Require("ProjectDir","../../Common/IngenUtils.lua");
 Require("ProjectDir","../../Common/IngenUI.lua");
@@ -15,11 +15,13 @@ rotSpeed = 0.4;
 pendingTex = "";
 pendingTexIndex = 0;
 
+initialMdlShader = "ProjectorShader.xml";
+initialTexShader = "TextureCopy.xml";
+initialModel = "vase.obj";
+
 -- State machine states:
-STATE_LOADING_ASSETS = 0;
-STATE_LOADING_SHADERS = 1;
-STATE_PROCESSING_SHADERS = 2;
-STATE_FINISHED = 3;
+STATE_LOADING_TEXTURE_SHADER = 0;
+STATE_FINISHED = 1;
 
 function FixupPickedPath(path)
 	local searchString = "Projects\\ShaderSandbox\\";
@@ -28,6 +30,35 @@ function FixupPickedPath(path)
 		path = string.sub(path,string.len(searchString) + 1);
 	end
 	return path;
+end
+
+function GetShaderType(shaderElement)
+	if shaderElement.label == "shader" then
+		for arg,argVal in pairs(shaderElement.args) do
+			if arg == "type" and argVal == "model" then
+				return "model";
+			end
+			if arg == "type" and argVal == "texture" then
+				return "texture";
+			end
+		end
+	end
+	return "none";
+end
+
+function LoadShader(shaderName)
+	LoadFile("FrameworkDir", shaderName, function(data)
+		if data and string.len(data) > 0 then
+			print("Loaded XML data for '"..shaderName.."'");
+			pendingShader = shaderName;
+			pendingShaderMeta = collect(data);
+			shaderType = GetShaderType(pendingShaderMeta[2]);
+			texShaderSelected = (shaderType == "texture");
+			shaderTicket = LoadAssets("FrameworkDir",shaderName,"Shader",shaderName);
+		else
+			print("Failed to load XML data for '"..shaderName.."'");
+		end
+	end);
 end
 
 function CreateStandardParams()
@@ -74,6 +105,7 @@ function CreateStandardParams()
 		if model then SetMeshColor(model,0,modelColorR,modelColorG,modelColorB) end;
 	end
 	AddUIComponent(redSlider);
+	
 	local greenSlider = CreateUISlider();
 	greenSlider.x = -250;
 	greenSlider.y = 250;
@@ -86,6 +118,7 @@ function CreateStandardParams()
 		if model then SetMeshColor(model,0,modelColorR,modelColorG,modelColorB) end;
 	end
 	AddUIComponent(greenSlider);
+	
 	local blueSlider = CreateUISlider();
 	blueSlider.x = -250;
 	blueSlider.y = 300;
@@ -101,11 +134,8 @@ function CreateStandardParams()
 end
 
 function Begin()
-	ticket = LoadAssets(
-		{"FrameworkDir","TextureCopy.xml","Shader","texCopy"}
-	);
 	
-	pendingModel = "skull3.obj";
+	pendingModel = initialModel;
 	modelTicket = LoadAssets("ProjectDir",pendingModel,"WavefrontModel",pendingModel);
 	
 	-- Enumerate the Framework Directory
@@ -154,7 +184,7 @@ function Begin()
 	mdlButton.y = 50;
 	mdlButton.width = 200;
 	mdlButton.height = 50;
-	mdlButton.text = "skull3.obj";
+	mdlButton.text = "";
 	mdlButton.action = function(button)
 		PickFile("ProjectDir","*.obj",function(data)
 			if data and string.len(data) > 0 then
@@ -167,12 +197,48 @@ function Begin()
 	end
 	AddUIComponent(mdlButton,leftPanel);
 	
-	label = CreateUILabel();
-	label.y = 100;
-	label.width = 200;
-	label.height = 50;
-	label.text = "Shader";
-	AddUIComponent(label,leftPanel);
+	mdlShaderLabel = CreateUILabel();
+	mdlShaderLabel.y = 100;
+	mdlShaderLabel.width = 200;
+	mdlShaderLabel.height = 50;
+	mdlShaderLabel.text = "Model Shader";
+	AddUIComponent(mdlShaderLabel,leftPanel);
+	
+	mdlShaderButton = CreateUIButton();
+	mdlShaderButton.y = 150;
+	mdlShaderButton.width = 200;
+	mdlShaderButton.height = 50;
+	mdlShaderButton.text = "";
+	mdlShaderButton.action = function(button)
+		PickFile("FrameworkDir","*.xml",function(data)
+			-- This won't work in Windows 8!
+			if data and string.len(data) > 0 then
+				LoadShader(data);
+			end
+		end);
+	end
+	AddUIComponent(mdlShaderButton,leftPanel);
+	
+	texShaderLabel = CreateUILabel();
+	texShaderLabel.y = 200;
+	texShaderLabel.width = 200;
+	texShaderLabel.height = 50;
+	texShaderLabel.text = "Screen Shader";
+	AddUIComponent(texShaderLabel,leftPanel);
+	
+	texShaderButton = CreateUIButton();
+	texShaderButton.y = 250;
+	texShaderButton.width = 200;
+	texShaderButton.height = 50;
+	texShaderButton.text = "";
+	texShaderButton.action = function(button)
+		PickFile("FrameworkDir","*xml",function(data)
+			if data and string.len(data) > 0 then
+				LoadShader(data);
+			end
+		end);
+	end
+	AddUIComponent(texShaderButton,leftPanel);
 	
 	CreateStandardParams();
 	
@@ -192,8 +258,6 @@ function Begin()
 	
 	maxAmplitude = 0;
 	
-	state = STATE_LOADING_ASSETS;
-	
 	sphere = CreateModel("PosNor", CreateSphere());
 	SetMeshColor(sphere,0,0,0,1,0.5);
 	SetModelPosition(sphere,0,0.35,0);
@@ -203,6 +267,11 @@ function Begin()
 	screenSurface2 = CreateSurface();
 	
 	SetClearColor(1,1,1);
+	
+	
+	LoadShader(initialTexShader);
+	
+	state = STATE_LOADING_TEXTURE_SHADER;
 end
 
 function Reload()
@@ -212,65 +281,35 @@ function Reload()
 end
 
 function ShaderLoaded()
+	print("SHADER LOADED!");
 	if texShaderSelected then
-		local tempScreenEffect = CreateEffect(shaderFileNames[pendingShader]);
+		local tempScreenEffect = CreateEffect(pendingShader);
 		if tempScreenEffect then
 			print("APPLYING SCREEN SHADER!");
 			screenEffect = tempScreenEffect;
 		end
+		texShaderButton.text = pendingShader:sub(-20);
 	else
-		modelEffect = CreateEffect(shaderFileNames[pendingShader]);
+		modelEffect = CreateEffect(pendingShader);
 		if modelEffect and model then
 			print("APPLYING MODEL SHADER!");
 			SetMeshEffect(model,0,modelEffect);
 		end
-		if shaderFileNames[pendingShader] == "MatcapShader.xml" and matcapTex then
+		if pendingShader == "MatcapShader.xml" and matcapTex then
 			SetEffectParam(modelEffect,0,matcapTex);
 		end
+		mdlShaderButton.text = pendingShader:sub(-20);
 	end
 	
 	ClearUIComponents(paramPanel);
-	CreateParamButtons(pendingShader);
+	CreateParamButtons(pendingShaderMeta);
+	
+	pendingShader = "";
+	pendingShaderMeta = nil;
 end
 
-function AssetsLoaded()
-	-- matcapTex = GetAsset("matcapTex");
-	
-	-- ding = GetAsset("ding");
-	-- if ding then
-		-- button.action = function(button) PlaySound(ding) end
-	-- end
-	
-	screenEffect = CreateEffect("texCopy");
-end
-
-function EnumerateShaders(frameworkFiles)
-	shaderFileNames = {};
-	numShaderFiles = 0;
-	for key,val in pairs(frameworkFiles) do
-		if string.sub(val, -4) == ".xml" then
-			table.insert(shaderFileNames,val);
-			numShaderFiles = numShaderFiles + 1;
-		end
-	end
-	
-	shaderXmlStructs = {};
-	loadedShaderFiles = 0;
-	for key,val in pairs(shaderFileNames) do
-		if val then
-			print(val);
-			LoadFile("FrameworkDir", val, function(data) 
-				print("Loaded XML data for '"..val.."'");
-				shaderXmlStructs[key] = collect(data);
-				loadedShaderFiles = loadedShaderFiles + 1;
-			end);
-		end
-	end
-end
-
-function CreateParamButtons(shaderIndex)
+function CreateParamButtons(xmlStruct)
 	local paramButtonOffset = 300;
-	local xmlStruct = shaderXmlStructs[shaderIndex];
 	local shaderElement = xmlStruct[2];
 	local paramsElement = nil;
 	for i = 1,shaderElement.n do
@@ -320,13 +359,21 @@ function CreateParamButtons(shaderIndex)
 				AddUIComponent(button,paramPanel);
 				paramButtonOffset = paramButtonOffset + 200;
 				
-				if shaderFileNames[shaderIndex] == "MatcapShader.xml" then
+				if displayName == "MatCap" then
 					pendingTex = "matcaps/metal_foundry.png";
 					pendingTexButton = button;
 					pendingTexIndex = 0;
 					texTicket = LoadAssets("ProjectDir",pendingTex,"Texture",pendingTex);
 				end
+				
+				if displayName == "ProjectionTex" then
+					pendingTex = "Flashlight.png";
+					pendingTexButton = button;
+					pendingTexIndex = 0;
+					texTicket = LoadAssets("ProjectDir",pendingTex,"Texture",pendingTex);
+				end
 			end
+			
 			if paramType and paramType == "tex3D" then
 				local button = CreateUIButton();
 				button.y = paramButtonOffset;
@@ -349,6 +396,7 @@ function CreateParamButtons(shaderIndex)
 				AddUIComponent(button,paramPanel);
 				paramButtonOffset = paramButtonOffset + 50;
 			end
+			
 			if paramType and paramType == "float" then
 				local paramDefault = paramsElement[i].args["default"];
 				local paramMin = paramsElement[i].args["min"];
@@ -378,90 +426,32 @@ function CreateParamButtons(shaderIndex)
 	end
 end
 
-function ShadersEnumerated()
-	local buttonOffset = 150;
-	for key,val in pairs(shaderXmlStructs) do
-		local shaderElement = val[2];
-		if shaderElement.label == "shader" then
-			local modelShader = false;
-			local textureShader = false;
-			for arg,argVal in pairs(shaderElement.args) do
-				if arg == "type" and argVal == "model" then
-					modelShader = true;
-				end
-				if arg == "type" and argVal == "texture" then
-					textureShader = true;
-				end
-			end
-			
-			if modelShader or textureShader then
-				local button = CreateUIButton();
-				button.y = buttonOffset;
-				button.width = 200;
-				button.height = 50;
-				button.text = shaderFileNames[key];
-				button.action = function(button)
-					pendingShader = button.shaderIndex;
-					texShaderSelected = button.texShader;
-					local shaderName = shaderFileNames[pendingShader];
-					shaderTicket = LoadAssets("FrameworkDir",shaderName,"Shader",shaderName);
-				end
-				button.shaderIndex = key;
-				button.texShader = textureShader;
-				
-				AddUIComponent(button,leftPanel);
-				
-				buttonOffset = buttonOffset + 50;
-				
-				if shaderFileNames[key] == "MatcapShader.xml" then
-					pendingShader = key;
-					local shaderName = shaderFileNames[pendingShader];
-					shaderTicket = LoadAssets("FrameworkDir",shaderName,"Shader",shaderName);
-				end
-			end
-		end
-	end
-end
-
 function Update(delta)
-	if state == STATE_LOADING_ASSETS then
-		if ticket and IsLoaded(ticket) then
-			AssetsLoaded();	
-			ticket = nil;
-			state = STATE_LOADING_SHADERS;
-		end
-	end
-	if state == STATE_LOADING_SHADERS then
-		local frameworkFiles = GetDirectoryFiles("FrameworkDir");
-		if frameworkFiles then
-			EnumerateShaders(frameworkFiles);
-			state = STATE_PROCESSING_SHADERS;
-		end
-	end
-	if state == STATE_PROCESSING_SHADERS then
-		if loadedShaderFiles and numShaderFiles and loadedShaderFiles == numShaderFiles then
-			ShadersEnumerated();
+	if state == STATE_LOADING_TEXTURE_SHADER then
+		if pendingShader == "" then
+			LoadShader(initialMdlShader)
 			state = STATE_FINISHED;
 		end
 	end
 	
 	if modelTicket and IsLoaded(modelTicket) then
 		model = GetAsset(pendingModel);
-		print("Model Loaded! "..pendingModel);
-		
-		mdlButton.text = pendingModel;
-		
-		if modelEffect then
-			SetMeshEffect(model,0,modelEffect);
+		if model then
+			print("Model Loaded! "..pendingModel);
+			
+			mdlButton.text = pendingModel;
+			
+			if modelEffect then
+				SetMeshEffect(model,0,modelEffect);
+			end
+			
+			SetMeshColor(model,0,modelColorR,modelColorG,modelColorB);
+			
+			modelX, modelY, modelZ, modelR = GetMeshBounds(model,0);
+			local modelScale = 1/modelR;
+			SetModelScale(model,modelScale);
+			SetModelPosition(model,modelScale * -modelX, (modelScale * -modelY) + 0.35, modelScale * -modelZ);
 		end
-		
-		SetMeshColor(model,0,modelColorR,modelColorG,modelColorB);
-		
-		modelX, modelY, modelZ, modelR = GetMeshBounds(model,0);
-		local modelScale = 1/modelR;
-		SetModelScale(model,modelScale);
-		SetModelPosition(model,modelScale * -modelX, (modelScale * -modelY) + 0.35, modelScale * -modelZ);
-		
 		modelTicket = nil;
 	end
 	

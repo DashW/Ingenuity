@@ -439,12 +439,12 @@ void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface)
 	{
 		position.x = sprite->position.x; 
 		position.y = sprite->position.y;
-		scale.x = sprite->scale.x * sprite->size;
-		scale.y = sprite->scale.y * sprite->size;
+		scale.x = sprite->scale.x;
+		scale.y = sprite->scale.y;
 	}
 	else
 	{
-		float deviceIndependentSize = sprite->size * (((float)backBufferHeight)/((float)standardScreenHeight));
+		float deviceIndependentSize = (((float)backBufferHeight)/((float)standardScreenHeight));
 		position.x = w + (sprite->position.x * h);
 		position.y = h + (sprite->position.y * h);
 		scale.x = sprite->scale.x * deviceIndependentSize;
@@ -542,7 +542,8 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 }
 
 void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, 
-									 unsigned numLights, Gpu::DrawSurface * surface, Gpu::InstanceBuffer * instances) 
+									 unsigned numLights, Gpu::DrawSurface * surface, 
+									 Gpu::InstanceBuffer * instances, Gpu::Effect * overrideEffect) 
 {
 	if(!model) return;
 	if(!model->mesh) return;
@@ -567,7 +568,7 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 			rasterDesc.FrontCounterClockwise = false;
 			rasterDesc.MultisampleEnable = false;
 			rasterDesc.ScissorEnable = false;
-			rasterDesc.SlopeScaledDepthBias = 0.0f;
+			rasterDesc.SlopeScaledDepthBias = 0.0f; // !!! TURNS OUT THIS IS CRUCIAL FOR SHADOW MAPPING !!!
 			direct3Ddevice->CreateRasterizerState(&rasterDesc,&wireframeState);
 		}
 		direct3Dcontext->RSSetState(wireframeState);
@@ -609,9 +610,17 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 	}
 
 	DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(baseShader);
-	if(model->effect && model->effect->shader && model->effect->shader->IsModelShader()) 
+	Gpu::Effect * effect = 0;
+
+	if(overrideEffect && overrideEffect->shader && overrideEffect->shader->IsModelShader())
+	{
+		shader = static_cast<DX11::ModelShader*>(overrideEffect->shader);
+		effect = overrideEffect;
+	}
+	else if(model->effect && model->effect->shader && model->effect->shader->IsModelShader()) 
 	{
 		shader = static_cast<DX11::ModelShader*>(model->effect->shader);
+		effect = model->effect;
 	}
 
 	if(!shader->SetTechnique(direct3Dcontext, vertexType,instanceType)) return;
@@ -624,12 +633,12 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 		aspect = float(surfaceTex->GetWidth())/float(surfaceTex->GetHeight());
 	}
 
-	if(!shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect)) return;
+	if(!shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect, effect)) return;
 
 	samplerMgr->ApplySamplerParams(
 		direct3Dcontext, 
 		shader->currentTechnique->paramMappings, 
-		model->effect ? &model->effect->samplerParams : 0,
+		effect ? &effect->samplerParams : 0,
 		true);
 
 	if(dx11surface) dx11surface->Begin();

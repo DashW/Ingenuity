@@ -126,6 +126,28 @@ void Gpu::ShaderParser::ParseSamplerParams(unsigned paramIndex, tinyxml2::XMLEle
 	{
 		samplerParams.emplace_back(paramIndex, Gpu::SamplerParam::Anisotropy, anisotropy);
 	}
+	const char * comparisonText = element->Attribute("comparison");
+	if(comparisonText)
+	{
+		Gpu::SamplerParam::ComparisonFunc comparisonFunc = Gpu::SamplerParam::ComparisonNone;
+		if(strcmp(comparisonText, "less") == 0)
+		{
+			comparisonFunc = Gpu::SamplerParam::ComparisonLess;
+		}
+		if(strcmp(comparisonText, "greater") == 0)
+		{
+			comparisonFunc = Gpu::SamplerParam::ComparisonGreater;
+		}
+		if(strcmp(comparisonText, "always") == 0)
+		{
+			comparisonFunc = Gpu::SamplerParam::ComparisonAlways;
+		}
+		if(strcmp(comparisonText, "never") == 0)
+		{
+			comparisonFunc = Gpu::SamplerParam::ComparisonNever;
+		}
+		samplerParams.emplace_back(paramIndex, Gpu::SamplerParam::Comparison, comparisonFunc);
+	}
 }
 
 Gpu::SamplerParam::AddressMode Gpu::ShaderParser::ParseAddressMode(const char * text)

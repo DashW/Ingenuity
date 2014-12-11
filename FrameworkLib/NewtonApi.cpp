@@ -19,7 +19,7 @@
 #include "GpuVertices.h"
 
 #define MAX_PHYSICS_FPS 120.0f
-#define MAX_PHYSICS_LOOPS 5
+#define MAX_PHYSICS_LOOPS 2
 
 class RagDollManager : public CustomArticulaledTransformManager
 {
@@ -205,6 +205,10 @@ NewtonPhysicsRagdoll::~NewtonPhysicsRagdoll()
 
 void NewtonPhysicsObject::RemoveFromWorld()
 {
+	for(unsigned i = 0; i < springs.size(); ++i)
+	{
+		delete springs[i];
+	}
 	if(newtonBody)
 	{
 		NewtonDestroyBody(newtonBody);
@@ -299,9 +303,13 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 
 			// add the mouse pick penalty force and torque
 			glm::vec4 com;
-			glm::mat4 matrix;
-			NewtonBodyGetMatrix(body, &matrix[0][0]);
+			glm::mat4 bodyMatrix;
+			glm::mat4 collisionMatrix;
+			NewtonBodyGetMatrix(body, &bodyMatrix[0][0]);
+			NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &collisionMatrix[0][0]);
 			NewtonBodyGetCentreOfMass(body, &com[0]);
+
+			glm::mat4 matrix = bodyMatrix * collisionMatrix;
 
 			if(NewtonBodyGetType(body) != NEWTON_KINEMATIC_BODY)
 			{
@@ -332,8 +340,8 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 					glm::vec4 point(matrix * (glm::vec4(localAttachPoint,0.0f) - com));
 					//glm::vec4 point(glm::inverse(glm::transpose(matrix)) * (m_pickedBodyLocalAtachmentPoint - com));
 					glm::vec4 torque(glm::cross(glm::vec3(point),glm::vec3(force)), 1.0f);
-					//glm::vec4 torqueDamping(omega * mass * 0.5f);
-					//torque -= torqueDamping;
+					glm::vec4 torqueDamping(omega * mass * 0.5f);
+					torque -= torqueDamping;
 
 					NewtonBodyAddForce(body, &force.x);
 					NewtonBodyAddTorque(body, &torque.x);
@@ -1087,7 +1095,7 @@ void NewtonApi::SetScale(PhysicsObject * object, glm::vec3 scale)
 	//ApplyMassMatrix(physicsObject);
 }
 
-void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix)
+void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix)
 {
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
 
