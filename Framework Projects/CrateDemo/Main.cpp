@@ -6,9 +6,9 @@
 #define _USE_MATH_DEFINES
 
 #include <RealtimeApp.h>
-#include <math.h>
 #include <GeoBuilder.h>
 #include <AssetMgr.h>
+#include <math.h>
 
 using namespace Ingenuity;
 

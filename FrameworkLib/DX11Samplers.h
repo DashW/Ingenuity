@@ -32,6 +32,8 @@ class SamplerMgr
 	static const unsigned ADDRESS_W = ADDRESS_V + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
 	static const unsigned FILTER_MD = ADDRESS_W + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
 	static const unsigned MAX_ANISO = FILTER_MD + ((Gpu::SamplerParam::FilterModeMAX + 1) / 2);
+	static const unsigned COMP_FUNC = MAX_ANISO + ((Gpu::SamplerParam::ComparisonMAX + 1) / 2);
+	static const unsigned MAX__BITS = 16;
 
 	void UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam & param);
 

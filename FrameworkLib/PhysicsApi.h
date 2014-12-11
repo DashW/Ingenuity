@@ -117,7 +117,7 @@ public:
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) = 0;
 	virtual void SetRotation(PhysicsObject * object, glm::vec3 rotation) = 0;
 	virtual void SetScale(PhysicsObject * object, glm::vec3 scale) = 0;
-	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix) = 0;
+	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix) = 0;
 	virtual void SetMass(PhysicsObject * object, float mass) = 0;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) = 0;
 	virtual void SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value) = 0;

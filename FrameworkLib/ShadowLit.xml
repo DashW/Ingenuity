@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="ShadowLit" type="model">
+
+  <params>
+    <param index="0" displayName="ShadowMatrix"  type="floatArray" size="16" />
+    <param index="1" displayName="ShadowTexture" type="tex2D" addressU="clamp" addressV="clamp" comparison="less" />
+    <param index="2" displayName="ShadowBias"    type="float" default="0.005" />
+  </params>
+  
+  <directx9>
+  </directx9>
+  
+  <directx11>
+   
+    <technique vertexShader="ShadowLitVtxPosNor" pixelShader="ShadowLitPixPosNor" vertexType="PosNor">
+      <paramMapping index="0" shader="vertex" bufferIndex="10" bufferOffset="0" />
+      <paramMapping index="1" shader="pixel"  textureIndex="3" />
+      <paramMapping index="2" shader="pixel"  bufferIndex="10" bufferOffset="0" />
+    </technique>
+    
+    <!--<technique vertexShader="ShadowLitVtxPosNorTex" pixelShader="ShadowLitPixPosNorTex" vertexType="PosNorTex">
+      <paramMapping index="0" shader="pixel" textureIndex="3" />
+    </technique>-->
+
+  </directx11>
+
+  <opengl>
+  </opengl>
+  
+</shader>

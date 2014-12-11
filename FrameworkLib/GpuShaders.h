@@ -27,8 +27,8 @@ struct ShaderParam
 	{
 		TypeInteger,
 		TypeFloat,
+		//TypeMatrix,
 		TypeFloatArray,
-		//Matrix,
 		TypeTexture,
 		TypeCubeTexture,
 		TypeVolumeTexture,
@@ -109,6 +109,7 @@ struct SamplerParam
 
 		Filter,
 		Anisotropy,
+		Comparison,
 
 		KeyMAX
 	}
@@ -132,6 +133,17 @@ struct SamplerParam
 		FilterAnisotropic,
 
 		FilterModeMAX
+	};
+
+	enum ComparisonFunc
+	{
+		ComparisonNone,
+		ComparisonLess,
+		ComparisonGreater,
+		ComparisonAlways,
+		ComparisonNever,
+
+		ComparisonMAX
 	};
 
 	unsigned value;

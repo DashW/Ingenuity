@@ -247,14 +247,19 @@
       <Message>
       </Message>
     </PostBuildEvent>
-    <PreBuildEvent>
+    <PreBuildEvent />
+    <PreBuildEvent />
+    <CustomBuildStep>
       <Command>copy "$(SolutionDir)$(Configuration)\*.spritefont" "$(OutDir)"
 copy "$(SolutionDir)$(Configuration)\*.cso" "$(OutDir)"
-copy "$(SolutionDir)$(Configuration)\*.xml" "$(OutDir)"</Command>
-    </PreBuildEvent>
-    <PreBuildEvent>
-      <Message>Copying Sprite Fonts and Shaders</Message>
-    </PreBuildEvent>
+copy "$(SolutionDir)$(Configuration)\*.xml" "$(OutDir)"
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Copying Fonts, Shaders and DLLs</Message>
+      <Outputs>ForceEveryBuild</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep />
+    <CustomBuildStep />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">
     <ClCompile>

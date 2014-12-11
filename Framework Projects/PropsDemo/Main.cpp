@@ -65,6 +65,12 @@ class HeightmapDemo : public RealtimeApp
 			camera->target = glm::vec3(0.03f,0.17f,0.36f);
 			cameraRadius = 0.1f;
 		}
+#if 0
+		camera->isOrthoCamera = true;
+		camera->fovOrHeight = cameraRadius;
+#else
+		camera->fovOrHeight = (float)(M_PI_4);
+#endif
 	}
 
 public:
@@ -122,7 +128,7 @@ public:
 		font = gpu->CreateGpuFont(40,L"Arial");
 
 		camera = new Gpu::Camera();
-		camera->fovOrHeight = (float)(M_PI_4);
+
 		camera->nearClip = 0.001f;
 		camera->farClip = 10.0f;
 		camera->position.x = 0.0f;
@@ -303,7 +309,6 @@ public:
 
 		camera->position.x = camera->target.x + sin(cameraAngle)*cameraRadius;
 		camera->position.z = camera->target.z + cos(cameraAngle)*cameraRadius;
-
 	}
 	virtual void Draw() override
 	{

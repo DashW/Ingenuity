@@ -475,6 +475,24 @@
     <FxCompile Include="Shaders\DX11\VignettePixPosTex.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowMapPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowMapVtxPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">
@@ -514,6 +532,12 @@
       <Filter>Shaders\GL</Filter>
     </None>
     <None Include="Shaders\GL\SkyShaderVtxPos.vert">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\TextureCopyPixPosTex.frag">
+      <Filter>Shaders\GL</Filter>
+    </None>
+    <None Include="Shaders\GL\FlatShaderVtxPosTex.vert">
       <Filter>Shaders\GL</Filter>
     </None>
   </ItemGroup>
@@ -576,6 +600,9 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="Vignette.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ShadowLit.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>

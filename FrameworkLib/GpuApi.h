@@ -59,7 +59,7 @@ public:
 	virtual void DrawGpuText(Font * font, const wchar_t* text, float x, float y,
 		bool center, DrawSurface * surface = 0) = 0;
 	virtual void DrawGpuModel(Model * model, Camera * camera, Light ** lights,
-		unsigned numLights, DrawSurface * surface = 0, InstanceBuffer * instances = 0) = 0;
+		unsigned numLights, DrawSurface * surface = 0, InstanceBuffer * instances = 0, Effect * overrideEffect = 0) = 0;
 	virtual void DrawGpuSurface(DrawSurface * source, Effect * effect, DrawSurface * dest) = 0;
 
 	virtual Font * CreateGpuFont(int height, const wchar_t * facename, FontStyle style = FontStyle_Regular) = 0;
@@ -128,12 +128,13 @@ public:
 struct Sprite : public Drawable
 {
 	Texture * texture;
+	 
 	glm::vec2 center;
-	float size;
 	glm::vec3 position;
-	float rotation;
-	glm::vec4 color;
 	glm::vec2 scale;
+	glm::vec4 color;
+
+	float rotation;
 	bool pixelSpace;
 	bool brightAsAlpha;
 	Rect clipRect;
@@ -141,11 +142,10 @@ struct Sprite : public Drawable
 	Sprite(
 		Texture * texture = 0,
 		float transformCenterX = 0.0f,
-		float transformCenterY = 0.0f,
-		float size = 1.0f)
+		float transformCenterY = 0.0f)
 		: texture(texture), center(transformCenterX, transformCenterY),
-		size(size), rotation(0.0f), color(1.0f, 1.0f, 1.0f, 1.0f),
-		scale(1.0f, 1.0f), pixelSpace(false), brightAsAlpha(false),
+		rotation(0.0f), scale(1.0f, 1.0f), color(1.0f, 1.0f, 1.0f, 1.0f),
+		pixelSpace(false), brightAsAlpha(false),
 		clipRect(0.0f, 0.0f, 1.0f, 1.0f) {}
 
 	virtual void BeDrawn(Api* gpu, DrawSurface * surface = 0) override
@@ -167,7 +167,7 @@ struct ComplexModel : public IAsset
 	bool useMatrix;
 	bool wireframe;
 
-	inline void SetMatrix(glm::mat4 matrix)
+	inline void SetMatrix(glm::mat4& matrix)
 	{
 		position = matrix[0];
 		rotation = matrix[1];

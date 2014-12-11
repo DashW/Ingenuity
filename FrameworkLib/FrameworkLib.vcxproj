@@ -165,7 +165,6 @@
     </ProjectReference>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)*.xml" "$(OutDir)"
-copy "$(ProjectDir)\Shaders\GL\*" "$(OutDir)"
 copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -436,6 +435,10 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderPixPosTex.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosCol.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">5.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">5.0</ShaderModel>
@@ -526,6 +529,10 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">VERTEXSHADER</AdditionalIncludeDirectories>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTex.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BlurShaderPixPosTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
@@ -767,6 +774,22 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">VERTEXSHADER</AdditionalIncludeDirectories>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowMapPixPosNor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowMapVtxPosNor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\SkyShaderPixPos.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">true</ExcludedFromBuild>
@@ -1015,9 +1038,11 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <None Include="Shaders\GL\BaseShaderVtxPosNorPos.vert" />
     <None Include="Shaders\GL\BaseShaderVtxPosNorTex.vert" />
     <None Include="Shaders\GL\BaseShaderVtxPosNorTexPos.vert" />
+    <None Include="Shaders\GL\FlatShaderVtxPosTex.vert" />
     <None Include="Shaders\GL\ModelShaderCommon.frag" />
     <None Include="Shaders\GL\SkyShaderPixPos.frag" />
     <None Include="Shaders\GL\SkyShaderVtxPos.vert" />
+    <None Include="Shaders\GL\TextureCopyPixPosTex.frag" />
   </ItemGroup>
   <ItemGroup>
     <Xml Include="BaseShader.xml">
@@ -1040,6 +1065,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <Xml Include="ProjectorShader.xml">
       <SubType>Designer</SubType>
     </Xml>
+    <Xml Include="ShadowLit.xml" />
     <Xml Include="SkyShader.xml" />
     <Xml Include="BloomShader.xml" />
     <Xml Include="TextureCopy.xml" />

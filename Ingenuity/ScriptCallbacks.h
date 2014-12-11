@@ -439,21 +439,21 @@ public:
 	static void DrawText(ScriptInterpreter*);
 	static void SetFontColor(ScriptInterpreter*);
 
-	static void CreateLight(ScriptInterpreter*);
-	static void SetLightColor(ScriptInterpreter*);
-	static void SetLightPosition(ScriptInterpreter*);
-	static void SetLightDirection(ScriptInterpreter*);
-	static void SetLightAttenuation(ScriptInterpreter*);
+	static void CreateLight(ScriptInterpreter*);         // LIGHTING
+	static void SetLightColor(ScriptInterpreter*);       // LIGHTING
+	static void SetLightPosition(ScriptInterpreter*);    // LIGHTING
+	static void SetLightDirection(ScriptInterpreter*);   // LIGHTING
+	static void SetLightAttenuation(ScriptInterpreter*); // LIGHTING
 
 	static void SetMeshPosition(ScriptInterpreter*);
 	static void SetMeshRotation(ScriptInterpreter*);
 	static void SetMeshMatrix(ScriptInterpreter*);
 	static void SetMeshTexture(ScriptInterpreter*);
-	static void SetMeshNormal(ScriptInterpreter*);
-	static void SetMeshCubeMap(ScriptInterpreter*);
+	static void SetMeshNormal(ScriptInterpreter*);       // LIGHTING
+	static void SetMeshCubeMap(ScriptInterpreter*);      // LIGHTING
 	static void SetMeshColor(ScriptInterpreter*);
-	static void SetMeshSpecular(ScriptInterpreter*);
-	static void SetMeshFactors(ScriptInterpreter*);
+	static void SetMeshSpecular(ScriptInterpreter*);     // LIGHTING
+	static void SetMeshFactors(ScriptInterpreter*);      // LIGHTING
 	static void GetMeshBounds(ScriptInterpreter*);
 	static void GetNumMeshes(ScriptInterpreter*);
 

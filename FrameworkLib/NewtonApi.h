@@ -193,7 +193,7 @@ public:
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) override;
 	virtual void SetRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetScale(PhysicsObject * object, glm::vec3 scale) override;
-	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 matrix) override;
+	virtual void SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix) override;
 	virtual void SetMass(PhysicsObject * object, float mass) override;
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) override;
 	virtual void SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value) override;

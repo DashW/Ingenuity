@@ -18,12 +18,13 @@ class MeshDemo : public RealtimeApp
 	Gpu::Font * font;
 	Gpu::ComplexModel * model;
 	Gpu::DirectionalLight * light;
-	Gpu::Camera * camera;
+	Gpu::Camera camera, spriteCamera;
 	Gpu::Texture * pixTest;
 	Gpu::VolumeTexture * dotsTex;
 	Gpu::DrawSurface * drawSurface, * drawSurface2;
-	Gpu::Sprite * drawSurfaceSprite, * pixTestSprite;
+	Gpu::Model * pixTestSprite, * drawSurfaceSprite;
 	Gpu::Effect * halfDotsEffect;
+	Gpu::Mesh * spriteMesh;
 
 	SpriteLoadingBar * loadingBar;
 
@@ -35,15 +36,18 @@ class MeshDemo : public RealtimeApp
 public:
 	virtual void Begin() override
 	{
-		font = 0; model = 0; light = 0; camera = 0;
+		font = 0; model = 0; light = 0;
 		pixTest = 0; dotsTex = 0; 
 		drawSurface = 0; drawSurface2 = 0; drawSurfaceSprite = 0; pixTestSprite = 0;
-		halfDotsEffect = 0; loadingBar = 0; quickTicket = -1; slowTicket = -1;
+		halfDotsEffect = 0; loadingBar = 0; quickTicket = -1; slowTicket = -1; spriteMesh = 0;
 
 		modelScale = 1.0f; modelPos = 0.0f;
 
 		font = gpu->CreateGpuFont(40,L"Arial");
-		font->color = glm::vec4(1.0f);
+		if(font)
+		{
+			font->color = glm::vec4(1.0f);
+		}
 
 		Files::Directory * appDir = files->GetKnownDirectory(Files::AppDir);
 		Files::Directory * frameworkDir = files->GetKnownDirectory(Files::FrameworkDir);
@@ -56,15 +60,17 @@ public:
 
 		slowTicket = assets->Load(appDir, L"RenderTextureDemo/skull3.obj", WavefrontModelAsset, "modelAsset");
 
-		camera = new Gpu::Camera();
 		cameraRadius = 15.0f;
-		camera->position.y = 12.0f;
+		camera.position.y = 12.0f;
 		cameraAngle = 0.0f;
-		camera->fovOrHeight = (float)(M_PI_4);
-		camera->nearClip = 1.f;
-		camera->farClip = 5000.f;
-		camera->position.x = 0.0f;
-		camera->position.z = cameraRadius;
+		camera.fovOrHeight = (float)(M_PI_4);
+		camera.nearClip = 1.f;
+		camera.farClip = 5000.f;
+		camera.position.x = 0.0f;
+		camera.position.z = cameraRadius;
+
+		spriteCamera.isOrthoCamera = true;
+		//spriteCamera.position.z = 1.0f;
 
 		light = new Gpu::DirectionalLight();
 		light->direction = glm::vec3(sinf(-0.5f),0.25f,cosf(-0.5f));
@@ -73,12 +79,18 @@ public:
 
 		drawSurface = gpu->CreateScreenDrawSurface();
 		drawSurface2 = gpu->CreateScreenDrawSurface();
-		drawSurfaceSprite = new Gpu::Sprite();
-		drawSurfaceSprite->pixelSpace = true;
 
-		pixTestSprite = new Gpu::Sprite();
-		pixTestSprite->pixelSpace = true;
-		pixTestSprite->texture = pixTest;
+		LocalMesh * spriteGeom = GeoBuilder().BuildGrid(1.0f, 1.0f, 2, 2, &Gpu::Rect(0.0f, 1.0f, 1.0f, 0.0f));
+		spriteGeom->vertexBuffer->Transform(glm::eulerAngleX(float(M_PI_2)));
+		spriteMesh = spriteGeom->GpuOnly(gpu);
+		
+		pixTestSprite = new Gpu::Model();
+		pixTestSprite->mesh = spriteMesh;
+		pixTestSprite->position.z = 1000.0f;
+
+		drawSurfaceSprite = new Gpu::Model();
+		drawSurfaceSprite->mesh = spriteMesh;
+		drawSurfaceSprite->position.z = 1000.0f;
 	}
 
 	virtual void End() override
@@ -87,11 +99,11 @@ public:
 		if(drawSurface) delete drawSurface;
 		if(drawSurface2) delete drawSurface2;
 		if(drawSurfaceSprite) delete drawSurfaceSprite;
+		if(spriteMesh) delete spriteMesh;
 		if(halfDotsEffect) delete halfDotsEffect;
 		if(model) delete model;	
 		if(loadingBar) delete loadingBar;
 		if(light) delete light;
-		if(camera) delete camera;
 		if(font) delete font;
 	}
 
@@ -100,6 +112,8 @@ public:
 		if(assets->IsLoaded(quickTicket))
 		{
 			pixTestSprite->texture = pixTest = assets->GetAsset<Gpu::Texture>("pixTest");
+			pixTestSprite->scale = glm::vec4(pixTest->GetWidth(), pixTest->GetHeight(), 1.0f, 1.0f);
+
 			dotsTex = assets->GetAsset<Gpu::VolumeTexture>("dotsTex");
 
 			Gpu::Shader * halfDotsShader = assets->GetAsset<Gpu::Shader>("dotsShader");
@@ -147,8 +161,17 @@ public:
 
 		unsigned screenWidth, screenHeight;
 		gpu->GetBackbufferSize(screenWidth, screenHeight);
-		pixTestSprite->position.x = screenWidth - 40.0f;
-		pixTestSprite->position.y = screenHeight - 40.0f;
+		pixTestSprite->position.x = float(screenWidth) - 20.0f;
+		pixTestSprite->position.y = float(screenHeight) - 20.0f;
+
+		spriteCamera.fovOrHeight = -float(screenHeight); // Y downward
+		spriteCamera.position.x = spriteCamera.target.x = float(screenWidth) / 2.0f;
+		spriteCamera.position.y = spriteCamera.target.y = float(screenHeight) / 2.0f;
+
+		drawSurfaceSprite->scale.x = float(screenWidth);
+		drawSurfaceSprite->scale.y = float(screenHeight);
+		drawSurfaceSprite->position.x = float(screenWidth) / 2.0f;
+		drawSurfaceSprite->position.y = float(screenHeight) / 2.0f;
 	}
 
 	virtual void Draw() override
@@ -158,15 +181,16 @@ public:
 
 		if(model)
 		{
-			model->BeDrawn(gpu, camera, (Gpu::Light**) &light, 1, drawSurface);
+			model->BeDrawn(gpu, &camera, (Gpu::Light**) &light, 1, drawSurface);
 		}
 
 		gpu->DrawGpuSurface(drawSurface,halfDotsEffect,drawSurface2);
 
-		gpu->DrawGpuSprite(pixTestSprite,drawSurface2);
+		// This is the next step!
+		gpu->DrawGpuModel(pixTestSprite, &spriteCamera, 0, 0, drawSurface2);
 
 		drawSurfaceSprite->texture = drawSurface2->GetTexture();
-		gpu->DrawGpuSprite(drawSurfaceSprite);
+		gpu->DrawGpuModel(drawSurfaceSprite, &spriteCamera, 0, 0);
 
 		if(slowTicket > -1) loadingBar->BeDrawn(gpu);
 

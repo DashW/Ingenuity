@@ -561,7 +561,7 @@ void ScriptCallbacks::DrawSprite(ScriptInterpreter * interpreter)
 
 	if(size.type == ScriptParam::DOUBLE) 
 	{
-		sprite.size = float(size.nvalue);
+		sprite.scale = glm::vec2(float(size.nvalue));
 	}
 
 	Gpu::DrawSurface * drawSurface = 0;

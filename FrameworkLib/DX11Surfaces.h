@@ -43,7 +43,7 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 	virtual void End() override;
 	virtual void OnLostDevice(Gpu::Api * gpu) override;
 	virtual void OnResetDevice(Gpu::Api * gpu) override;
-	virtual void Clear(glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
 	virtual Gpu::DrawSurface::Type GetSurfaceType() override;
 	virtual Gpu::Texture * GetTexture() override { return texture; }
 };
@@ -54,7 +54,7 @@ struct StencilSurface : public DX11::DrawSurface
 	virtual ~StencilSurface() { if(stencilState) stencilState->Release(); }
 	virtual void Begin() override;
 	virtual void End() override;
-	virtual void Clear(glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
 	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencil; }
 	virtual Gpu::Texture * GetTexture() override { return 0; }
 
@@ -67,7 +67,7 @@ struct StencilClipSurface : public DX11::DrawSurface
 	virtual ~StencilClipSurface() { if(stencilClipState) stencilClipState->Release(); }
 	virtual void Begin() override;
 	virtual void End() override;
-	virtual void Clear(glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
 	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencilClip; }
 	virtual Gpu::Texture * GetTexture() override { return 0; }
 
