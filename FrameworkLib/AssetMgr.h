@@ -27,6 +27,7 @@ enum AssetType
 	ShaderAsset,
 	ModelAsset,
 	WavefrontModelAsset,
+	ColladaModelAsset,
 	RawHeightMapAsset,
 	SvgAsset,
 	ImageAsset,
@@ -97,8 +98,8 @@ struct SteppableLoader : public AssetLoader, Steppable
 		steppables->Add(this);
 	}
 
-	virtual float GetAssetProgress() override { return GetProgress(); }
-	virtual bool IsAssetReady() override { return IsFinished(); }
+	float GetAssetProgress() override { return GetProgress(); }
+	bool IsAssetReady() override { return IsFinished(); }
 };
 
 class AssetMgr

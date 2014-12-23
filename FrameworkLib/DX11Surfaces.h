@@ -48,6 +48,25 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 	virtual Gpu::Texture * GetTexture() override { return texture; }
 };
 
+struct BackbufferSurface : public DrawSurface
+{
+	ID3D11RenderTargetView * renderTargetView;
+	ID3D11DepthStencilView * depthStencilView;
+	D3D11_VIEWPORT viewport;
+	const unsigned width;
+	const unsigned height;
+
+	BackbufferSurface(ID3D11Device * device, ID3D11DeviceContext * context, ID3D11Texture2D * texture, unsigned width, unsigned height);
+	virtual ~BackbufferSurface();
+
+	virtual void Begin() override;
+	virtual void End() override;
+	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeBackbuffer; }
+	virtual Gpu::Texture * GetTexture() override { return 0; }
+	float GetAspect() { return float(width) / float(height); }
+};
+
 struct StencilSurface : public DX11::DrawSurface
 {
 	StencilSurface(ID3D11Device * device, ID3D11DeviceContext * context) : DX11::DrawSurface(device, context), stencilState(0) {}

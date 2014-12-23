@@ -1,5 +1,6 @@
 #include "AssetMgr.h"
 
+#include "AssimpLoader.h"
 #include "AudioApi.h"
 #include "GpuApi.h"
 #include "FilesApi.h"
@@ -130,33 +131,34 @@ int AssetMgr::Load(Files::Directory * directory, const wchar_t * path, AssetType
 
 	AssetLoader * loader = 0;
 
-	if(type == TextureAsset || type == CubeMapAsset || type == VolumeTexAsset)
+	switch(type)
 	{
+	case TextureAsset:
+	case CubeMapAsset:
+	case VolumeTexAsset:
 		loader = new Gpu::TextureLoader(gpu, files, directory, path, type);
-	}
-	if(type == ShaderAsset)
-	{
+		break;
+	case ShaderAsset:
 		loader = gpu->CreateGpuShaderLoader(directory, path);
-	}
-	if(type == WavefrontModelAsset)
-	{
-		loader = new WavefrontLoader(steppables, gpu, this, directory, path);
-	}
-	if(type == RawHeightMapAsset)
-	{
+		break;
+	case WavefrontModelAsset:
+		loader = new WavefrontLoader(steppables, this, gpu, directory, path);
+		break;
+	case ColladaModelAsset:
+		loader = new AssimpLoader(steppables, this, gpu, directory, path, type);
+		break;
+	case RawHeightMapAsset:
 		loader = new RawHeightLoader(gpu, files, directory, path);
-	}
-	if(type == SvgAsset)
-	{
+		break;
+	case SvgAsset:
 		loader = new SvgLoader(this, gpu, directory, path);
-	}
-	if(type == ImageAsset)
-	{
+		break;
+	case ImageAsset:
 		loader = new Image::Loader(imaging, files, directory, path);
-	}
-	if(type == AudioAsset)
-	{
+		break;
+	case AudioAsset:
 		loader = new SoundFileReader(audio, files, directory, path);
+		break;
 	}
 
 	if(loader)

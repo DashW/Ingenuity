@@ -69,6 +69,8 @@ class FileApi : public Files::Api
 
 	std::vector<PendingFile> pendingFiles;
 
+	std::vector<Directory> createdDirectories;
+
 	Directory * tempKnownDirectory;
 
 	void RemoveEvent(unsigned index);
@@ -79,6 +81,7 @@ public:
 	virtual ~FileApi();
 
 	virtual Files::Directory * GetKnownDirectory(Files::KnownDirectory option) override;
+	virtual Files::Directory * GetSubDirectory(Files::Directory * root, const wchar_t * path);
 	virtual void               PickFile(Files::Directory * directory, const wchar_t * extension, Files::Response * response) override;
 	virtual void               Enumerate(Files::Directory * directory, bool subDirectories = true) override;
 

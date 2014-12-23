@@ -28,6 +28,7 @@ class ScriptCallbacks
 		TypeGpuShader,
 		TypeGpuInstanceBuffer,
 		
+		TypePlatformWindow,
 		TypeFloatArray,
 		TypeHeightParser,
 		TypeImageBuffer,
@@ -44,7 +45,7 @@ class ScriptCallbacks
 		TypeCount
 	};
 	static unsigned typeHandles[TypeCount];
-	static std::wstring projectDirPath;
+	static Files::Directory * projectDirectory;
 
 	static inline bool CheckPtrType(ScriptParam & param, PtrType type) { return param.CheckPointer(typeHandles[type]); }
 	static Files::Directory * GetDirectory(Files::Api * files, const char * name);
@@ -56,38 +57,24 @@ class ScriptCallbacks
 	static LocalMesh * FloatsToLocalMesh(ScriptInterpreter * interpreter, ScriptParam type, ScriptParam vtx, ScriptParam idx);
 
 public:
-	static void SetSubDirectory(const wchar_t * subPath) { projectDirPath = subPath ? subPath : L""; }
+	static void SetSubDirectory(Files::Directory * directory) { projectDirectory = directory; }
 
 	static void RegisterWith(ScriptInterpreter * interpreter)
 	{
 		// Types
-		typeHandles[TypeGpuComplexModel] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuEffect] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuTexture] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuCubeMap] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuVolumeTexture] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuCamera] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuFont] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuLight] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuDrawSurface] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuScene] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuShader] = interpreter->RegisterPointerType();
-		typeHandles[TypeGpuInstanceBuffer] = interpreter->RegisterPointerType();
-		
-		typeHandles[TypeFloatArray] = interpreter->RegisterPointerType();
-		typeHandles[TypeHeightParser] = interpreter->RegisterPointerType();
-		typeHandles[TypeImageBuffer] = interpreter->RegisterPointerType();
-		typeHandles[TypeAudioItem] = interpreter->RegisterPointerType();
-		typeHandles[TypeIsoSurface] = interpreter->RegisterPointerType();
-		typeHandles[TypeSVGParser] = interpreter->RegisterPointerType();
+		for(unsigned i = 0; i < TypeCount; ++i)
+		{
+			typeHandles[i] = interpreter->RegisterPointerType();
+		}
 
-		typeHandles[TypePhysicsWorld] = interpreter->RegisterPointerType();
-		typeHandles[TypePhysicsObject] = interpreter->RegisterPointerType();
-		typeHandles[TypePhysicsMaterial] = interpreter->RegisterPointerType();
-		typeHandles[TypePhysicsRagdoll] = interpreter->RegisterPointerType();
-		typeHandles[TypePhysicsSpring] = interpreter->RegisterPointerType();
-
-		typeHandles[TypeLeapHelper] = interpreter->RegisterPointerType();
+		interpreter->RegisterCallback("CreateWindow", &ScriptCallbacks::CreateWindow,
+			"([width,height]) Creates a window [of the given width and height]");
+		interpreter->RegisterCallback("GetMainWindow", &ScriptCallbacks::GetMainWindow,
+			"() Gets a reference to the application's main window");
+		interpreter->RegisterCallback("GetWindowSurface", &ScriptCallbacks::GetWindowSurface,
+			"(window) Gets a reference to the GPU draw surface of the given window");
+		interpreter->RegisterCallback("SetWindowProps", &ScriptCallbacks::SetWindowProps,
+			"(window,width,height,undecorated,resizeable) Sets generic properties for the given window");
 
 		// GPU
 		interpreter->RegisterCallback("DrawSprite", &ScriptCallbacks::DrawSprite,
@@ -116,6 +103,8 @@ public:
 			"(level) Sets the level of anisotropic filtering for the default texture sampler");
 		interpreter->RegisterCallback("GetScreenSize", &ScriptCallbacks::GetScreenSize,
 			"() returns the width and height of the screen, in pixels");
+		interpreter->RegisterCallback("GetBackbufferSize", &ScriptCallbacks::GetBackbufferSize,
+			"([window]) returns the width and height of the [main, otherwise given] window, in pixels");
 
 		// GPU OBJECTS
 		interpreter->RegisterCallback("CreateCamera", &ScriptCallbacks::CreateCamera,
@@ -132,6 +121,8 @@ public:
 			"(camera,nearclip,farclip,height) Sets the near and far clip panes and height of an orthographic camera");
 		interpreter->RegisterCallback("GetCameraRay", &ScriptCallbacks::GetCameraRay,
 			"(camera,x,y[,surface]) Returns the vector4 ray from the camera for the given point [on the surface]");
+		interpreter->RegisterCallback("GetCameraMatrix", &ScriptCallbacks::GetCameraMatrix,
+			"(camera[,surface,isTex]) Returns [texture] projection matrix for the camera [with surface's aspect ratio]");
 
 		interpreter->RegisterCallback("CreateLight", &ScriptCallbacks::CreateLight,
 			"(type) Creates a new light of type \"directional\", \"point\", or \"spot\"");
@@ -415,6 +406,12 @@ public:
 	static void Help(ScriptInterpreter*);
 	static void Require(ScriptInterpreter*);
 
+	static void CreateWindow(ScriptInterpreter*);
+	static void GetMainWindow(ScriptInterpreter*);
+	static void GetWindowStatus(ScriptInterpreter*);
+	static void GetWindowSurface(ScriptInterpreter*);
+	static void SetWindowProps(ScriptInterpreter*);
+
 	static void DrawSprite(ScriptInterpreter*);
 
 	static void CreateCamera(ScriptInterpreter*);
@@ -423,6 +420,7 @@ public:
 	static void SetCameraUp(ScriptInterpreter*);
 	static void SetCameraClipFovOrHeight(ScriptInterpreter*);
 	static void GetCameraRay(ScriptInterpreter*);
+	static void GetCameraMatrix(ScriptInterpreter*);
 
 	static void CreateGrid(ScriptInterpreter*);
 	static void CreateCube(ScriptInterpreter*);
@@ -493,6 +491,7 @@ public:
 	static void SetAnisotropy(ScriptInterpreter*);
 
 	static void GetScreenSize(ScriptInterpreter*);
+	static void GetBackbufferSize(ScriptInterpreter*);
 	static void GetMousePosition(ScriptInterpreter*);
 	static void GetMouseDelta(ScriptInterpreter*);
 	static void GetMouseLeft(ScriptInterpreter*);

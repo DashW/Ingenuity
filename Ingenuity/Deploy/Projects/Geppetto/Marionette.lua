@@ -206,22 +206,24 @@ function UpdateMarionette()
 	end
 end
 
-function DrawMarionette()
+function DrawMarionette(camera, surface, effect)
 	for i,model in pairs(boneModels) do
-		DrawComplexModel(model,camera,light);
-		--DrawComplexModel(debugModels[i],camera);
+		DrawComplexModel(model,camera,light,surface,nil,effect);
+		--DrawComplexModel(debugModels[i],camera,surface);
 	end
-	
+end
+
+function DrawMarionetteWires(camera, surface, effect)
 	SetModelPosition(pickModel,headAnchor.x,headAnchor.y,headAnchor.z);
-	DrawComplexModel(pickModel,camera,light);
+	DrawComplexModel(pickModel,camera,light,surface,nil,effect);
 	SetModelPosition(pickModel,arm1Anchor.x,arm1Anchor.y,arm1Anchor.z);
-	DrawComplexModel(pickModel,camera,light);
+	DrawComplexModel(pickModel,camera,light,surface,nil,effect);
 	SetModelPosition(pickModel,arm2Anchor.x,arm2Anchor.y,arm2Anchor.z);
-	DrawComplexModel(pickModel,camera,light);
+	DrawComplexModel(pickModel,camera,light,surface,nil,effect);
 	
 	if springVisible then
-		DrawComplexModel(springModel,camera,light);
-		DrawComplexModel(arm1SpringModel,camera,light);
-		DrawComplexModel(arm2SpringModel,camera,light);
+		DrawComplexModel(springModel,camera,light,surface,nil,effect);
+		DrawComplexModel(arm1SpringModel,camera,light,surface,nil,effect);
+		DrawComplexModel(arm2SpringModel,camera,light,surface,nil,effect);
 	end
 end

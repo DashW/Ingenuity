@@ -6,7 +6,7 @@ namespace Ingenuity {
 
 DX11::TextureSurface::TextureSurface(DX11::Api * gpu, ID3D11Device * device, ID3D11DeviceContext * context,
 	Format format, bool screenRelative, float width, float height, bool mips) :
-	DX11::DrawSurface(device, context),
+	DrawSurface(device, context),
 	gpu(gpu),
 	renderTargetView(0),
 	depthStencilTexture(0),
@@ -154,7 +154,69 @@ void DX11::TextureSurface::Clear(glm::vec4 & color)
 
 Gpu::DrawSurface::Type DX11::TextureSurface::GetSurfaceType()
 {
-	return screenRelative ? Gpu::DrawSurface::TypeFullscreenTexture : Gpu::DrawSurface::TypeTexture;
+	return screenRelative ? Gpu::DrawSurface::TypeRelativeTexture : Gpu::DrawSurface::TypeTexture;
+}
+
+DX11::BackbufferSurface::BackbufferSurface(ID3D11Device * device, ID3D11DeviceContext * context,
+	ID3D11Texture2D * texture, unsigned width, unsigned height) : 
+	DrawSurface(device, context),
+	width(width),
+	height(height)
+{
+	device->CreateRenderTargetView(texture, 0, &renderTargetView);
+
+	CD3D11_TEXTURE2D_DESC depthStencilTextureDesc(
+		DXGI_FORMAT_D24_UNORM_S8_UINT,
+		width,
+		height,
+		1,
+		1,
+		D3D11_BIND_DEPTH_STENCIL);
+
+	ID3D11Texture2D* depthStencilBuffer;
+	device->CreateTexture2D(
+		&depthStencilTextureDesc,
+		0,
+		&depthStencilBuffer);
+
+	device->CreateDepthStencilView(
+		depthStencilBuffer,
+		&CD3D11_DEPTH_STENCIL_VIEW_DESC(D3D11_DSV_DIMENSION_TEXTURE2DMS),
+		&depthStencilView);
+
+	depthStencilBuffer->Release();
+
+	viewport = CD3D11_VIEWPORT(
+		0.0f,
+		0.0f,
+		static_cast<float>(width),
+		static_cast<float>(height));
+}
+
+DX11::BackbufferSurface::~BackbufferSurface()
+{
+	if(renderTargetView) renderTargetView->Release(); renderTargetView = 0;
+	if(depthStencilView) depthStencilView->Release(); depthStencilView = 0;
+}
+
+void DX11::BackbufferSurface::Begin()
+{
+	context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+	context->RSSetViewports(1, &viewport);
+}
+
+void DX11::BackbufferSurface::End()
+{
+	
+}
+
+void DX11::BackbufferSurface::Clear(glm::vec4 & color)
+{
+	// Clear the back buffer.
+	context->ClearRenderTargetView(renderTargetView, (float*)&color);
+
+	// Clear the depth buffer.
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
 void DX11::StencilSurface::Begin()

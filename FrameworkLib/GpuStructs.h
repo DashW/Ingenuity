@@ -289,8 +289,9 @@ struct DrawSurface
 {
 	enum Type
 	{
+		TypeBackbuffer,
 		TypeTexture,
-		TypeFullscreenTexture,
+		TypeRelativeTexture,
 		TypeStencil,
 		TypeStencilClip
 	};

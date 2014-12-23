@@ -1114,6 +1114,7 @@ void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix)
 		if(fabs(basisVectorLength - 1.0f) > 1.0e-4f)
 		{
 			__debugbreak();
+			matrix[i] = glm::normalize(matrix[i]);
 		}
 	}
 

@@ -146,7 +146,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\LeapSDK\include;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dContainers;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dMath;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dCustomJoints;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.5.4;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Third Party\LeapSDK\include;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dContainers;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dMath;$(ProjectDir)..\Third Party\newton-dynamics-master\packages\dCustomJoints;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\source\newton;$(ProjectDir)..\Third Party\DirectXTK 2014-04\Inc;$(ProjectDir)..\Third Party\glm-0.9.5.4;$(ProjectDir)..\Third Party\FreeImage3154\Dist;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalOptions>-D_SCL_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -156,9 +156,9 @@
     </Link>
     <Lib />
     <Lib>
-      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
+      <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;assimpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;$(ProjectDir)..\Third Party\assimp-cmake\code\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>LIBCMT;LIBCMTD</IgnoreSpecificDefaultLibraries>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -279,6 +279,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include=".\DX9Api.h" />
+    <ClInclude Include="AssimpLoader.h" />
     <ClInclude Include="DX11Samplers.h" />
     <ClInclude Include="DX11ShaderLoader.h" />
     <ClInclude Include="DX11Surfaces.h" />
@@ -333,6 +334,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClInclude Include="XAudio2Api.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AssimpLoader.cpp" />
     <ClCompile Include="DX11Api.cpp" />
     <ClCompile Include="DX11Samplers.cpp" />
     <ClCompile Include="DX11ShaderLoader.cpp" />
@@ -350,7 +352,6 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="IsoSurface.cpp" />
     <ClCompile Include="LeapMotionHelper.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="LuaInterpreter.cpp" />
@@ -779,7 +780,15 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNorTex.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNor.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNorTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
     </FxCompile>

@@ -105,8 +105,6 @@ struct SamplerParam
 		AddressV,
 		AddressW,
 
-		// Split here???
-
 		Filter,
 		Anisotropy,
 		Comparison,

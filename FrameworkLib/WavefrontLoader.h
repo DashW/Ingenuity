@@ -90,8 +90,8 @@ class WavefrontLoader : public SteppableLoader
 public:
 	WavefrontLoader(
 		StepMgr * steppables,
-		Gpu::Api * gpu,
 		AssetMgr * assets,
+		Gpu::Api * gpu,
 		Files::Directory * directory,
 		const wchar_t * path,
 		bool noNormals = false,

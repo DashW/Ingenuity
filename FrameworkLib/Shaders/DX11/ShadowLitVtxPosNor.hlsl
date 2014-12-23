@@ -26,7 +26,7 @@ VertexOutPosNor main(in VertexPosNor input)
     _vout._ProjPos1 = mul(float4(_vout._WorldPos, 1.0f), _viewProjection);
     _vout._Normal = mul(float4(input.Normal, 1.0f), _worldInverseTranspose).xyz;
     _vout._Color1 = _materialColor;
-	_vout._ShadowPos = mul(float4(input.Pos, 1.0f), shadowMatrix);
+	_vout._ShadowPos = mul(float4(_vout._WorldPos, 1.0f), shadowMatrix);
 
     return _vout;
 } 

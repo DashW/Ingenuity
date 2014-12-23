@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="Windows-1252"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp\test\CMakeLists.txt" />
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\40ecb0070d57fb62397bc4c91bc434c6\gtest-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\4c85c9ccf4ba6df45d9a91280d929b75\gtest-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\CMakeFiles\3d9b3f134a4c8832a8debdd9c243ff46\gtest.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\Richard\Documents\IngenuityGitHub\Third Party\assimp-cmake\test\CMakeFiles\gtest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{448C1B67-9C29-40BC-AE23-795483531666}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

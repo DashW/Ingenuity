@@ -15,8 +15,8 @@ class Window;
 
 class AppController
 {
-	Window * window;
 	RealtimeApp * app;
+	Window * mainWindow;
 
 public:
 	AppController(HINSTANCE instance, RealtimeApp* app);
@@ -26,8 +26,6 @@ public:
 	void OnResize();
 
 	__int64 GetTimeStamp();
-
-	volatile bool windowClosed;
 };
 
 } // namespace Win32

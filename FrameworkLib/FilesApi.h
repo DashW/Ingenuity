@@ -101,6 +101,7 @@ public:
 	virtual ~Api() {}
 
 	virtual Directory *  GetKnownDirectory(KnownDirectory option) = 0;
+	virtual Directory *  GetSubDirectory(Directory * root, const wchar_t * path) = 0;
 	//virtual FileApi_Directory * PickDirectory() = 0;
 	virtual void         PickFile(Directory * directory, const wchar_t * extension, Response * response) = 0;
 	virtual void         Enumerate(Directory * directory, bool subDirectories = true) = 0;

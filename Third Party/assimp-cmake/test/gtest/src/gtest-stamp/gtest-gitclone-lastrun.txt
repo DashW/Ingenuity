@@ -1,0 +1,3 @@
+repository='https://chromium.googlesource.com/external/googletest'
+module=''
+tag=''

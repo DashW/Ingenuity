@@ -38,66 +38,41 @@
 
 namespace Ingenuity {
 
-struct OnDestroyResponse : Win32::WindowEventResponse
-{
-	Win32::AppController * owner;
-	OnDestroyResponse(Win32::AppController * creator) : owner(creator) {}
-	void Respond(WPARAM wparam, LPARAM lparam) override
-	{
-		owner->windowClosed = true;
-	}
-};
-
 // The fate of XAudio2 is inexorably
-// tied to the fate of the window
+// tied to the fate of the main window
 #ifdef USE_XAUDIO2_AUDIOAPI
 struct OnCloseResponse : Win32::WindowEventResponse
 {
 	RealtimeApp * app;
 	OnCloseResponse(RealtimeApp * app) : app(app) {}
-	void Respond(WPARAM wparam, LPARAM lparam) override
+	void Respond(Win32::Window * window, WPARAM wparam, LPARAM lparam) override
 	{
 		if(app->audio) { app->audio->Stop(); }
 	}
 };
 #endif
 
-struct OnResizeResponse : Win32::WindowEventResponse
-{
-	Win32::AppController* owner;
-	OnResizeResponse(Win32::AppController* creator) { owner = creator; }
-	void Respond(WPARAM wparam, LPARAM lparam) override
-	{
-		owner->OnResize();
-	}
-};
-
 Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeApp)
 	: app(realtimeApp)
-	, window(new Win32::Window(instance))
-	, windowClosed(false)
+	, mainWindow(new Win32::Window(instance))
 {
-	window->Hide();
-	window->onDestroy = new OnDestroyResponse(this);
-	window->onExitSizeMove = new OnResizeResponse(this);
-	window->onMaximize = window->onExitSizeMove;
-	window->onUnmaximize = window->onExitSizeMove;
+	mainWindow->Hide();
 
-	app->files = new Win32::FileApi(window);
-	app->platform = new Win32::PlatformApi();
+	app->files = new Win32::FileApi(mainWindow);
+	app->platform = new Win32::PlatformApi(mainWindow);
 
 	app->steppables = new StepMgr();
 
 	if(FAILED(CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 	{
-		OutputDebugString(L"Failed to initialize the COM library, required by the DX11 texture loader and win32 file API!");
+		OutputDebugString(L"Failed to initialize the COM library, required by the DX11 Texture Loader and Win32 File API!");
 	}
 
 #ifdef USE_DX9_GPUAPI
-	app->gpu = new DX9::Api(app->files, app->steppables, window->getHandle());
+	app->gpu = new DX9::Api(app->files, app->steppables, window);
 #else
 #ifdef USE_DX11_GPUAPI
-	app->gpu = new DX11::Api(app->files, window->getHandle());
+	app->gpu = new DX11::Api(app->files, mainWindow);
 #else
 #ifdef USE_GL_GPUAPI
 	app->gpu = new GL::Api(app->files, window->getHandle());
@@ -109,7 +84,7 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 
 #ifdef USE_XAUDIO2_AUDIOAPI
 	app->audio = new XAudio2::Api();
-	window->onClose = new OnCloseResponse(app);
+	mainWindow->onClose = new OnCloseResponse(app);
 #else
 	app->audio = new Audio::DummyApi();
 #endif
@@ -130,7 +105,7 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 #error "Physics API not defined!"
 #endif
 
-	app->input = window->inputMgr = new InputState();
+	app->input = mainWindow->inputMgr = new InputState();
 
 	app->assets = new AssetMgr(app->files, app->gpu, app->imaging, app->steppables, app->audio);
 
@@ -147,12 +122,10 @@ Win32::AppController::~AppController()
 	delete app->platform;
 	delete app->files;
 	delete app->gpu;
+	delete app->input;
 	delete app;
-	delete window->inputMgr;
-	delete window->onDestroy;
-	delete window->onExitSizeMove;
-	if(window->onClose) delete window->onClose;
-	delete window;
+	if(mainWindow->onClose) delete mainWindow->onClose;
+	delete mainWindow;
 
 	CoUninitialize();
 }
@@ -170,7 +143,7 @@ void Win32::AppController::Run()
 	QueryPerformanceCounter((LARGE_INTEGER*)&prevTimeStamp);
 	startTimeStamp = prevTimeStamp;
 
-	while(app->running && !windowClosed)
+	while(app->running && !mainWindow->isClosed())
 	{
 		__int64 curTimeStamp = GetTimeStamp();
 		float dt = (curTimeStamp - prevTimeStamp) * secsPerCnt;
@@ -193,12 +166,12 @@ void Win32::AppController::Run()
 		app->assets->Update();
 
 		// Check critical assets are loaded
-		if(!window->IsVisible())
+		if(!mainWindow->IsVisible())
 		{
 			if(app->assets->IsLoaded(AssetMgr::CRITICAL_TICKET))
 			{
 				app->gpu->OnCriticalLoad(app->assets);
-				window->Show();
+				mainWindow->Show();
 			}
 		}
 
@@ -206,7 +179,7 @@ void Win32::AppController::Run()
 		app->input->Update();
 
 		// Update and draw the app
-		if(window->IsVisible() && !app->gpu->isDeviceLost())
+		if(mainWindow->IsVisible() && !app->gpu->isDeviceLost())
 		{
 			app->Update(dt);
 
@@ -221,17 +194,6 @@ void Win32::AppController::Run()
 	app->audio->Stop();
 
 	app->End();
-}
-
-void Win32::AppController::OnResize()
-{
-	RECT windowRect;
-	GetClientRect(window->getHandle(), &windowRect);
-	app->gpu->OnScreenResize(windowRect.right, windowRect.bottom);
-	//app->windowRect.left = static_cast<float>(windowRect.left);
-	//app->windowRect.top = static_cast<float>(windowRect.top);
-	//app->windowRect.right = static_cast<float>(windowRect.right);
-	//app->windowRect.bottom = static_cast<float>(windowRect.bottom);
 }
 
 __int64 Win32::AppController::GetTimeStamp()

@@ -171,25 +171,25 @@ unsigned LeapMotionHelper::GetNumBones()
 
 bool LeapMotionHelper::IsBoneVisible(unsigned index)
 {
-	if(index > InternalListener::MAX_BONES) return false;
+	if(index >= InternalListener::MAX_BONES) return false;
 	return listener->bones[index].visTimeout > 0;
 }
 
 float LeapMotionHelper::GetBoneLength(unsigned index) const
 {
-	if(index > InternalListener::MAX_BONES) return 0.0f;
+	if(index >= InternalListener::MAX_BONES) return 0.0f;
 	return listener->bones[index].length * uniformScale;
 }
 
 float LeapMotionHelper::GetBoneRadius(unsigned index) const
 {
-	if(index > InternalListener::MAX_BONES) return 0.0f;
+	if(index >= InternalListener::MAX_BONES) return 0.0f;
 	return listener->bones[index].width * 0.5f * uniformScale;
 }
 
 glm::mat4 LeapMotionHelper::GetBoneMatrix(unsigned index)
 {
-	if(index > InternalListener::MAX_BONES) return glm::mat4();
+	if(index >= InternalListener::MAX_BONES) return glm::mat4();
 	glm::mat4 boneMatrix = listener->bones[index].matrix;
 	boneMatrix[3].x *= uniformScale;
 	boneMatrix[3].y *= uniformScale;

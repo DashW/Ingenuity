@@ -7,6 +7,9 @@
 #include "StepMgr.h"
 
 namespace Ingenuity {
+
+class PlatformWindow;
+
 namespace Gpu {
 
 class Api;
@@ -100,7 +103,8 @@ public:
 	DrawSurface * GetStencilSurface() { return stencilSurface; }
 	DrawSurface * GetStencilClipSurface() { return stencilClipSurface; }
 	virtual DrawSurface * CreateDrawSurface(unsigned width, unsigned height, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
-	virtual DrawSurface * CreateScreenDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
+	virtual DrawSurface * CreateRelativeDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int, PlatformWindow * window = 0) = 0;
+	virtual DrawSurface * GetWindowDrawSurface(PlatformWindow * window) = 0;
 
 	virtual void AddDeviceListener(IDeviceListener * listener) = 0;
 	virtual void RemoveDeviceListener(IDeviceListener * listener) = 0;
@@ -109,15 +113,17 @@ public:
 	virtual void EndTimestamp(const std::wstring name) = 0;
 	virtual TimestampData GetTimestampData(const std::wstring name) = 0;
 
-	virtual float MeasureGpuText(Font * font, const wchar_t * text) = 0;
+	virtual float MeasureGpuText(Font * font, const wchar_t * text) = 0; // DEPRECATE when removing Font API!
 	virtual void SetClearColor(float r, float g, float b, float a) = 0;
 
-	virtual void OnScreenResize(unsigned width, unsigned height) = 0;
-	virtual void GetBackbufferSize(unsigned & width, unsigned & height) = 0;
+	virtual void OnWindowCreated(PlatformWindow * window) = 0;
+	virtual void OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) = 0;
+	virtual void OnWindowDestroyed(PlatformWindow * window) = 0;
+	virtual void GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window = 0) = 0;
 	virtual void SetMultisampling(unsigned multisampleLevel) = 0;
 	virtual void SetBlendMode(BlendMode blendMode) = 0;
 
-	unsigned GetStandardScreenHeight() { return standardScreenHeight; }
+	unsigned GetStandardScreenHeight() { return standardScreenHeight; } // DEPRECATE when removing Sprite API!
 	virtual void SetDrawWireframe(bool wireframe) { drawEverythingWireframe = wireframe; }
 
 	virtual void SetAnisotropy(unsigned anisotropy) = 0;
@@ -220,7 +226,7 @@ struct ComplexModel : public IAsset
 	}
 
 	virtual void BeDrawn(Api * gpu, Camera * camera, Light ** lights,
-		unsigned numLights, DrawSurface * buffer = 0)
+		unsigned numLights, DrawSurface * buffer = 0, Gpu::Effect * overrideEffect = 0)
 	{
 		Model tempModel;
 
@@ -240,7 +246,7 @@ struct ComplexModel : public IAsset
 			tempModel.wireframe = wireframe ? true : tempModel.wireframe;
 			tempModel.destructMesh = false;
 
-			gpu->DrawGpuModel(&tempModel, camera, lights, numLights, buffer, instances);
+			gpu->DrawGpuModel(&tempModel, camera, lights, numLights, buffer, instances, overrideEffect);
 		}
 	}
 };

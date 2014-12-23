@@ -20,7 +20,7 @@
 namespace Ingenuity {
 
 unsigned ScriptCallbacks::typeHandles[ScriptCallbacks::TypeCount];
-std::wstring ScriptCallbacks::projectDirPath;
+Files::Directory * ScriptCallbacks::projectDirectory = 0;
 
 struct ScriptFloatArray
 {
@@ -52,10 +52,13 @@ Files::Directory * ScriptCallbacks::GetDirectory(Files::Api * files, const char 
 	{
 		directoryPtr = files->GetKnownDirectory(Files::TempDir);
 	}
-	if(strcmp(name, "ProjectDir") == 0)
+	if(strcmp(name, "DataDir") == 0)
 	{
 		directoryPtr = IngenuityHelper::GetDataDirectory();
-		directoryPtr->isProjectDir = true;
+	}
+	if(strcmp(name, "ProjectDir") == 0)
+	{
+		directoryPtr = projectDirectory;
 	}
 
 	return directoryPtr;
@@ -86,6 +89,10 @@ void ScriptCallbacks::LoadAsset(
 		{
 			assetType = WavefrontModelAsset;
 		}
+		if(strcmp(type, "ColladaModel") == 0)
+		{
+			assetType = ColladaModelAsset;
+		}
 		if(strcmp(type, "RawHeightMap") == 0)
 		{
 			assetType = RawHeightMapAsset;
@@ -106,11 +113,6 @@ void ScriptCallbacks::LoadAsset(
 
 	std::string shortFile(file);
 	std::wstring wideFile(shortFile.begin(), shortFile.end());
-
-	if(directoryPtr && directoryPtr->isProjectDir)
-	{
-		wideFile = projectDirPath + wideFile;
-	}
 
 	batch.emplace_back(directoryPtr, wideFile.c_str(), assetType, name);
 }
@@ -536,14 +538,75 @@ void ScriptCallbacks::Require(ScriptInterpreter * interpreter)
 	std::string spath(path.svalue);
 	std::wstring wpath(spath.begin(), spath.end());
 
-	if(dir->isProjectDir)
-	{
-		wpath = projectDirPath + wpath;
-	}
-
 	bool hasModuleName = modulename.type == ScriptParam::STRING;
 	
 	files->OpenAndRead(dir, wpath.c_str(), new RequireResponse(interpreter, wpath, hasModuleName ? modulename.svalue : 0));
+}
+
+void ScriptCallbacks::CreateWindow(ScriptInterpreter * interpreter)
+{
+	ScriptParam width = interpreter->PopParam();
+	ScriptParam height = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::Api * gpu = interpreter->GetApp()->gpu;
+	PlatformWindow * window = interpreter->GetApp()->platform->CreatePlatformWindow(gpu, 
+		width.IsNumber() ? unsigned(width.nvalue) : 640,
+		height.IsNumber() ? unsigned(height.nvalue) : 480);
+
+	interpreter->PushParam(ScriptParam(window, typeHandles[TypePlatformWindow]));;
+}
+
+void ScriptCallbacks::GetMainWindow(ScriptInterpreter * interpreter)
+{
+	PlatformWindow * window = interpreter->GetApp()->platform->GetMainPlatformWindow();
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(window, typeHandles[TypePlatformWindow])));;
+}
+
+void ScriptCallbacks::GetWindowStatus(ScriptInterpreter * interpreter)
+{
+
+}
+
+void ScriptCallbacks::GetWindowSurface(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, window, TypePlatformWindow);
+	interpreter->ClearParams();
+
+	Gpu::DrawSurface * surface = interpreter->GetApp()->gpu->GetWindowDrawSurface(window.GetPointer<PlatformWindow>());
+	if(surface)
+	{
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(surface, typeHandles[TypeGpuDrawSurface])));
+	}
+}
+
+void ScriptCallbacks::SetWindowProps(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, window, TypePlatformWindow);
+	ScriptParam width = interpreter->PopParam();
+	ScriptParam height = interpreter->PopParam();
+	ScriptParam undecorated = interpreter->PopParam();
+	ScriptParam resizeable = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	PlatformWindow * platformWindow = window.GetPointer<PlatformWindow>();
+
+	if(undecorated.type == ScriptParam::BOOL)
+	{
+		platformWindow->SetUndecorated(undecorated.nvalue > 0.0);
+	}
+
+	if(resizeable.type == ScriptParam::BOOL)
+	{
+		platformWindow->SetResizeable(resizeable.nvalue > 0.0);
+	}
+
+	if(width.IsNumber() && height.IsNumber())
+	{
+		platformWindow->SetSize(unsigned(width.nvalue), unsigned(height.nvalue));
+	}
+
+	//interpreter->GetApp()->gpu->OnWindowCreated(platformWindow);
 }
 
 void ScriptCallbacks::DrawSprite(ScriptInterpreter * interpreter)
@@ -680,6 +743,41 @@ void ScriptCallbacks::GetCameraRay(ScriptInterpreter * interpreter)
 		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
 }
 
+void ScriptCallbacks::GetCameraMatrix(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, camera, TypeGpuCamera);
+	ScriptParam surface = interpreter->PopParam();
+	ScriptParam isTex = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
+
+	float aspect = 1.0f;
+	
+	if(CheckPtrType(surface, TypeGpuDrawSurface))
+	{
+		Gpu::Texture * surfaceTex = surface.GetPointer<Gpu::DrawSurface>()->GetTexture();
+		aspect = float(surfaceTex->GetWidth()) / float(surfaceTex->GetHeight());
+	}
+
+	glm::mat4 cameraMatrix = gpuCamera->GetProjMatrix(aspect) * gpuCamera->GetViewMatrix();
+
+	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+	static const glm::mat4 texCoordTransform(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	if(isTex.type == ScriptParam::BOOL && isTex.nvalue > 0.0)
+	{
+		cameraMatrix = texCoordTransform * cameraMatrix;
+	}
+
+	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&cameraMatrix, sizeof(glm::mat4),
+		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4))));
+}
+
 void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
 {
 	POP_NUMPARAM(1, width);
@@ -777,6 +875,7 @@ void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 	ScriptParam lights = interpreter->PopParam();
 	ScriptParam surface = interpreter->PopParam();
 	ScriptParam instances = interpreter->PopParam();
+	ScriptParam effect = interpreter->PopParam();
 
 	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
 	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
@@ -784,6 +883,7 @@ void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 	unsigned numGpuLights = 0;
 	Gpu::DrawSurface * gpuSurface = 0;
 	Gpu::InstanceBuffer * gpuInstances = 0;
+	Gpu::Effect * gpuOverrideEffect = 0;
 
 	if(lights.type == ScriptParam::MAPREF)
 	{
@@ -809,12 +909,16 @@ void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 	{
 		gpuInstances = instances.GetPointer<Gpu::InstanceBuffer>();
 	}
+	if(CheckPtrType(effect, TypeGpuEffect))
+	{
+		gpuOverrideEffect = effect.GetPointer<Gpu::Effect>();
+	}
 
 	if(gpuModel)
 	{
 		Gpu::Api * gpu = interpreter->GetApp()->gpu;
 		gpuModel->instances = gpuInstances;
-		gpuModel->BeDrawn(gpu, gpuCamera, gpuLights, numGpuLights, gpuSurface);
+		gpuModel->BeDrawn(gpu, gpuCamera, gpuLights, numGpuLights, gpuSurface, gpuOverrideEffect);
 	}
 }
 
@@ -1363,15 +1467,29 @@ void ScriptCallbacks::SetSamplerParam(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::CreateFloatArray(ScriptInterpreter * interpreter)
 {
-	POP_NUMPARAM(1, length);
+	ScriptParam content = interpreter->PopParam();
 
-	if(length.nvalue < 0.0)
+	ScriptFloatArray * floatArray = 0;
+
+	if(content.IsNumber())
 	{
-		interpreter->ThrowError("Attempted to create FloatArray of negative length!");
-		return;
+		if(content.nvalue < 0.0)
+		{
+			interpreter->ThrowError("Attempted to create FloatArray of negative length!");
+			return;
+		}
+		floatArray = new ScriptFloatArray(unsigned(content.nvalue));
 	}
-
-	ScriptFloatArray * floatArray = new ScriptFloatArray(unsigned(length.nvalue));
+	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4)))
+	{
+		floatArray = new ScriptFloatArray(4);
+		*((glm::vec4*)floatArray->floats) = *(content.GetPointer<glm::vec4>());
+	}
+	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4)))
+	{
+		floatArray = new ScriptFloatArray(16);
+		*((glm::mat4*)floatArray->floats) = *(content.GetPointer<glm::mat4>());
+	}
 
 	interpreter->PushParam(ScriptParam(floatArray, typeHandles[TypeFloatArray]));
 }
@@ -1424,6 +1542,14 @@ void ScriptCallbacks::GetFloatArray(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
 {
+	static const char * surfaceTypeStrings[Gpu::DrawSurface::Format_Total] = {
+		"4x8i",
+		"4x16f",
+		"3x10f",
+		"1x16f",
+		"typeless"
+	};
+
 	ScriptParam width = interpreter->PopParam();
 	ScriptParam height = interpreter->PopParam();
 	ScriptParam screen = interpreter->PopParam();
@@ -1434,19 +1560,21 @@ void ScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
 
 	if(format.type == ScriptParam::STRING)
 	{
-		if(strcmp(format.svalue, "4x16f") == 0)
-			surfaceFormat = Gpu::DrawSurface::Format_4x16float;
-		if(strcmp(format.svalue, "3x10f") == 0)
-			surfaceFormat = Gpu::DrawSurface::Format_3x10float;
-		if(strcmp(format.svalue, "1x16f") == 0)
-			surfaceFormat = Gpu::DrawSurface::Format_1x16float;
+		for(unsigned i = 0; i < Gpu::DrawSurface::Format_Total; ++i)
+		{
+			if(strcmp(format.svalue, surfaceTypeStrings[i]) == 0)
+			{
+				surfaceFormat = (Gpu::DrawSurface::Format) i;
+				break;
+			}
+		}
 	}
 
 	if(width.type == ScriptParam::DOUBLE && height.type == ScriptParam::DOUBLE)
 	{
 		if(screen.type == ScriptParam::BOOL && screen.nvalue > 0.0)
 		{
-			surface = interpreter->GetApp()->gpu->CreateScreenDrawSurface(
+			surface = interpreter->GetApp()->gpu->CreateRelativeDrawSurface(
 				float(width.nvalue), 
 				float(height.nvalue),
 				surfaceFormat);
@@ -1461,7 +1589,7 @@ void ScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
 	}
 	else
 	{
-		surface = interpreter->GetApp()->gpu->CreateScreenDrawSurface();
+		surface = interpreter->GetApp()->gpu->CreateRelativeDrawSurface();
 	}
 
 	interpreter->PushParam(ScriptParam(surface,typeHandles[TypeGpuDrawSurface]));
@@ -1502,6 +1630,7 @@ void ScriptCallbacks::ClearSurface(ScriptInterpreter * interpreter)
 	ScriptParam g = interpreter->PopParam();
 	ScriptParam b = interpreter->PopParam();
 	ScriptParam a = interpreter->PopParam();
+	interpreter->ClearParams();
 
 	Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
 
@@ -1532,7 +1661,7 @@ void ScriptCallbacks::GetSurfaceTexture(ScriptInterpreter * interpreter)
 	Gpu::Texture * texture = gpuSurface->GetTexture();
 
 	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr(texture,typeHandles[TypeGpuTexture])));
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(texture,typeHandles[TypeGpuTexture])));
 }
 
 void ScriptCallbacks::LoadAssets(ScriptInterpreter * interpreter)
@@ -1644,11 +1773,6 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 		std::string subPathShort(subPath.svalue);
 		std::wstring subPathWide(subPathShort.begin(), subPathShort.end());
 
-		if(directoryPtr && directoryPtr->isProjectDir)
-		{
-			subPathWide = projectDirPath + subPathWide;
-		}
-
 		asset = interpreter->GetApp()->assets->GetAsset<IAsset>(directoryPtr, subPathWide.c_str());
 	}
 	else
@@ -1663,25 +1787,25 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case TextureAsset:
 			{
 				Gpu::Texture * texAsset = dynamic_cast<Gpu::Texture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(texAsset, typeHandles[TypeGpuTexture])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(texAsset, typeHandles[TypeGpuTexture])));
 				break;
 			}
 			case CubeMapAsset:
 			{
 				Gpu::CubeMap * cubeAsset = dynamic_cast<Gpu::CubeMap*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(cubeAsset, typeHandles[TypeGpuCubeMap])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(cubeAsset, typeHandles[TypeGpuCubeMap])));
 				break;
 			}
 			case VolumeTexAsset:
 			{
 				Gpu::VolumeTexture * vTexAsset = dynamic_cast<Gpu::VolumeTexture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(vTexAsset, typeHandles[TypeGpuVolumeTexture])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(vTexAsset, typeHandles[TypeGpuVolumeTexture])));
 				break;
 			}
 			case ShaderAsset:
 			{
 				Gpu::Shader * shdrAsset = dynamic_cast<Gpu::Shader*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(shdrAsset, typeHandles[TypeGpuShader])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(shdrAsset, typeHandles[TypeGpuShader])));
 				break;
 			}
 			case ModelAsset:
@@ -1693,25 +1817,25 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case RawHeightMapAsset:
 			{
 				HeightParser * heightParser = dynamic_cast<HeightParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(heightParser, typeHandles[TypeHeightParser])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(heightParser, typeHandles[TypeHeightParser])));
 				break;
 			}
 			case ImageAsset:
 			{
 				Image::Buffer * imgAsset = dynamic_cast<Image::Buffer*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(imgAsset, typeHandles[TypeImageBuffer])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(imgAsset, typeHandles[TypeImageBuffer])));
 				break;
 			}
 			case AudioAsset:
 			{
 				Audio::Item * audioItem = dynamic_cast<Audio::Item*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(audioItem, typeHandles[TypeAudioItem])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(audioItem, typeHandles[TypeAudioItem])));
 				break;
 			}
 			case SvgAsset:
 			{
 				SvgParser * svgParser = dynamic_cast<SvgParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(svgParser, typeHandles[TypeSVGParser])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(svgParser, typeHandles[TypeSVGParser])));
 				break;
 			}
 		}
@@ -1972,8 +2096,40 @@ void ScriptCallbacks::SetAnisotropy(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::GetScreenSize(ScriptInterpreter * interpreter)
 {
+	ScriptParam windowOrIndex = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	unsigned width = 0, height = 0;
+	const PlatformApi * platform = interpreter->GetApp()->platform;
+
+	if(CheckPtrType(windowOrIndex, TypePlatformWindow))
+	{
+		platform->GetScreenSize(width, height, windowOrIndex.GetPointer<PlatformWindow>());
+	}
+	else if(windowOrIndex.IsNumber())
+	{
+		platform->GetScreenSize(width, height, unsigned(windowOrIndex.nvalue));
+	}
+	else
+	{
+		platform->GetScreenSize(width, height);
+	}
+
+	interpreter->PushParam(ScriptParam(ScriptParam::INT, width));
+	interpreter->PushParam(ScriptParam(ScriptParam::INT, height));
+}
+
+void ScriptCallbacks::GetBackbufferSize(ScriptInterpreter * interpreter)
+{
+	ScriptParam window = interpreter->PopParam();
+	PlatformWindow * platformWindow = 0;
+	if(window.CheckPointer(typeHandles[TypePlatformWindow]))
+	{
+		platformWindow = window.GetPointer<PlatformWindow>();
+	}
+
 	unsigned width, height;
-	interpreter->GetApp()->gpu->GetBackbufferSize(width, height);
+	interpreter->GetApp()->gpu->GetBackbufferSize(width, height, platformWindow);
 
 	interpreter->ClearParams();
 
@@ -2424,11 +2580,6 @@ void ScriptCallbacks::LoadFile(ScriptInterpreter * interpreter)
 	Files::Directory * fileDir = GetDirectory(interpreter->GetApp()->files, directory.svalue);
 	std::string spath(path.svalue);
 	std::wstring wpath(spath.begin(), spath.end());
-
-	if(fileDir->isProjectDir)
-	{
-		wpath = projectDirPath + wpath;
-	}
 
 	interpreter->GetApp()->files->OpenAndRead(fileDir, wpath.c_str(), new ScriptCallbackResponse(interpreter, callback));
 }
@@ -3001,7 +3152,7 @@ void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, typeHandles[TypePhysicsObject])));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, typeHandles[TypePhysicsObject])));
 	}
 }
 
@@ -3038,7 +3189,7 @@ void ScriptCallbacks::PickPhysicsObject(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, typeHandles[TypePhysicsObject])));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, typeHandles[TypePhysicsObject])));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&posVec4, sizeof(glm::vec4), 
 			interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&norVec4, sizeof(glm::vec4), 

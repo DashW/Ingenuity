@@ -35,6 +35,7 @@ end
 function Begin()
 	assetTicket = LoadAssets(
 		{"FrameworkDir","SkyShader.xml","Shader","skyshader"},
+		{"FrameworkDir","ShadowLit.xml","Shader","shadowShader"},
 		{"ProjectDir","grassCubeMap.dds","CubeMap","skymap"},
 		{"ProjectDir","stonefloor.bmp","Texture","floortex"}
 	);
@@ -86,14 +87,34 @@ function Begin()
 	SetMeshColor(pickModel,0,1,0,0);
 
 	debugFont = GetFont(40,"Arial");
+	SetFontColor(debugFont,1,1,1);
+	
+	local lightPosX = -math.sin(2.5);
+	local lightPosY = 0.75;
+	local lightPosZ = -math.cos(2.5);
 	
 	light = CreateLight("directional");
-	SetLightDirection(light,math.sin(2.5),0.75,math.cos(2.5));
+	SetLightDirection(light,lightPosX,lightPosY,lightPosZ);
+	
+	shadowSurface = CreateSurface(2048,2048,false,"typeless");
+	
+	shadowCamera = CreateCamera(true);
+	SetCameraPosition(shadowCamera,lightPosX,lightPosY,lightPosZ);
+	SetCameraClipHeight(shadowCamera,1,200,7);
+	
+	performanceWindow = CreateWindow();
+	--SetWindowProps(performanceWindow,nil,nil,true); -- Set performance window undecorated!
+	
+	performanceCamera = CreateCamera()
+	SetCameraPosition(performanceCamera,0,-2,4);
+	SetCameraTarget(performanceCamera,0,-2.5,0);
+	SetCameraClipFov(camera,0.01,200,0.78539);
 end
 
 function Update(delta)
 	if IsLoaded(assetTicket) then
 		skyEffect = CreateEffect("skyshader");
+		shadowEffect = CreateEffect("shadowShader");
 		skyMap = GetAsset("skymap");
 		floorTex = GetAsset("floortex");
 
@@ -130,7 +151,7 @@ function Update(delta)
 		UpdateFlyCamera(delta);
 	--end
 	
-	local sWidth, sHeight = GetScreenSize();
+	local sWidth, sHeight = GetBackbufferSize();
 	local mouseX, mouseY = GetMousePosition();
 	
 	--down,pressed,released = GetKeyState('p');
@@ -145,26 +166,68 @@ function Update(delta)
 	--end
 	
 	UpdateFrameTime(delta);
+	
+	local fDown, fPressed, fReleased = GetKeyState('f');
+	if fPressed then
+		if currentlyFullscreen then
+			SetWindowProps(performanceWindow, previousWidth, previousHeight, false);
+			currentlyFullscreen = false;
+		else
+			previousWidth, previousHeight = GetBackbufferSize();
+			newWidth, newHeight = GetDesktopSize(performanceWindow);
+			print("Resizing window to " .. newWidth .. ", " .. newHeight);
+			SetWindowProps(performanceWindow, newWidth, newHeight, true);
+			currentlyFullscreen = true;
+		end
+	end
 end
 
 function Draw()
-	DrawComplexModel(floorModel,camera);
-	--DrawComplexModel(cubeModel,camera);
 	
-	DrawLeapHand();
+	-- Draw all objects to the main window
+	
+	DrawComplexModel(floorModel,camera,light);
 	
 	if pickedObject then
 		DrawComplexModel(pickModel,camera,light);
 	end
 	
-	DrawMarionette();
-
-	if assetTicket == -1 then
-		DrawComplexModel(skyModel,camera);
+	DrawLeapHand();
+	
+	DrawMarionette(camera,nil,nil);
+	
+	DrawMarionetteWires(camera,nil,nil);
+	
+	-- Draw shadows to the shadow map
+	
+	ClearSurface(shadowSurface);
+	DrawMarionette(shadowCamera,shadowSurface,nil,false);
+	
+	-- Draw objects to the performance window
+	
+	local performanceSurface = GetWindowSurface(performanceWindow);
+	if performanceSurface then 
+		ClearSurface(performanceSurface);
+		
+		if shadowEffect then
+			cameraMatrixFloats = CreateFloatArray(GetCameraMatrix(shadowCamera,shadowSurface,true));
+			SetEffectParam(shadowEffect,0,cameraMatrixFloats);
+			SetEffectParam(shadowEffect,1,GetSurfaceTexture(shadowSurface));
+			SetEffectParam(shadowEffect,2,0.0002);
+		end
+		
+		DrawComplexModel(floorModel,performanceCamera,light,performanceSurface,nil,shadowEffect);
+		
+		DrawMarionette(performanceCamera,performanceSurface,shadowEffect);
+	
+		if skyEffect then
+			DrawComplexModel(skyModel,performanceCamera,nil,performanceSurface);
+		end
 	end
 
 	--debugText = string.format("%s Leap: %2.2fms", frameTimeText, leapFrameTime * 1000);
 	DrawText(debugFont,frameTimeText,0,0,0);
+	
 end
 
 function End()

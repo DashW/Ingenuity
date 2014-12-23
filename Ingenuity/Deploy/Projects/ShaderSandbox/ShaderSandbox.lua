@@ -15,9 +15,10 @@ rotSpeed = 0.4;
 pendingTex = "";
 pendingTexIndex = 0;
 
-initialMdlShader = "ProjectorShader.xml";
+initialMdlShader = "BaseShader.xml";
 initialTexShader = "TextureCopy.xml";
-initialModel = "vase.obj";
+initialModel = "duck.dae";
+initialModelType = "ColladaModel"
 
 -- State machine states:
 STATE_LOADING_TEXTURE_SHADER = 0;
@@ -102,7 +103,11 @@ function CreateStandardParams()
 	redSlider.value = 1.0;
 	redSlider.action = function(slider)
 		modelColorR = slider.value;
-		if model then SetMeshColor(model,0,modelColorR,modelColorG,modelColorB) end;
+		if model then
+			for i = 0,GetNumMeshes(model)-1 do
+				SetMeshColor(model,i,modelColorR,modelColorG,modelColorB);
+			end
+		end
 	end
 	AddUIComponent(redSlider);
 	
@@ -115,7 +120,11 @@ function CreateStandardParams()
 	greenSlider.value = 1.0;
 	greenSlider.action = function(slider)
 		modelColorG = slider.value;
-		if model then SetMeshColor(model,0,modelColorR,modelColorG,modelColorB) end;
+		if model then
+			for i = 0,GetNumMeshes(model)-1 do
+				SetMeshColor(model,i,modelColorR,modelColorG,modelColorB);
+			end
+		end
 	end
 	AddUIComponent(greenSlider);
 	
@@ -128,7 +137,11 @@ function CreateStandardParams()
 	blueSlider.value = 1.0;
 	blueSlider.action = function(slider)
 		modelColorB = slider.value;
-		if model then SetMeshColor(model,0,modelColorR,modelColorG,modelColorB) end;
+		if model then
+			for i = 0,GetNumMeshes(model)-1 do
+				SetMeshColor(model,i,modelColorR,modelColorG,modelColorB);
+			end
+		end
 	end
 	AddUIComponent(blueSlider);
 end
@@ -136,7 +149,7 @@ end
 function Begin()
 	
 	pendingModel = initialModel;
-	modelTicket = LoadAssets("ProjectDir",pendingModel,"WavefrontModel",pendingModel);
+	modelTicket = LoadAssets("ProjectDir",pendingModel,initialModelType,pendingModel);
 	
 	-- Enumerate the Framework Directory
 	EnumerateDirectory("FrameworkDir");
@@ -186,12 +199,16 @@ function Begin()
 	mdlButton.height = 50;
 	mdlButton.text = "";
 	mdlButton.action = function(button)
-		PickFile("ProjectDir","*.obj",function(data)
+		PickFile("ProjectDir","*.obj;*.dae",function(data)
 			if data and string.len(data) > 0 then
 				data = FixupPickedPath(data);
 				pendingModel = data;
 				print("Loading Model: "..data);
-				modelTicket = LoadAssets("ProjectDir",pendingModel,"WavefrontModel",pendingModel);
+				local modelType = "ColladaModel";
+				if data:sub(-4) == ".obj" then
+					modelType = "WavefrontModel";
+				end
+				modelTicket = LoadAssets("ProjectDir",pendingModel,modelType,pendingModel);
 			end
 		end);
 	end
@@ -239,6 +256,19 @@ function Begin()
 		end);
 	end
 	AddUIComponent(texShaderButton,leftPanel);
+	
+	windowButton = CreateUIButton();
+	windowButton.y = 350;
+	windowButton.width = 200;
+	windowButton.height = 50;
+	windowButton.text = "Create Second Window!";
+	windowButton.action = function(button)
+		if not secondWindow then
+			secondWindow = CreateWindow();
+			print("SECOND WINDOW CREATED!");
+		end
+	end
+	AddUIComponent(windowButton,leftPanel);
 	
 	CreateStandardParams();
 	
@@ -293,7 +323,9 @@ function ShaderLoaded()
 		modelEffect = CreateEffect(pendingShader);
 		if modelEffect and model then
 			print("APPLYING MODEL SHADER!");
-			SetMeshEffect(model,0,modelEffect);
+			for i=0,GetNumMeshes(model)-1 do
+				SetMeshEffect(model,i,modelEffect);
+			end
 		end
 		if pendingShader == "MatcapShader.xml" and matcapTex then
 			SetEffectParam(modelEffect,0,matcapTex);
@@ -426,6 +458,49 @@ function CreateParamButtons(xmlStruct)
 	end
 end
 
+function Vec3Length(x,y,z)
+	return math.sqrt(x*x + y*y + z*z);
+end
+function ExpandBounds(newX,newY,newZ,newR)
+	local epsilon = 1e-12;
+	local normX = newX - modelX;
+	local normY = newY - modelY;
+	local normZ = newZ - modelZ;
+	local normLength = Vec3Length(normX,normY,normZ);
+	if normLength > epsilon then
+		normX = normX / normLength;
+		normY = normY / normLength;
+		normZ = normZ / normLength;
+		local furthestX = newX + (normX * newR);
+		local furthestY = newY + (normY * newR);
+		local furthestZ = newZ + (normZ * newR);
+		local furthestDistance = Vec3Length(furthestX-modelX,furthestY-modelY,furthestZ-modelZ);
+		if furthestDistance > modelR then
+			local nearestX = newX - (normX * newR);
+			local nearestY = newY - (normY * newR);
+			local nearestZ = newZ - (normZ * newR);
+			local nearestDistance = Vec3Length(nearestX-modelX,nearestY-modelY,nearestZ-modelZ);
+			if nearestDistance > modelR then
+				print("NEW ENCOMPASSES OLD, REPLACING");
+				modelX = newX; modelY = newY; modelZ = newZ; modelR = newR;
+			else
+				print("NEW BREACHES OLD, RESIZING");
+				local oppositeX = modelX - (normX * modelR);
+				local oppositeY = modelY - (normY * modelR);
+				local oppositeZ = modelZ - (normZ * modelR);
+				modelX = oppositeX + ((furthestX - oppositeX) / 2);
+				modelY = oppositeY + ((furthestY - oppositeY) / 2);
+				modelZ = oppositeZ + ((furthestZ - oppositeZ) / 2);
+				modelR = Vec3Length(furthestX-oppositeX,furthestY-oppositeY,furthestZ-oppositeZ) / 2;
+			end
+		end
+	else
+		print("NEW POSITIONED AT OLD, COMPARING RADII ONLY");
+		modelR = math.max(modelR,newR);
+	end
+	print("POS = (".. modelX .. "," .. modelY .. "," .. modelZ .. ") R = " .. modelR);
+end
+
 function Update(delta)
 	if state == STATE_LOADING_TEXTURE_SHADER then
 		if pendingShader == "" then
@@ -441,13 +516,22 @@ function Update(delta)
 			
 			mdlButton.text = pendingModel;
 			
+			local numMeshes = GetNumMeshes(model);
+			
 			if modelEffect then
-				SetMeshEffect(model,0,modelEffect);
+				for i = 0,numMeshes-1 do
+					SetMeshEffect(model,i,modelEffect);
+				end
 			end
 			
-			SetMeshColor(model,0,modelColorR,modelColorG,modelColorB);
+			for i=0,numMeshes-1 do
+				SetMeshColor(model,i,modelColorR,modelColorG,modelColorB);
+			end
 			
-			modelX, modelY, modelZ, modelR = GetMeshBounds(model,0);
+			modelX = 0; modelY = 0; modelZ = 0; modelR = 0;
+			for i=0,numMeshes-1 do
+				ExpandBounds(GetMeshBounds(model,i));
+			end
 			local modelScale = 1/modelR;
 			SetModelScale(model,modelScale);
 			SetModelPosition(model,modelScale * -modelX, (modelScale * -modelY) + 0.35, modelScale * -modelZ);
@@ -475,8 +559,6 @@ function Update(delta)
 		ShaderLoaded();
 		shaderTicket = nil;
 	end
-	
-	ingenUiPanel.texture = GetSurfaceTexture(screenSurface2);
 
 	modelx = modelx + (delta * rotSpeed);
 	if(modelx > (math.pi * 2)) then modelx = modelx - (math.pi * 2); end
@@ -487,7 +569,7 @@ function Update(delta)
 	SetLightDirection(light,math.sin(modelx-0.5),-0.4,math.cos(modelx-0.5));
 	SetLightPosition(light,-math.sin(modelx-0.5) * lightRadius,0.5 * lightRadius,-math.cos(modelx-0.5) * lightRadius);
 	
-	screenWidth, screenHeight = GetScreenSize();
+	screenWidth, screenHeight = GetBackbufferSize();
 	SetCameraClipHeight(orthoCam,1,5000,screenHeight);
 	
 	-- SetModelPosition(square,(screenWidth/2)-160,screenHeight/2-32,0);
@@ -522,6 +604,7 @@ function Draw()
 	end
 	
 	if uiVisible then
+		ingenUiPanel.texture = GetSurfaceTexture(screenSurface2);
 		DrawUI();
 	end
 	
@@ -531,6 +614,14 @@ function Draw()
 	
 	ClearSurface(screenSurface1,1,1,1);
 	ClearSurface(screenSurface2,1,1,1);
+	
+	if secondWindow then
+		local secondWindowSurface = GetWindowSurface(secondWindow);
+		if secondWindowSurface then
+			ClearSurface(secondWindowSurface,1,1,1);
+			DrawText(font,"HELLO!",0,0,0,secondWindowSurface);
+		end
+	end
 end
 
 function End()

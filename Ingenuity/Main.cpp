@@ -43,9 +43,9 @@ class Engine : public RealtimeApp
 	bool audioPaused = false;
 
 	Files::Directory * dataDirectory = 0;
+	Files::Directory * projectDirectory = 0;
 
 	std::wstring projectName;
-	std::wstring projectDirectory;
 	std::wstring scriptPath;
 
 	//ScriptParam updateFunction;
@@ -98,15 +98,16 @@ class Engine : public RealtimeApp
 	{
 		if(projectName.size() > 0)
 		{
-			projectDirectory = L"Projects//";
-			projectDirectory += projectName + L"//";
+			std::wstring projectDirectoryPath = L"Projects//";
+			projectDirectoryPath += projectName + L"//";
+			projectDirectory = files->GetSubDirectory(dataDirectory, projectDirectoryPath.data());
+			ScriptCallbacks::SetSubDirectory(projectDirectory);
+
 			std::wstring scriptExtension = L".lua";
 			if(interpreterType == Python) scriptExtension = L".py";
-			scriptPath = projectDirectory + projectName + scriptExtension;
+			scriptPath = projectName + scriptExtension;
 
-			ScriptCallbacks::SetSubDirectory(projectDirectory.c_str());
-
-			files->OpenAndRead(dataDirectory, scriptPath.c_str(), new ScriptResponse(this, scriptPath, false));
+			files->OpenAndRead(projectDirectory, scriptPath.c_str(), new ScriptResponse(this, scriptPath, false));
 		}
 	}
 
@@ -272,7 +273,7 @@ class Engine : public RealtimeApp
 		}
 		if(keyboard.downKeys[0x3f]) // f5
 		{
-			files->OpenAndRead(dataDirectory, scriptPath.c_str(), new ScriptResponse(this, scriptPath, true));
+			files->OpenAndRead(projectDirectory, scriptPath.c_str(), new ScriptResponse(this, scriptPath, true));
 		}
 
 		if(!showConsole && !interpreter->IsInError())

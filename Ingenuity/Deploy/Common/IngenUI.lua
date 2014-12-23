@@ -375,13 +375,13 @@ function UpdateUI(delta)
 		ingenUiLoaded = true;
 	end
 	
-	screenWidth, screenHeight = GetScreenSize();
-	SetCameraPosition(ingenUiCamera,screenWidth/2,-screenHeight/2,-1);
-	SetCameraTarget(ingenUiCamera,screenWidth/2,-screenHeight/2,0);
-	SetCameraClipHeight(ingenUiCamera,1,5000,screenHeight);
+	backbufferWidth, backbufferHeight = GetBackbufferSize();
+	SetCameraPosition(ingenUiCamera,backbufferWidth/2,-backbufferHeight/2,-1);
+	SetCameraTarget(ingenUiCamera,backbufferWidth/2,-backbufferHeight/2,0);
+	SetCameraClipHeight(ingenUiCamera,1,5000,backbufferHeight);
 	
-	ingenUiPanel.width = screenWidth;
-	ingenUiPanel.height = screenHeight;
+	ingenUiPanel.width = backbufferWidth;
+	ingenUiPanel.height = backbufferHeight;
 	
 	if ingenUiLoaded then
 		ingenUiPanel.Update(ingenUiPanel,nil,delta);

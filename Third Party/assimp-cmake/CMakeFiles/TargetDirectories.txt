@@ -1,0 +1,7 @@
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/uninstall.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/test/CMakeFiles/gtest.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/test/CMakeFiles/unit.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/code/CMakeFiles/assimp.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/contrib/zlib/CMakeFiles/ALL_BUILD.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/contrib/zlib/CMakeFiles/zlibstatic.dir

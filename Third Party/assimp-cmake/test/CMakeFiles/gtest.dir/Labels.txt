@@ -1,0 +1,14 @@
+# Target labels
+ gtest
+# Source files and their labels
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/test/CMakeFiles/gtest
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp/test/CMakeLists.txt
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/3d9b3f134a4c8832a8debdd9c243ff46/gtest.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/4c85c9ccf4ba6df45d9a91280d929b75/gtest-complete.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-install.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-mkdir.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-download.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-update.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-patch.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-configure.rule
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/CMakeFiles/40ecb0070d57fb62397bc4c91bc434c6/gtest-build.rule

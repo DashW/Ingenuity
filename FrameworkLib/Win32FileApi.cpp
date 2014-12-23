@@ -37,6 +37,24 @@ Files::Directory * Win32::FileApi::GetKnownDirectory(Files::KnownDirectory optio
 	return tempKnownDirectory;
 }
 
+Files::Directory * Win32::FileApi::GetSubDirectory(Files::Directory * root, const wchar_t * path)
+{
+	if(path != 0)
+	{
+		for(unsigned i = 0; i < createdDirectories.size(); ++i)
+		{
+			if(createdDirectories[i].directoryPath.compare(path) == 0)
+			{
+				return &createdDirectories[i];
+			}
+		}
+		createdDirectories.emplace_back();
+		createdDirectories.back().directoryPath = path;
+		return &createdDirectories.back();
+	}
+	return 0;
+}
+
 COMDLG_FILTERSPEC c_rgSpecificTypes[] =
 {
 	{ L"Specific File Type (*.?)", L"*.xml" },
@@ -174,7 +192,7 @@ void Win32::FileApi::PickFile(Files::Directory * directory, const wchar_t * exte
 							//}
 
 							// Show the dialog
-							hr = pfd->Show(window->getHandle());
+							hr = pfd->Show(window->GetHandle());
 							if(SUCCEEDED(hr))
 							{
 								// Obtain the result once the user clicks 
@@ -292,11 +310,14 @@ Files::File * Win32::FileApi::Open(Files::Directory * directory, LPCWSTR path)
 
 	Win32::File * file = new Win32::File(directory);
 
-	std::wstring filePath = win32dir->directoryPath + path;
-
 	//file->fileHandle = (HANDLE) Openfilew(filePath.c_str(), 0, 0);
 
-	file->fileHandle = CreateFile(filePath.c_str(),
+	wchar_t exeDir[128];
+	GetCurrentDirectory(128, exeDir);
+
+	SetCurrentDirectory(win32dir->GetPath().c_str());
+
+	file->fileHandle = CreateFile(path,
 		GENERIC_WRITE | GENERIC_READ,
 		0,
 		NULL,
@@ -304,18 +325,20 @@ Files::File * Win32::FileApi::Open(Files::Directory * directory, LPCWSTR path)
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
 		NULL);
 
+	SetCurrentDirectory(exeDir);
+
 	if(file->fileHandle == INVALID_HANDLE_VALUE)
 	{
 		DWORD lastError = GetLastError();
 		if(lastError == 0x20) // File already open
 		{
-			pendingFiles.emplace_back(file, filePath);
+			pendingFiles.emplace_back(file, path);
 			file->openState = Files::InProgress;
 		}
 		else
 		{
 			std::wstringstream errStream;
-			errStream << L"Could not open file " << filePath.c_str() << L"\n";
+			errStream << L"Could not open file " << win32dir->GetPath() << path << L"\n";
 			OutputDebugString(errStream.str().c_str());
 			file->openState = Files::Failed;
 		}
@@ -329,7 +352,7 @@ Files::File * Win32::FileApi::Open(Files::Directory * directory, LPCWSTR path)
 	if(fileSize.HighPart > 0)
 	{
 		std::wstringstream errStream;
-		errStream << L"File " << filePath.c_str() << L" is too large!\n";
+		errStream << L"File " << path << L" is too large!\n";
 		OutputDebugString(errStream.str().c_str());
 		file->openState = Files::Failed;
 	}
@@ -362,6 +385,7 @@ void Win32::FileApi::OpenAndRead(Files::Directory * directory, const wchar_t * f
 	else
 	{
 		HandleResponse(response);
+		delete openedFile;
 	}
 }
 

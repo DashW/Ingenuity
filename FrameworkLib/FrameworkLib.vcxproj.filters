@@ -19,9 +19,6 @@
     <Filter Include="Graphics\Gpu">
       <UniqueIdentifier>{409c4cbd-fb2b-475b-9f0e-f7f96bb276a7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Parsers">
-      <UniqueIdentifier>{6310958a-9d4e-4500-9a0f-f495c7906a98}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Audio">
       <UniqueIdentifier>{ece5b79f-278f-4dfb-accf-d8e59f093e04}</UniqueIdentifier>
     </Filter>
@@ -46,6 +43,9 @@
     <Filter Include="Shaders\GL">
       <UniqueIdentifier>{cea2f567-0cab-4d12-a4fb-798818c75e1e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Loaders/Parsers">
+      <UniqueIdentifier>{6310958a-9d4e-4500-9a0f-f495c7906a98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
@@ -69,19 +69,19 @@
       <Filter>Graphics\Gpu</Filter>
     </ClInclude>
     <ClInclude Include="ObjParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="HeightParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="MeshParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="MtlParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="WavefrontLoader.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="DX9Shaders.h">
       <Filter>Graphics\DX9</Filter>
@@ -99,10 +99,10 @@
       <Filter>Graphics\DX9</Filter>
     </ClInclude>
     <ClInclude Include="SvgParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="tinyxml2.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="GeoBuilder.h" />
     <ClInclude Include="GeoStructs.h" />
@@ -119,7 +119,7 @@
       <Filter>Audio</Filter>
     </ClInclude>
     <ClInclude Include="SoundFileReader.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="Win32Window.h">
       <Filter>Application\Win32</Filter>
@@ -128,19 +128,19 @@
       <Filter>Application\Win32</Filter>
     </ClInclude>
     <ClInclude Include="ImageApi.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="FreeImageApi.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="AssetMgr.h">
       <Filter>Application</Filter>
     </ClInclude>
     <ClInclude Include="ShaderParser.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="WICImageApi.h">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="Debug.h">
       <Filter>Application</Filter>
@@ -191,6 +191,9 @@
     <ClInclude Include="DX11Surfaces.h">
       <Filter>Graphics\DX11</Filter>
     </ClInclude>
+    <ClInclude Include="AssimpLoader.h">
+      <Filter>Loaders/Parsers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -201,25 +204,25 @@
       <Filter>Graphics\DX9</Filter>
     </ClCompile>
     <ClCompile Include="HeightParser.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="MtlParser.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="ObjParser.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="WavefrontLoader.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="DX9Surfaces.cpp">
       <Filter>Graphics\DX9</Filter>
     </ClCompile>
     <ClCompile Include="SvgParser.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="tinyxml2.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="DX9Shaders.cpp">
       <Filter>Graphics\DX9</Filter>
@@ -229,7 +232,7 @@
       <Filter>Audio</Filter>
     </ClCompile>
     <ClCompile Include="SoundFileReader.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="Win32AppController.cpp">
       <Filter>Application\Win32</Filter>
@@ -238,7 +241,7 @@
       <Filter>Application\Win32</Filter>
     </ClCompile>
     <ClCompile Include="FreeImageApi.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="AssetMgr.cpp">
       <Filter>Application</Filter>
@@ -250,10 +253,10 @@
       <Filter>Graphics\DX11</Filter>
     </ClCompile>
     <ClCompile Include="ShaderParser.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="WICImageApi.cpp">
-      <Filter>Parsers</Filter>
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="Debug.cpp">
       <Filter>Application</Filter>
@@ -290,6 +293,9 @@
     </ClCompile>
     <ClCompile Include="GLShaders.cpp">
       <Filter>Graphics\GL</Filter>
+    </ClCompile>
+    <ClCompile Include="AssimpLoader.cpp">
+      <Filter>Loaders/Parsers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -491,6 +497,12 @@
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowMapVtxPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNorTex.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
   </ItemGroup>

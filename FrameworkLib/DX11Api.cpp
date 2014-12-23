@@ -6,8 +6,10 @@
 #include "DX11ShaderLoader.h"
 #include "DX11Surfaces.h"
 #include "GeoBuilder.h"
+#include "PlatformApi.h"
 #include "ShaderParser.h"
 #include "tinyxml2.h"
+#include "Win32Window.h"
 
 #if defined(_DEBUG)
 #include <dxgidebug.h>
@@ -29,17 +31,11 @@ namespace Ingenuity {
 
 float secsPerCnt;
 
-#if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
-DX11::Api::Api(Files::Api * files, HWND handle) :
-#else
-DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
-#endif
+DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
 	direct3Ddevice(0),
     direct3Dcontext(0),
-	dxgiSwapChain(0),
-	renderTargetView(0),
-	depthStencilView(0),
-	depthStencilBuffer(0),
+	mainSwapChain(0),
+	mainDrawSurface(0),
 	wireframeState(0),
 	stencilState(0),
 	stencilClipState(0),
@@ -84,68 +80,37 @@ DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
         &featureLevel,           
         &direct3Dcontext);
 
-#if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
-    DXGI_SWAP_CHAIN_DESC swapChainDesc = {0};
-    //swapChainDesc.Width = 0;                                     // use automatic sizing
-    //swapChainDesc.Height = 0;
-    swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // this is the most common swapchain format
-	swapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
-	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-    //swapChainDesc.Stereo = false; 
-    swapChainDesc.SampleDesc.Count = 1;                            // don't use multi-sampling
-    swapChainDesc.SampleDesc.Quality = 0;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 1;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; 
-    swapChainDesc.Flags = 0;
-	swapChainDesc.Windowed = true;
-	swapChainDesc.OutputWindow = handle;
+#ifdef _DEBUG
+	ID3D11Debug *d3dDebug = nullptr;
+	if(SUCCEEDED(direct3Ddevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+	{
+		ID3D11InfoQueue *d3dInfoQueue = nullptr;
+		if(SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&d3dInfoQueue)))
+		{
+			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true);
+			d3dInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true);
 
-	IDXGIDevice* dxgiDevice = 0;
-	direct3Ddevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
-	IDXGIAdapter* dxgiAdapter = 0;
-	dxgiDevice->GetParent(__uuidof(IDXGIAdapter),(void**)&dxgiAdapter);
-	IDXGIFactory* dxgiFactory = 0;
-	dxgiAdapter->GetParent(__uuidof(IDXGIFactory),(void**)&dxgiFactory);
+			D3D11_MESSAGE_ID hide[] =
+			{
+				D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+				D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET
+				// Add more message IDs here as needed
+			};
 
-	dxgiFactory->CreateSwapChain(
-		dxgiDevice,
-		&swapChainDesc,
-		&dxgiSwapChain);
-#else
-	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {0};
-    swapChainDesc.Width = 0;                                     // use automatic sizing
-    swapChainDesc.Height = 0;
-    swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;           // this is the most common swapchain format
-    swapChainDesc.Stereo = false; 
-    swapChainDesc.SampleDesc.Count = 1;                          // don't use multi-sampling
-    swapChainDesc.SampleDesc.Quality = 0;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 2;                               // use two buffers to enable flip effect
-    swapChainDesc.Scaling = DXGI_SCALING_NONE;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // we recommend using this swap effect for all applications
-    swapChainDesc.Flags = 0;
-
-	IDXGIDevice1* dxgiDevice = 0;
-	direct3Ddevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
-	IDXGIAdapter* dxgiAdapter = 0;
-	dxgiDevice->GetParent(__uuidof(IDXGIAdapter),(void**)&dxgiAdapter);
-	IDXGIFactory2* dxgiFactory = 0;
-	dxgiAdapter->GetParent(__uuidof(IDXGIFactory2),(void**)&dxgiFactory);
-
-	dxgiFactory->CreateSwapChainForCoreWindow(
-		dxgiDevice,
-		reinterpret_cast<IUnknown*>(window), 
-		&swapChainDesc,
-		nullptr,
-		&dxgiSwapChain);
+			D3D11_INFO_QUEUE_FILTER filter;
+			memset(&filter, 0, sizeof(filter));
+			filter.DenyList.NumIDs = _countof(hide);
+			filter.DenyList.pIDList = hide;
+			d3dInfoQueue->AddStorageFilterEntries(&filter);
+			d3dInfoQueue->Release();
+		}
+		d3dDebug->Release();
+	}
 #endif
 
-	dxgiDevice->Release();
-	dxgiAdapter->Release();
-	dxgiFactory->Release();
+	OnWindowCreated(window);
 
-	OnScreenResize(0,0); // use HWND
+	OnWindowResized(window, 0, 0);
 
 	direct3Ddevice->CreateDepthStencilState(
 		&CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT()),
@@ -197,7 +162,14 @@ DX11::Api::Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window) :
 }
 
 DX11::Api::~Api()
-{	
+{
+	WindowSwapChainMap::iterator swapIt = windowSwapChains.begin();
+	for( ; swapIt != windowSwapChains.end(); ++swapIt)
+	{
+		swapIt->second->Release();
+		delete windowDrawSurfaces[swapIt->first];
+	}
+
 	CoUninitialize();
 
 	if(texVertexShader) texVertexShader->Release();
@@ -210,12 +182,9 @@ DX11::Api::~Api()
 	if(stencilClipState) stencilClipState->Release();
 	if(stencilClipSurface) delete stencilClipSurface;
 	if(depthStencilState) depthStencilState->Release();
-	if(renderTargetView) renderTargetView->Release();
-	if(depthStencilView) depthStencilView->Release();
 	if(commonStates) delete commonStates;
 	if(spriteBatch) delete spriteBatch;
 	if(samplerMgr) delete samplerMgr;
-	if(dxgiSwapChain) dxgiSwapChain->Release();
 
 	if(direct3Dcontext) {
 		direct3Dcontext->ClearState();
@@ -331,12 +300,11 @@ void DX11::Api::OnCriticalLoad(AssetMgr * assets)
 
 void DX11::Api::Clear() 
 {
-	direct3Dcontext->ClearRenderTargetView(renderTargetView,clearColor);
-	direct3Dcontext->ClearDepthStencilView(depthStencilView,D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL,1.0f,0);
+	mainDrawSurface->Clear();
 }
 void DX11::Api::BeginScene() 
 {
-	direct3Dcontext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+	mainDrawSurface->Begin();
 
 #ifdef USE_DIRECT2D
 	direct2Dtarget->BeginDraw();
@@ -407,10 +375,33 @@ void DX11::Api::EndScene()
 
 	direct3Dcontext->OMSetDepthStencilState(0,0);
 	//direct3Dcontext->RSSetState(0);
+
+	// Reset all shader resource views
+	ID3D11ShaderResourceView * nullResources[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT];
+	memset(nullResources, 0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT * sizeof(void*));
+	direct3Dcontext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, nullResources);
+
+	// Release the backbuffers for any windows destroyed this frame
+	for(unsigned i = 0; i < destroyedWindows.size(); ++i)
+	{
+		WindowSurfaceMap::iterator surfIt = windowDrawSurfaces.find(destroyedWindows[i]);
+		WindowSwapChainMap::iterator swapIt = windowSwapChains.find(destroyedWindows[i]);
+
+		delete surfIt->second;
+		swapIt->second->Release();
+
+		windowDrawSurfaces.erase(surfIt);
+		windowSwapChains.erase(swapIt);
+	}
+	destroyedWindows.clear();
 }
 void DX11::Api::Present()
 {
-	dxgiSwapChain->Present(0,0);
+	std::map<PlatformWindow*, IDXGISwapChain*>::iterator it;
+	for(it = windowSwapChains.begin(); it != windowSwapChains.end(); ++it)
+	{
+		it->second->Present(0, 0);
+	}
 }
 
 void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface) 
@@ -433,8 +424,8 @@ void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface)
 
 	XMFLOAT2 position;
 	XMFLOAT2 scale;
-	float w = static_cast<float>(backBufferWidth/2);
-	float h = static_cast<float>(backBufferHeight/2);
+	float w = static_cast<float>(mainDrawSurface->width/2);
+	float h = static_cast<float>(mainDrawSurface->height/2);
 	if(sprite->pixelSpace)
 	{
 		position.x = sprite->position.x; 
@@ -444,7 +435,7 @@ void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface)
 	}
 	else
 	{
-		float deviceIndependentSize = (((float)backBufferHeight)/((float)standardScreenHeight));
+		float deviceIndependentSize = h/((float)standardScreenHeight);
 		position.x = w + (sprite->position.x * h);
 		position.y = h + (sprite->position.y * h);
 		scale.x = sprite->scale.x * deviceIndependentSize;
@@ -503,8 +494,8 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 		offset.x = (widthHeight.x + 20.0f)/2.0f; offset.y = widthHeight.y/2.0f;
 	}
 
-	float screenWidth = float(backBufferWidth);
-	float screenHeight = float(backBufferHeight);
+	float screenWidth = float(mainDrawSurface->width);
+	float screenHeight = float(mainDrawSurface->height);
 
 	if(!font->pixelSpace)
 	{
@@ -514,7 +505,12 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 	}
 
 	DX11::DrawSurface * dx11surface = static_cast<DX11::DrawSurface*>(surface);
-	if(dx11surface) dx11surface->Begin();
+	if(dx11surface)
+	{
+		spriteBatch->End();
+		dx11surface->Begin();
+		spriteBatch->Begin(DirectX::SpriteSortMode_Immediate);
+	}
 	//spriteBatch->Begin();//SpriteSortMode_Deferred,0,0,depthStencilState);
 	//if(!center)
 	try
@@ -527,7 +523,12 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 		OutputDebugString(L"Failed to draw string!\n");
 	}
 	//spriteBatch->End();
-	if(dx11surface) dx11surface->End();
+	if(dx11surface)
+	{
+		spriteBatch->End();
+		dx11surface->End();
+		spriteBatch->Begin(SpriteSortMode_BackToFront, commonStates->NonPremultiplied());
+	}
 
 	//ID3D11BlendState blendState = 
 	//direct3Dcontext->OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
@@ -623,14 +624,19 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 		effect = model->effect;
 	}
 
-	if(!shader->SetTechnique(direct3Dcontext, vertexType,instanceType)) return;
+	if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
 
-	float aspect = float(backBufferWidth)/float(backBufferHeight);
-	DX11::DrawSurface * dx11surface = static_cast<DX11::DrawSurface*>(surface);
-	if(dx11surface && dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeTexture)
+	float aspect = float(mainDrawSurface->width)/float(mainDrawSurface->height);
+	DX11::DrawSurface * dx11surface = surface ? static_cast<DX11::DrawSurface*>(surface) : mainDrawSurface;
+	if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeTexture)
 	{
 		Gpu::Texture * surfaceTex = dx11surface->GetTexture();
 		aspect = float(surfaceTex->GetWidth())/float(surfaceTex->GetHeight());
+	}
+	else if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeBackbuffer)
+	{
+		DX11::BackbufferSurface * backbufferSurface = static_cast<DX11::BackbufferSurface*>(dx11surface);
+		aspect = backbufferSurface->GetAspect();
 	}
 
 	if(!shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect, effect)) return;
@@ -664,7 +670,11 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 			direct3Dcontext->Draw(dx11mesh->numVertices, 0);
 		}
 	}
-	if(dx11surface) dx11surface->End();
+	if(dx11surface)
+	{
+		dx11surface->End();
+		mainDrawSurface->Begin();
+	}
 
 	ProfileList::iterator profileIt = activeProfiles.begin();
 	for(; profileIt != activeProfiles.end(); profileIt++)
@@ -984,11 +994,21 @@ Gpu::DrawSurface * DX11::Api::CreateDrawSurface(unsigned width, unsigned height,
 	return new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, false, float(width), float(height));
 }
 
-Gpu::DrawSurface * DX11::Api::CreateScreenDrawSurface(float widthFactor, float heightFactor, Gpu::DrawSurface::Format format)
+Gpu::DrawSurface * DX11::Api::CreateRelativeDrawSurface(float widthFactor, float heightFactor, Gpu::DrawSurface::Format format, PlatformWindow * window)
 {
 	DX11::TextureSurface * surface = new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, true, widthFactor, heightFactor);
 	deviceListeners.push_back(surface);
 	return surface;
+}
+
+Gpu::DrawSurface * DX11::Api::GetWindowDrawSurface(PlatformWindow * window)
+{
+	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
+	if(it != windowDrawSurfaces.end())
+	{
+		return it->second;
+	}
+	return 0;
 }
 
 void DX11::Api::BeginTimestamp(const std::wstring name)
@@ -1058,7 +1078,118 @@ void DX11::Api::SetClearColor(float r, float g, float b, float a)
 	clearColor[0] = r; clearColor[1] = g; clearColor[2] = b; clearColor[3] = a;
 }
 
-void DX11::Api::OnScreenResize(unsigned width, unsigned height) 
+void DX11::Api::OnWindowCreated(PlatformWindow * window)
+{
+#if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
+
+	struct OnDestroyResponse : Win32::WindowEventResponse
+	{
+		Gpu::Api * gpu;
+		OnDestroyResponse(Gpu::Api * gpu) : gpu(gpu) {}
+		void Respond(Win32::Window * window, WPARAM wparam, LPARAM lparam) override
+		{
+			gpu->OnWindowDestroyed(window);
+		}
+	};
+
+	struct OnResizeResponse : Win32::WindowEventResponse
+	{
+		Gpu::Api * gpu;
+		OnResizeResponse(Gpu::Api * gpu) : gpu(gpu) {}
+		void Respond(Win32::Window * window, WPARAM wparam, LPARAM lparam) override
+		{
+			RECT windowRect;
+			GetClientRect(window->GetHandle(), &windowRect);
+			gpu->OnWindowResized(window, windowRect.right, windowRect.bottom);
+		}
+	};
+
+	struct OnDeleteResponse : Win32::WindowEventResponse
+	{
+		void Respond(Win32::Window * window, WPARAM wparam, LPARAM lparam) override
+		{
+			delete window->onDestroy;
+			delete window->onExitSizeMove;
+			delete window->onDelete;
+		}
+	};
+
+	Win32::Window * win32Window = static_cast<Win32::Window*>(window);
+
+	win32Window->onDestroy = new OnDestroyResponse(this);
+	win32Window->onExitSizeMove = new OnResizeResponse(this);
+	win32Window->onResizing = win32Window->onExitSizeMove;
+	win32Window->onMaximize = win32Window->onExitSizeMove;
+	win32Window->onUnmaximize = win32Window->onExitSizeMove;
+	win32Window->onDelete = new OnDeleteResponse();
+
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
+	//swapChainDesc.Width = 0;                                     // use automatic sizing
+	//swapChainDesc.Height = 0;
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // this is the most common swapchain format
+	swapChainDesc.BufferDesc.RefreshRate.Numerator = 0;
+	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	//swapChainDesc.Stereo = false; 
+	swapChainDesc.SampleDesc.Count = 1;                            // don't use multi-sampling
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = 1;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	swapChainDesc.Flags = 0;
+	swapChainDesc.Windowed = true;
+	swapChainDesc.OutputWindow = win32Window->GetHandle();
+
+	IDXGIDevice* dxgiDevice = 0;
+	direct3Ddevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+	IDXGIAdapter* dxgiAdapter = 0;
+	dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter);
+	IDXGIFactory* dxgiFactory = 0;
+	dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)&dxgiFactory);
+	IDXGISwapChain * dxgiSwapChain = 0;
+
+	dxgiFactory->CreateSwapChain(
+		dxgiDevice,
+		&swapChainDesc,
+		&dxgiSwapChain);
+
+	windowSwapChains[window] = dxgiSwapChain;
+
+	if(!mainSwapChain) mainSwapChain = dxgiSwapChain;
+#else
+	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
+	swapChainDesc.Width = 0;                                     // use automatic sizing
+	swapChainDesc.Height = 0;
+	swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;           // this is the most common swapchain format
+	swapChainDesc.Stereo = false;
+	swapChainDesc.SampleDesc.Count = 1;                          // don't use multi-sampling
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = 2;                               // use two buffers to enable flip effect
+	swapChainDesc.Scaling = DXGI_SCALING_NONE;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // we recommend using this swap effect for all applications
+	swapChainDesc.Flags = 0;
+
+	IDXGIDevice1* dxgiDevice = 0;
+	direct3Ddevice->QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
+	IDXGIAdapter* dxgiAdapter = 0;
+	dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgiAdapter);
+	IDXGIFactory2* dxgiFactory = 0;
+	dxgiAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&dxgiFactory);
+
+	dxgiFactory->CreateSwapChainForCoreWindow(
+		dxgiDevice,
+		reinterpret_cast<IUnknown*>(window),
+		&swapChainDesc,
+		nullptr,
+		&mainSwapChain);
+#endif
+
+	dxgiDevice->Release();
+	dxgiAdapter->Release();
+	dxgiFactory->Release();
+}
+
+void DX11::Api::OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) 
 {
 	std::list<Gpu::IDeviceListener*>::iterator lostIt;
 	for(lostIt = deviceListeners.begin(); lostIt != deviceListeners.end(); ++lostIt)
@@ -1066,54 +1197,30 @@ void DX11::Api::OnScreenResize(unsigned width, unsigned height)
 		(*lostIt)->OnLostDevice(this);
 	}
 
-	if(renderTargetView) renderTargetView->Release();
-	if(depthStencilView) depthStencilView->Release();
+	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
+	if(it != windowDrawSurfaces.end())
+	{
+		if(it->second == mainDrawSurface) mainDrawSurface = 0;
+		delete it->second;
+	}
 
+	IDXGISwapChain * dxgiSwapChain = windowSwapChains[window];
+
+	// For future reference, ResizeBuffers will accept w/h of 0/0 and size automatically...
 	if(width > 0 && height > 0)
 		dxgiSwapChain->ResizeBuffers(2,width,height,DXGI_FORMAT_R8G8B8A8_UNORM,0);
 
 	ID3D11Texture2D* backBuffer;
 	dxgiSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-	direct3Ddevice->CreateRenderTargetView(backBuffer,0,&renderTargetView);
 
 	D3D11_TEXTURE2D_DESC backBufferDesc;
 	backBuffer->GetDesc(&backBufferDesc);
 
+	windowDrawSurfaces[window] = new BackbufferSurface(direct3Ddevice, direct3Dcontext, backBuffer, backBufferDesc.Width, backBufferDesc.Height);
+
+	if(!mainDrawSurface) mainDrawSurface = windowDrawSurfaces[window];
+
 	backBuffer->Release();
-
-	backBufferWidth = backBufferDesc.Width;
-	backBufferHeight = backBufferDesc.Height;
-
-	CD3D11_TEXTURE2D_DESC depthStencilTextureDesc(
-		DXGI_FORMAT_D24_UNORM_S8_UINT,
-		backBufferWidth,
-		backBufferHeight,
-		1,
-		1,
-		D3D11_BIND_DEPTH_STENCIL);
-
-	ID3D11Texture2D* depthStencilBuffer;
-	direct3Ddevice->CreateTexture2D(
-		&depthStencilTextureDesc,
-		0,
-		&depthStencilBuffer);
-
-	direct3Ddevice->CreateDepthStencilView(
-		depthStencilBuffer,
-		&CD3D11_DEPTH_STENCIL_VIEW_DESC(D3D11_DSV_DIMENSION_TEXTURE2DMS),
-		&depthStencilView);
-
-	direct3Dcontext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
-
-	depthStencilBuffer->Release();
-
-	CD3D11_VIEWPORT viewPort(
-		0.0f,
-		0.0f,
-		static_cast<float>(backBufferWidth),
-		static_cast<float>(backBufferHeight));
-
-	direct3Dcontext->RSSetViewports(1,&viewPort);
 
 	std::list<Gpu::IDeviceListener*>::iterator resetIt;
 	for(resetIt = deviceListeners.begin(); resetIt != deviceListeners.end(); ++resetIt)
@@ -1122,9 +1229,22 @@ void DX11::Api::OnScreenResize(unsigned width, unsigned height)
 	}
 }
 
-void DX11::Api::GetBackbufferSize(unsigned & width, unsigned & height)
+void DX11::Api::OnWindowDestroyed(PlatformWindow * window)
 {
-	width = backBufferWidth; height = backBufferHeight;
+	destroyedWindows.push_back(window);
+}
+
+void DX11::Api::GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window)
+{
+	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
+	if(it != windowDrawSurfaces.end())
+	{
+		width = it->second->width; height = it->second->height;
+	}
+	else
+	{
+		width = mainDrawSurface->width; height = mainDrawSurface->height;
+	}
 }
 
 void DX11::Api::SetMultisampling(unsigned multisampleLevel)
@@ -1161,15 +1281,7 @@ bool DX11::Api::isDeviceLost()
 
 void DX11::Api::ResetRenderTargets()
 {
-	direct3Dcontext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
-
-	CD3D11_VIEWPORT viewPort(
-		0.0f,
-		0.0f,
-		static_cast<float>(backBufferWidth),
-		static_cast<float>(backBufferHeight));
-
-	direct3Dcontext->RSSetViewports(1,&viewPort);
+	mainDrawSurface->Begin();
 }
 
 float DX11::Api::MeasureGpuText(Gpu::Font* font, const wchar_t* text)

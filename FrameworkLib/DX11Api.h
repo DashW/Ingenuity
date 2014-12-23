@@ -157,6 +157,8 @@ struct InstanceBuffer : public Gpu::InstanceBuffer
 	virtual unsigned GetCapacity() override { return instanceCapacity; }
 };
 
+struct BackbufferSurface;
+
 class ShaderParser;
 
 class Api : public Gpu::Api
@@ -166,19 +168,26 @@ class Api : public Gpu::Api
 	D3D_FEATURE_LEVEL featureLevel;
 
 	ID3D11Device * direct3Ddevice;
+	ID3D11DeviceContext * direct3Dcontext;
 
 #if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
-	IDXGISwapChain* dxgiSwapChain;
+	typedef std::map<PlatformWindow*, IDXGISwapChain*> WindowSwapChainMap;
+	typedef std::map<PlatformWindow*, DX11::BackbufferSurface*> WindowSurfaceMap;
+	std::vector<PlatformWindow*> destroyedWindows;
+	WindowSwapChainMap windowSwapChains;
+	WindowSurfaceMap windowDrawSurfaces;
 #else
 	IDXGISwapChain1* dxgiSwapChain;
 #endif
 
-	ID3D11DeviceContext * direct3Dcontext;
-	ID3D11RenderTargetView * renderTargetView;
-	ID3D11DepthStencilView * depthStencilView;
-	ID3D11DepthStencilState * depthStencilState;
-	ID3D11Texture2D * depthStencilBuffer;
+	IDXGISwapChain * mainSwapChain;
+	DX11::BackbufferSurface * mainDrawSurface;
 
+	//ID3D11RenderTargetView * mainRenderTargetView;
+	//ID3D11DepthStencilView * mainDepthStencilView;
+	//ID3D11Texture2D * mainDepthStencilBuffer;
+
+	ID3D11DepthStencilState * depthStencilState;
 	ID3D11RasterizerState * wireframeState;
 	ID3D11RasterizerState * defaultRasterState;
 
@@ -194,9 +203,6 @@ class Api : public Gpu::Api
 	ModelShader * baseShader;
 	TextureShader * texCopyShader;
 	Mesh * texShaderQuad;
-
-	unsigned backBufferWidth;
-	unsigned backBufferHeight;
 
 	void SetupVertexInformation();
 
@@ -253,14 +259,10 @@ class Api : public Gpu::Api
 
 	SamplerMgr * samplerMgr;
 
-public:
 	float clearColor[4];
 
-#if !defined(WINAPI_FAMILY) || WINAPI_FAMILY != WINAPI_FAMILY_APP
-	Api(Files::Api * files, HWND handle);
-#else
-	Api(Files::Api * files, Windows::UI::Core::CoreWindow ^ window);
-#endif
+public:
+	Api(Files::Api * files, PlatformWindow * window);
 	~Api();
 
 	virtual void Initialize(AssetMgr * assets) override;
@@ -286,7 +288,8 @@ public:
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, unsigned numTriangles, unsigned* indexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) override;
 	virtual Gpu::DrawSurface * CreateDrawSurface(unsigned width, unsigned height, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
-	virtual Gpu::DrawSurface * CreateScreenDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
+	virtual Gpu::DrawSurface * CreateRelativeDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int, PlatformWindow * window = 0) override;
+	virtual Gpu::DrawSurface * GetWindowDrawSurface(PlatformWindow * window);
 
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer) override;
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData) override;
@@ -302,8 +305,10 @@ public:
 	virtual float MeasureGpuText(Gpu::Font * font, const wchar_t * text) override;
 
 	virtual void SetClearColor(float r, float g, float b, float a) override;
-	virtual void OnScreenResize(unsigned width, unsigned height) override;
-	virtual void GetBackbufferSize(unsigned & width, unsigned & height) override;
+	virtual void OnWindowCreated(PlatformWindow * window) override;
+	virtual void OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) override;
+	virtual void OnWindowDestroyed(PlatformWindow * window) override;
+	virtual void GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window = 0) override;
 	virtual void SetMultisampling(unsigned multisampleLevel) override;
 	virtual void SetAnisotropy(unsigned anisotropy) override { samplerMgr->SetAnisotropy(direct3Dcontext, anisotropy); }
 	virtual void SetBlendMode(Gpu::BlendMode blendMode) override;

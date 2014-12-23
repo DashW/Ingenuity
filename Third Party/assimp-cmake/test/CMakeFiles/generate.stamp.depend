@@ -1,0 +1,17 @@
+# CMake generation dependency list for this directory.
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp/test/CMakeLists.txt
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp/cmake-modules/AddGTest.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindThreads.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/CheckIncludeFiles.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/CheckLibraryExists.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/CheckSymbolExists.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindPackageMessage.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/CMakeParseArguments.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/ExternalProject.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindGit.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/FindPackageMessage.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/CMakeParseArguments.cmake
+C:/Program Files (x86)/CMake/share/cmake-3.1/Modules/RepositoryInfo.txt.in
+C:/Users/Richard/Documents/IngenuityGitHub/Third Party/assimp-cmake/test/gtest/tmp/gtest-cfgcmd.txt.in

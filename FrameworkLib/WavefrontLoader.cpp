@@ -12,28 +12,28 @@
 namespace Ingenuity {
 
 WavefrontLoader::WavefrontLoader(
-	StepMgr * steppables,
-	Gpu::Api * gpu,
-	AssetMgr * assets,
-	Files::Directory * directory,
-	const wchar_t * path,
-	bool noNormals,
-	bool noTangents,
-	bool consolidate) :
-	SteppableLoader(steppables, directory, path, WavefrontModelAsset),
-	state(Initializing),
-	path(path),
-	gpu(gpu),
-	assets(assets),
-	steppables(steppables),
-	model(0),
-	debugMesh(0),
-	objParser(noNormals),
-	mtlParser(assets),
-	noTangents(noTangents),
-	genDebugMesh(false),
-	finished(false),
-	debugMeshAcquired(false)
+		StepMgr * steppables,
+		AssetMgr * assets,
+		Gpu::Api * gpu,
+		Files::Directory * directory,
+		const wchar_t * path,
+		bool noNormals,
+		bool noTangents,
+		bool consolidate)
+	: SteppableLoader(steppables, directory, path, WavefrontModelAsset)
+	, state(Initializing)
+	, path(path)
+	, gpu(gpu)
+	, assets(assets)
+	, steppables(steppables)
+	, model(0)
+	, debugMesh(0)
+	, objParser(noNormals)
+	, mtlParser(assets)
+	, noTangents(noTangents)
+	, genDebugMesh(false)
+	, finished(false)
+	, debugMeshAcquired(false)
 {
 }
 
