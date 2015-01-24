@@ -275,10 +275,10 @@ function Draw()
 		DrawText(font,progressText,400,0,0);
 	end
 	
-	local screenWidth,screenHeight = GetScreenSize();
+	local screenWidth,screenHeight = GetBackbufferSize();
 	
 	if logoSprite then
-		DrawSprite(logoSprite,0.05-(screenWidth/screenHeight),0.58);
+		--DrawSprite(logoSprite,0.05-(screenWidth/screenHeight),0.58);
 	end
 	--DrawText(font,positionText,700,0,0);
 end

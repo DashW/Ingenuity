@@ -98,14 +98,15 @@ struct NewtonPhysicsSpring : public PhysicsSpring
 	glm::vec3 attachPoint1;
 	glm::vec3 attachPoint2;
 	float stiffness;
-	float damping;
+	float forceDamping;
+	float torqueDamping;
 	float length;
 	bool extension;
 	bool compression;
 
 	NewtonPhysicsSpring() :
 		body1(0), body2(0),
-		stiffness(300.0f), damping(20.0f), length(0.0f), 
+		stiffness(300.0f), forceDamping(20.0f), torqueDamping(0.1f), length(0.0f),
 		extension(true), compression(false) {}
 	
 	// Needs to remove itself from the respective bodies!
@@ -186,6 +187,8 @@ public:
 	virtual glm::vec3 GetPosition(PhysicsObject * object) override;
 	//virtual glm::vec3 GetRotation(PhysicsObject * object) override;
 	virtual glm::mat4 GetMatrix(PhysicsObject * object) override;
+	virtual glm::mat4 GetGlobalMatrix(PhysicsObject * object) override;
+	virtual glm::mat4 GetLocalMatrix(PhysicsObject * object) override;
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) override;
 	
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) override;

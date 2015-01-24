@@ -27,7 +27,10 @@ enum BlendMode
 {
 	BlendMode_None,
 	BlendMode_Alpha,
-	BlendMode_Additive
+	BlendMode_Additive,
+	BlendMode_Premultiplied,
+
+	BlendMode_Count
 };
 
 /* Abstract class to interact with a graphics API like DirectX or OpenGL */
@@ -36,15 +39,15 @@ class Api
 protected:
 	bool drawEverythingWireframe;
 
+	Effect * baseEffect;
 	DrawSurface * stencilSurface;
 	DrawSurface * stencilClipSurface;
 
 public:
-	const unsigned standardScreenHeight;
 
 	Api() :
 		drawEverythingWireframe(false),
-		standardScreenHeight(768),
+		baseEffect(0),
 		stencilSurface(0),
 		stencilClipSurface(0) {}
 	virtual ~Api() {};
@@ -58,7 +61,6 @@ public:
 
 	inline void Draw(Drawable * drawable, DrawSurface * surface = 0) { drawable->BeDrawn(this, surface); }
 
-	virtual void DrawGpuSprite(Sprite * sprite, DrawSurface * buffer = 0) = 0;
 	virtual void DrawGpuText(Font * font, const wchar_t* text, float x, float y,
 		bool center, DrawSurface * surface = 0) = 0;
 	virtual void DrawGpuModel(Model * model, Camera * camera, Light ** lights,
@@ -69,7 +71,7 @@ public:
 	virtual Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) = 0;
 	virtual CubeMap * CreateGpuCubeMap(char * data, unsigned dataSize) = 0;
 	virtual VolumeTexture * CreateGpuVolumeTexture(char * data, unsigned dataSize) = 0;
-	virtual ShaderLoader * CreateGpuShaderLoader(Files::Directory * directory, const wchar_t * path) = 0;
+	virtual ShaderLoader * CreateGpuShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path) = 0;
 
 	virtual Mesh * CreateGpuMesh(unsigned numVertices, void * vertexData, VertexType type, bool dynamic = false) = 0;
 	virtual Mesh * CreateGpuMesh(unsigned numVertices, void * vertexData,
@@ -100,11 +102,12 @@ public:
 	virtual void UpdateDynamicMesh(Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData) = 0;
 	virtual void UpdateInstanceBuffer(InstanceBuffer * instanceBuffer, unsigned numInstances, void * instanceData) = 0;
 
+	Effect * GetBaseEffect() { return baseEffect; }
 	DrawSurface * GetStencilSurface() { return stencilSurface; }
 	DrawSurface * GetStencilClipSurface() { return stencilClipSurface; }
 	virtual DrawSurface * CreateDrawSurface(unsigned width, unsigned height, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
-	virtual DrawSurface * CreateRelativeDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int, PlatformWindow * window = 0) = 0;
-	virtual DrawSurface * GetWindowDrawSurface(PlatformWindow * window) = 0;
+	virtual DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
+	virtual DrawSurface * GetWindowDrawSurface(PlatformWindow * window = 0) = 0;
 
 	virtual void AddDeviceListener(IDeviceListener * listener) = 0;
 	virtual void RemoveDeviceListener(IDeviceListener * listener) = 0;
@@ -119,45 +122,14 @@ public:
 	virtual void OnWindowCreated(PlatformWindow * window) = 0;
 	virtual void OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) = 0;
 	virtual void OnWindowDestroyed(PlatformWindow * window) = 0;
+
 	virtual void GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window = 0) = 0;
 	virtual void SetMultisampling(unsigned multisampleLevel) = 0;
 	virtual void SetBlendMode(BlendMode blendMode) = 0;
-
-	unsigned GetStandardScreenHeight() { return standardScreenHeight; } // DEPRECATE when removing Sprite API!
 	virtual void SetDrawWireframe(bool wireframe) { drawEverythingWireframe = wireframe; }
-
 	virtual void SetAnisotropy(unsigned anisotropy) = 0;
 
 	virtual bool isDeviceLost() = 0;
-};
-
-struct Sprite : public Drawable
-{
-	Texture * texture;
-	 
-	glm::vec2 center;
-	glm::vec3 position;
-	glm::vec2 scale;
-	glm::vec4 color;
-
-	float rotation;
-	bool pixelSpace;
-	bool brightAsAlpha;
-	Rect clipRect;
-
-	Sprite(
-		Texture * texture = 0,
-		float transformCenterX = 0.0f,
-		float transformCenterY = 0.0f)
-		: texture(texture), center(transformCenterX, transformCenterY),
-		rotation(0.0f), scale(1.0f, 1.0f), color(1.0f, 1.0f, 1.0f, 1.0f),
-		pixelSpace(false), brightAsAlpha(false),
-		clipRect(0.0f, 0.0f, 1.0f, 1.0f) {}
-
-	virtual void BeDrawn(Api* gpu, DrawSurface * surface = 0) override
-	{
-		gpu->DrawGpuSprite(this, surface);
-	}
 };
 
 struct ComplexModel : public IAsset
@@ -191,7 +163,7 @@ struct ComplexModel : public IAsset
 		{
 			return glm::translate(glm::vec3(position))
 				* glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z)
-				* glm::scale(glm::vec3(scale.x));
+				* glm::scale(glm::vec3(scale));
 		}
 	}
 
@@ -221,8 +193,23 @@ struct ComplexModel : public IAsset
 		{
 			dst->models[i] = models[i];
 			dst->models[i].destructMesh = false;
+			dst->models[i].destructEffect = false;
 		}
 		return dst;
+	}
+
+	inline void ApplyTransform(Gpu::Model * subModel)
+	{
+		if(useMatrix || subModel->useMatrix)
+		{
+			subModel->SetMatrix(GetMatrix() * subModel->GetMatrix());
+		}
+		else
+		{
+			subModel->position = GetMatrix() * subModel->position;
+			subModel->rotation += rotation;
+			subModel->scale *= scale;
+		}
 	}
 
 	virtual void BeDrawn(Api * gpu, Camera * camera, Light ** lights,
@@ -232,19 +219,15 @@ struct ComplexModel : public IAsset
 
 		for(unsigned i = 0; i < numModels; ++i)
 		{
+			// TEMPMODEL INITIALISATION - MINOR COST - ~4us //
+
 			tempModel = models[i];
-			if(useMatrix || tempModel.useMatrix)
-			{
-				tempModel.SetMatrix(tempModel.GetMatrix() * GetMatrix());
-			}
-			else
-			{
-				tempModel.position += position; // with respect to rotation about the parent model's axis??
-				tempModel.rotation += rotation;
-				tempModel.scale *= scale;
-			}
+
+			ApplyTransform(&tempModel);
+
 			tempModel.wireframe = wireframe ? true : tempModel.wireframe;
 			tempModel.destructMesh = false;
+			tempModel.destructEffect = false;
 
 			gpu->DrawGpuModel(&tempModel, camera, lights, numLights, buffer, instances, overrideEffect);
 		}

@@ -16,17 +16,17 @@ public:
 	virtual ~Scene() {}
 
 	virtual unsigned Add(Model * model) = 0;
-	virtual unsigned Add(Sprite * sprite) = 0;
+	//virtual unsigned Add(Sprite * sprite) = 0;
 	virtual unsigned Add(Light * light) = 0;
 
 	virtual void SetCamera(Camera * camera) = 0;
 
 	virtual unsigned GetNumModels() = 0;
-	virtual unsigned GetNumSprites() = 0;
+	//virtual unsigned GetNumSprites() = 0;
 	virtual unsigned GetNumLights() = 0;
 
 	virtual void ClearModels() = 0;
-	virtual void ClearSprites() = 0;
+	//virtual void ClearSprites() = 0;
 	virtual void ClearLights() = 0;
 
 	virtual void SetDirty() {}
@@ -35,7 +35,7 @@ public:
 class LinearScene : public Scene
 {
 	std::list<Model*> models;
-	std::vector<Sprite*> sprites;
+	//std::vector<Sprite*> sprites;
 	std::vector<Light*> lights;
 	Camera * camera;
 
@@ -50,11 +50,11 @@ public:
 		models.push_back(model);
 		return models.size() - 1;
 	}
-	virtual unsigned Add(Sprite * sprite) override
-	{
-		sprites.push_back(sprite);
-		return sprites.size() - 1;
-	}
+	//virtual unsigned Add(Sprite * sprite) override
+	//{
+	//	sprites.push_back(sprite);
+	//	return sprites.size() - 1;
+	//}
 	virtual unsigned Add(Light * light) override
 	{
 		lights.push_back(light);
@@ -72,11 +72,11 @@ public:
 		}
 		return 0;
 	}
-	Sprite* GetSprite(unsigned index)
-	{
-		if(index >= sprites.size()) return 0;
-		return sprites[index];
-	}
+	//Sprite* GetSprite(unsigned index)
+	//{
+	//	if(index >= sprites.size()) return 0;
+	//	return sprites[index];
+	//}
 	Light* GetLight(unsigned index)
 	{
 		if(index >= lights.size()) return 0;
@@ -87,10 +87,10 @@ public:
 	{
 		return models.size();
 	}
-	virtual unsigned GetNumSprites() override
-	{
-		return sprites.size();
-	}
+	//virtual unsigned GetNumSprites() override
+	//{
+	//	return sprites.size();
+	//}
 	virtual unsigned GetNumLights() override
 	{
 		return lights.size();
@@ -105,10 +105,10 @@ public:
 	{
 		models.clear();
 	}
-	virtual void ClearSprites() override
-	{
-		sprites.clear();
-	}
+	//virtual void ClearSprites() override
+	//{
+	//	sprites.clear();
+	//}
 	virtual void ClearLights() override
 	{
 		lights.clear();
@@ -123,10 +123,10 @@ public:
 			gpu->DrawGpuModel(*it, camera, lights.data(), lights.size(), surface);
 		}
 		// Then sprites
-		for(unsigned i = 0; i < sprites.size(); i++)
-		{
-			gpu->DrawGpuSprite(sprites[i], surface);
-		}
+		//for(unsigned i = 0; i < sprites.size(); i++)
+		//{
+		//	gpu->DrawGpuSprite(sprites[i], surface);
+		//}
 	}
 };
 
@@ -139,7 +139,7 @@ class InstancedScene : public Scene
 	//};
 	//SortByMesh sortPred;
 
-	std::vector<Sprite*> sprites;
+	//std::vector<Sprite*> sprites;
 	std::vector<Light*> lights;
 
 	typedef std::map<Mesh*, Model> ModelMap;
@@ -165,7 +165,7 @@ public:
 	virtual ~InstancedScene()
 	{
 		ClearModels();
-		ClearSprites();
+		//ClearSprites();
 		ClearLights();
 
 		BufferMap::iterator instanceBufferIt = instanceBuffers.begin();
@@ -201,11 +201,11 @@ public:
 
 		return instanceVectors[mesh].size() - 1;
 	}
-	virtual unsigned Add(Sprite * sprite) override
-	{
-		sprites.push_back(sprite);
-		return sprites.size() - 1;
-	}
+	//virtual unsigned Add(Sprite * sprite) override
+	//{
+	//	sprites.push_back(sprite);
+	//	return sprites.size() - 1;
+	//}
 	virtual unsigned Add(Light * light) override
 	{
 		lights.push_back(light);
@@ -252,10 +252,10 @@ public:
 		}
 		return 0;
 	}
-	virtual unsigned GetNumSprites() override
-	{
-		return sprites.size();
-	}
+	//virtual unsigned GetNumSprites() override
+	//{
+	//	return sprites.size();
+	//}
 	virtual unsigned GetNumLights() override
 	{
 		return lights.size();
@@ -273,10 +273,10 @@ public:
 
 		dirty = true;
 	}
-	virtual void ClearSprites() override
-	{
-		sprites.clear();
-	}
+	//virtual void ClearSprites() override
+	//{
+	//	sprites.clear();
+	//}
 	virtual void ClearLights() override
 	{
 		lights.clear();
@@ -323,11 +323,11 @@ public:
 		}
 
 		// Then sprites // Perhaps we can take advantage of, or emulate the D3DXSprite's batching support here?
-		std::vector<Sprite*>::const_iterator spriteIt;
-		for(spriteIt = sprites.begin(); spriteIt != sprites.end(); ++spriteIt)
-		{
-			gpu->DrawGpuSprite(*spriteIt, surface);
-		}
+		//std::vector<Sprite*>::const_iterator spriteIt;
+		//for(spriteIt = sprites.begin(); spriteIt != sprites.end(); ++spriteIt)
+		//{
+		//	gpu->DrawGpuSprite(*spriteIt, surface);
+		//}
 	}
 };
 

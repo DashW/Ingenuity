@@ -19,6 +19,10 @@ Win32::FileApi::FileApi(Win32::Window * window) : activeEventCount(0), window(wi
 
 Win32::FileApi::~FileApi()
 {
+	for(unsigned i = 0; i < createdDirectories.size(); ++i)
+	{
+		delete createdDirectories[i];
+	}
 	delete tempKnownDirectory;
 }
 
@@ -39,18 +43,20 @@ Files::Directory * Win32::FileApi::GetKnownDirectory(Files::KnownDirectory optio
 
 Files::Directory * Win32::FileApi::GetSubDirectory(Files::Directory * root, const wchar_t * path)
 {
-	if(path != 0)
+	if(root != 0 && path != 0 && wcslen(path) != 0)
 	{
 		for(unsigned i = 0; i < createdDirectories.size(); ++i)
 		{
-			if(createdDirectories[i].directoryPath.compare(path) == 0)
+			if(createdDirectories[i]->directoryPath.compare(path) == 0)
 			{
-				return &createdDirectories[i];
+				return createdDirectories[i];
 			}
 		}
-		createdDirectories.emplace_back();
-		createdDirectories.back().directoryPath = path;
-		return &createdDirectories.back();
+		Directory * newDirectory = new Directory();
+		newDirectory->directoryPath = root->GetPath();
+		newDirectory->directoryPath += path;
+		createdDirectories.push_back(newDirectory);
+		return newDirectory;
 	}
 	return 0;
 }

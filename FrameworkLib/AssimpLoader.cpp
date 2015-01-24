@@ -30,11 +30,11 @@ public:
 
 	virtual size_t Read(void * buffer, size_t pSize, size_t pCount) override
 	{
-		unsigned int numChars = pSize;
+		unsigned int numChars = pSize * pCount;
 		const char * charBufferPtr = files->ReadChars(file, numChars, seekHead);
 		memcpy(buffer, charBufferPtr, numChars);
 		delete[] charBufferPtr;
-		return numChars;
+		return numChars / pSize;
 	}
 
 	virtual size_t Write(const void* pvBuffer, size_t pSize, size_t pCount) override
@@ -164,7 +164,14 @@ AssimpLoader::AssimpLoader(
 	, textureTicket(0)
 {
 	assimpIoSystem = new AssimpIOSystem(assets->GetFileApi());
-	assimpIoSystem->SetDirectory(dir);
+
+	int directoryCharIndex = this->path.find_last_of(L"\\/");
+	std::wstring subPath = this->path.substr(0, directoryCharIndex + 1);
+	Files::Directory * tempDir = assets->GetFileApi()->GetSubDirectory(directory, subPath.c_str());
+	directory = tempDir ? tempDir : directory;
+	this->path = this->path.substr(directoryCharIndex + 1);
+
+	assimpIoSystem->SetDirectory(directory);
 
 	assimpImporter.SetIOHandler(assimpIoSystem);
 	assimpImporter.SetProgressHandler(new AssimpProgressHandler(this));
@@ -270,7 +277,8 @@ void AssimpLoader::TraverseNode(const aiScene *sc, const aiNode* nd, const glm::
 		{
 			if(mesh->HasNormals())
 			{
-				if(mesh->HasTextureCoords(0))
+				if(mesh->HasTextureCoords(0) && mesh->mMaterialIndex < materials.size() &&
+					materials[mesh->mMaterialIndex].diffuseTexturePath.length() > 0)
 				{
 					if(mesh->HasTangentsAndBitangents())
 					{

@@ -14,26 +14,39 @@
 #include "WavefrontLoader.h"
 #include "HeightParser.h"
 #include "LeapMotionHelper.h"
+#include "SpriteManager.h"
 #include <sstream>
 #include <vector>
 
+// Generic Parameter
+#define POP_PARAM(NUM,NAME,TYPE) ScriptParam NAME = interpreter->PopParam();\
+	if(NAME.type != ScriptParam::TYPE) { \
+	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not of type " #TYPE); \
+	return; }
+
+// Numeric Parameter
+#define POP_NUMPARAM(NUM,NAME) ScriptParam NAME = interpreter->PopParam();\
+	if(!NAME.IsNumber() && NAME.type != ScriptParam::BOOL) {\
+	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a number");\
+	return; }
+
+// Pointer Parameter
+#define POP_PTRPARAM(NUM,NAME,PTRTYPE) ScriptParam NAME = interpreter->PopParam();\
+	if(!ScriptTypes::CheckPtrType(NAME,PTRTYPE)) {\
+	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a pointer of type " #PTRTYPE);\
+	return; }
+
+// Special Pointer Parameter
+#define POP_SPTRPARAM(NUM,NAME,PTRTYPE) ScriptParam NAME = interpreter->PopParam();\
+	if(!NAME.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::PTRTYPE))) {\
+	interpreter->ThrowError("parameter " #NUM " (" #NAME ") is not a pointer of type " #PTRTYPE);\
+	return; }
+
 namespace Ingenuity {
 
-unsigned ScriptCallbacks::typeHandles[ScriptCallbacks::TypeCount];
+unsigned ScriptTypes::typeHandles[TypeCount];
+
 Files::Directory * ScriptCallbacks::projectDirectory = 0;
-
-struct ScriptFloatArray
-{
-	float * floats;
-	unsigned length;
-	Gpu::FloatArray gpuFloatArray;
-
-	ScriptFloatArray(unsigned length) :
-		floats(new float[length]),
-		length(length),
-		gpuFloatArray(floats, length) {}
-	~ScriptFloatArray() { delete[] floats; }
-};
 
 Files::Directory * ScriptCallbacks::GetDirectory(Files::Api * files, const char * name)
 {
@@ -236,7 +249,7 @@ ScriptParam ScriptCallbacks::VertexBufferToFloats(ScriptInterpreter * interprete
 
 	memcpy(scriptFloatArray->floats, vertexBuffer->GetData(), rawBufferSize);
 
-	return ScriptParam(scriptFloatArray, typeHandles[TypeFloatArray]);
+	return ScriptParam(scriptFloatArray, ScriptTypes::GetHandle(TypeFloatArray));
 }
 
 ScriptParam ScriptCallbacks::IndexBufferToFloats(ScriptInterpreter * interpreter, unsigned * indexBuffer, unsigned numTriangles)
@@ -250,7 +263,7 @@ ScriptParam ScriptCallbacks::IndexBufferToFloats(ScriptInterpreter * interpreter
 		scriptFloatArray->floats[i] = float(indexBuffer[i]);
 	}
 	
-	return ScriptParam(scriptFloatArray, typeHandles[TypeFloatArray]);
+	return ScriptParam(scriptFloatArray, ScriptTypes::GetHandle(TypeFloatArray));
 }
 
 LocalMesh * ScriptCallbacks::FloatsToLocalMesh(ScriptInterpreter * interpreter, ScriptParam type, ScriptParam vertices, ScriptParam indices)
@@ -401,7 +414,7 @@ LocalMesh * ScriptCallbacks::FloatsToLocalMesh(ScriptInterpreter * interpreter, 
 
 		localMesh = new LocalMesh(vb, ib, numindices);
 	}
-	else if(CheckPtrType(vertices, TypeFloatArray) && CheckPtrType(indices, TypeFloatArray))
+	else if(ScriptTypes::CheckPtrType(vertices, TypeFloatArray) && ScriptTypes::CheckPtrType(indices, TypeFloatArray))
 	{
 		ScriptFloatArray * vertexArray = vertices.GetPointer<ScriptFloatArray>();
 		ScriptFloatArray * indexArray = indices.GetPointer<ScriptFloatArray>();
@@ -554,13 +567,13 @@ void ScriptCallbacks::CreateWindow(ScriptInterpreter * interpreter)
 		width.IsNumber() ? unsigned(width.nvalue) : 640,
 		height.IsNumber() ? unsigned(height.nvalue) : 480);
 
-	interpreter->PushParam(ScriptParam(window, typeHandles[TypePlatformWindow]));;
+	interpreter->PushParam(ScriptParam(window, ScriptTypes::GetHandle(TypePlatformWindow)));;
 }
 
 void ScriptCallbacks::GetMainWindow(ScriptInterpreter * interpreter)
 {
 	PlatformWindow * window = interpreter->GetApp()->platform->GetMainPlatformWindow();
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(window, typeHandles[TypePlatformWindow])));;
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(window, ScriptTypes::GetHandle(TypePlatformWindow))));;
 }
 
 void ScriptCallbacks::GetWindowStatus(ScriptInterpreter * interpreter)
@@ -576,7 +589,7 @@ void ScriptCallbacks::GetWindowSurface(ScriptInterpreter * interpreter)
 	Gpu::DrawSurface * surface = interpreter->GetApp()->gpu->GetWindowDrawSurface(window.GetPointer<PlatformWindow>());
 	if(surface)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(surface, typeHandles[TypeGpuDrawSurface])));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(surface, ScriptTypes::GetHandle(TypeGpuDrawSurface))));
 	}
 }
 
@@ -609,173 +622,87 @@ void ScriptCallbacks::SetWindowProps(ScriptInterpreter * interpreter)
 	//interpreter->GetApp()->gpu->OnWindowCreated(platformWindow);
 }
 
-void ScriptCallbacks::DrawSprite(ScriptInterpreter * interpreter)
+void ScriptCallbacks::CreateFloatArray(ScriptInterpreter * interpreter)
 {
-	POP_PTRPARAM(1,texture,TypeGpuTexture);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	ScriptParam size = interpreter->PopParam();
-	ScriptParam surface = interpreter->PopParam();
+	ScriptParam content = interpreter->PopParam();
 
-	Gpu::Sprite sprite;
-	sprite.position.x = (float) x.nvalue;
-	sprite.position.y = (float) y.nvalue;
-	sprite.texture = texture.GetPointer<Gpu::Texture>();
+	ScriptFloatArray * floatArray = 0;
 
-	if(size.type == ScriptParam::DOUBLE) 
+	if(content.IsNumber())
 	{
-		sprite.scale = glm::vec2(float(size.nvalue));
+		if(content.nvalue < 0.0)
+		{
+			interpreter->ThrowError("Attempted to create FloatArray of negative length!");
+			return;
+		}
+		floatArray = new ScriptFloatArray(unsigned(content.nvalue));
+	}
+	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4)))
+	{
+		floatArray = new ScriptFloatArray(4);
+		*((glm::vec4*)floatArray->floats) = *(content.GetPointer<glm::vec4>());
+	}
+	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4)))
+	{
+		floatArray = new ScriptFloatArray(16);
+		*((glm::mat4*)floatArray->floats) = *(content.GetPointer<glm::mat4>());
 	}
 
-	Gpu::DrawSurface * drawSurface = 0;
-	if(CheckPtrType(surface, TypeGpuDrawSurface))
+	interpreter->PushParam(ScriptParam(floatArray, ScriptTypes::GetHandle(TypeFloatArray)));
+}
+
+void ScriptCallbacks::SetFloatArray(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, floatArray, TypeFloatArray);
+	POP_NUMPARAM(2, index);
+	POP_NUMPARAM(3, value);
+
+	ScriptFloatArray * scriptFloatArray = floatArray.GetPointer<ScriptFloatArray>();
+	unsigned uindex = unsigned(index.nvalue);
+
+	while(value.IsNumber())
 	{
-		drawSurface = surface.GetPointer<Gpu::DrawSurface>();
+		if(index.nvalue < 0.0 || uindex >= scriptFloatArray->length)
+		{
+			interpreter->ThrowError("Attempted to set a FloatArray index out of range");
+			return;
+		}
+
+		scriptFloatArray->floats[uindex++] = float(value.nvalue);
+
+		value = interpreter->PopParam();
+	}
+}
+
+void ScriptCallbacks::GetFloatArray(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, floatArray, TypeFloatArray);
+	POP_NUMPARAM(2, index);
+	ScriptParam numValues = interpreter->PopParam();
+
+	ScriptFloatArray * scriptFloatArray = floatArray.GetPointer<ScriptFloatArray>();
+	unsigned uindex = unsigned(index.nvalue);
+	unsigned numVals = 1;
+	if(numValues.IsNumber()) numVals = unsigned(numValues.nvalue);
+
+	if(index.nvalue < 0.0 || uindex + numVals > scriptFloatArray->length)
+	{
+		interpreter->ThrowError("Attempted to get a FloatArray index out of range");
+		return;
 	}
 
-	interpreter->GetApp()->gpu->DrawGpuSprite(&sprite, drawSurface);
-}
-
-void ScriptCallbacks::CreateCamera(ScriptInterpreter * interpreter)
-{
-	ScriptParam orthographic = interpreter->PopParam();
-
-	Gpu::Camera * camera = new Gpu::Camera();
-
-	if(orthographic.type == ScriptParam::BOOL)
+	for(unsigned i = uindex; i < uindex + numVals; ++i)
 	{
-		camera->isOrthoCamera = orthographic.nvalue > 0.0;
+		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(scriptFloatArray->floats[i])));
 	}
-
-	if(camera) interpreter->PushParam(ScriptParam(camera,typeHandles[TypeGpuCamera]));
 }
 
-void ScriptCallbacks::SetCameraPosition(ScriptInterpreter * interpreter)
+void ScriptCallbacks::GetFloatArrayLength(ScriptInterpreter * interpreter)
 {
-	POP_PTRPARAM(1,camera,TypeGpuCamera);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	if(!gpuCamera) return;
-
-	gpuCamera->position.x = (float) x.nvalue;
-	gpuCamera->position.y = (float) y.nvalue;
-	gpuCamera->position.z = (float) z.nvalue;
-}
-
-void ScriptCallbacks::SetCameraTarget(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,camera,TypeGpuCamera);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	if(!gpuCamera) return;
-
-	gpuCamera->target.x = (float) x.nvalue;
-	gpuCamera->target.y = (float) y.nvalue;
-	gpuCamera->target.z = (float) z.nvalue;
-}
-
-void ScriptCallbacks::SetCameraUp(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, camera, TypeGpuCamera);
-	POP_NUMPARAM(2, x);
-	POP_NUMPARAM(3, y);
-	POP_NUMPARAM(4, z);
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	if(!gpuCamera) return;
-
-	gpuCamera->up.x = (float)x.nvalue;
-	gpuCamera->up.y = (float)y.nvalue;
-	gpuCamera->up.z = (float)z.nvalue;
-}
-
-void ScriptCallbacks::SetCameraClipFovOrHeight(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,camera,TypeGpuCamera);
-	POP_NUMPARAM(2,nearclip);
-	POP_NUMPARAM(3,farclip);
-	POP_NUMPARAM(4,fovOrHeight);
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-	if(!gpuCamera) return;
-
-	gpuCamera->nearClip = (float) nearclip.nvalue;
-	gpuCamera->farClip = (float) farclip.nvalue;
-	gpuCamera->fovOrHeight = (float) fovOrHeight.nvalue;
-}
-
-void ScriptCallbacks::GetCameraRay(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, camera, TypeGpuCamera);
-	POP_NUMPARAM(2, x);
-	POP_NUMPARAM(3, y);
-	ScriptParam surface = interpreter->PopParam();
+	POP_PTRPARAM(1, floatArray, TypeFloatArray);
 	interpreter->ClearParams();
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	unsigned width, height;
-	if(CheckPtrType(surface, TypeGpuDrawSurface))
-	{
-		Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-		width = gpuSurface->GetTexture()->GetWidth();
-		height = gpuSurface->GetTexture()->GetHeight();
-	}
-	else
-	{
-		interpreter->GetApp()->gpu->GetBackbufferSize(width, height);
-	}
-
-	float aspect = float(width) / float(height);
-	glm::vec4 ray(gpuCamera->GetUnprojectedRay(float(x.nvalue), float(y.nvalue), aspect), 0.0f);
-	ray *= (gpuCamera->farClip - gpuCamera->nearClip);
-
-	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&ray, sizeof(glm::vec4), 
-		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
-}
-
-void ScriptCallbacks::GetCameraMatrix(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, camera, TypeGpuCamera);
-	ScriptParam surface = interpreter->PopParam();
-	ScriptParam isTex = interpreter->PopParam();
-	interpreter->ClearParams();
-
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	float aspect = 1.0f;
-	
-	if(CheckPtrType(surface, TypeGpuDrawSurface))
-	{
-		Gpu::Texture * surfaceTex = surface.GetPointer<Gpu::DrawSurface>()->GetTexture();
-		aspect = float(surfaceTex->GetWidth()) / float(surfaceTex->GetHeight());
-	}
-
-	glm::mat4 cameraMatrix = gpuCamera->GetProjMatrix(aspect) * gpuCamera->GetViewMatrix();
-
-	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
-	static const glm::mat4 texCoordTransform(
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, -0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.0f, 1.0f);
-
-	if(isTex.type == ScriptParam::BOOL && isTex.nvalue > 0.0)
-	{
-		cameraMatrix = texCoordTransform * cameraMatrix;
-	}
-
-	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&cameraMatrix, sizeof(glm::mat4),
-		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4))));
+	ScriptFloatArray * scriptFloatArray = floatArray.GetPointer<ScriptFloatArray>();
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(scriptFloatArray->length)));
 }
 
 void ScriptCallbacks::CreateGrid(ScriptInterpreter * interpreter)
@@ -858,810 +785,14 @@ void ScriptCallbacks::CreateCylinder(ScriptInterpreter * interpreter)
 
 void ScriptCallbacks::CreateCapsule(ScriptInterpreter * interpreter)
 {
-	POP_NUMPARAM(1,length)
+	POP_NUMPARAM(1, length)
 
-	LocalMesh * localCapsule = GeoBuilder().BuildCapsule(0.5f, float(length.nvalue), 20, 20);
+		LocalMesh * localCapsule = GeoBuilder().BuildCapsule(0.5f, float(length.nvalue), 20, 20);
 
 	interpreter->PushParam(VertexBufferToFloats(interpreter, localCapsule->vertexBuffer));
 	interpreter->PushParam(IndexBufferToFloats(interpreter, localCapsule->indexBuffer, localCapsule->numTriangles));
 
 	delete localCapsule;
-}
-
-void ScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_PTRPARAM(2,camera,TypeGpuCamera);
-	ScriptParam lights = interpreter->PopParam();
-	ScriptParam surface = interpreter->PopParam();
-	ScriptParam instances = interpreter->PopParam();
-	ScriptParam effect = interpreter->PopParam();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-	Gpu::Light * gpuLights[5];
-	unsigned numGpuLights = 0;
-	Gpu::DrawSurface * gpuSurface = 0;
-	Gpu::InstanceBuffer * gpuInstances = 0;
-	Gpu::Effect * gpuOverrideEffect = 0;
-
-	if(lights.type == ScriptParam::MAPREF)
-	{
-		ScriptParam index; // NONE
-		ScriptParam result;
-
-		while(interpreter->GetMapNext(lights,index,result) && numGpuLights < 5)
-		{
-			if(!CheckPtrType(result,TypeGpuLight)) break;
-			gpuLights[numGpuLights++] = result.GetPointer<Gpu::Light>();
-		}
-	}
-	if(CheckPtrType(lights, TypeGpuLight))
-	{
-		gpuLights[numGpuLights++] = lights.GetPointer<Gpu::Light>();
-	}
-
-	if(CheckPtrType(surface, TypeGpuDrawSurface))
-	{
-		gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-	}
-	if(CheckPtrType(instances, TypeGpuInstanceBuffer))
-	{
-		gpuInstances = instances.GetPointer<Gpu::InstanceBuffer>();
-	}
-	if(CheckPtrType(effect, TypeGpuEffect))
-	{
-		gpuOverrideEffect = effect.GetPointer<Gpu::Effect>();
-	}
-
-	if(gpuModel)
-	{
-		Gpu::Api * gpu = interpreter->GetApp()->gpu;
-		gpuModel->instances = gpuInstances;
-		gpuModel->BeDrawn(gpu, gpuCamera, gpuLights, numGpuLights, gpuSurface, gpuOverrideEffect);
-	}
-}
-
-void ScriptCallbacks::SetModelPosition(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-
-	if(!gpuModel) return;
-
-	gpuModel->position.x = (float) x.nvalue;
-	gpuModel->position.y = (float) y.nvalue;
-	gpuModel->position.z = (float) z.nvalue;
-}
-
-void ScriptCallbacks::SetModelRotation(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-
-	if(!gpuModel) return;
-
-	gpuModel->rotation.x = (float) x.nvalue;
-	gpuModel->rotation.y = (float) y.nvalue;
-	gpuModel->rotation.z = (float) z.nvalue;
-}
-
-void ScriptCallbacks::SetModelScale(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,scale);
-	ScriptParam scaleY = interpreter->PopParam();
-	ScriptParam scaleZ = interpreter->PopParam();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-
-	if(scaleY.IsNumber() && scaleZ.IsNumber())
-	{
-		gpuModel->scale.x = (float)scale.nvalue;
-		gpuModel->scale.y = (float)scaleY.nvalue;
-		gpuModel->scale.z = (float)scaleZ.nvalue;
-	}
-	else
-	{
-		gpuModel->scale = glm::vec4((float)scale.nvalue, (float)scale.nvalue, (float)scale.nvalue, 1.0f);
-	}
-}
-
-void ScriptCallbacks::GetFont(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,size);
-	POP_PARAM(2,family,STRING);
-	ScriptParam style = interpreter->PopParam();
-	ScriptParam isPixelSpace = interpreter->PopParam();
-
-	Gpu::FontStyle styleValue = Gpu::FontStyle_Regular;
-	if(style.type == ScriptParam::STRING)
-	{
-		if(_stricmp(style.svalue,"italic") == 0)
-			styleValue = Gpu::FontStyle_Italic;
-		if(_stricmp(style.svalue,"bold") == 0)
-			styleValue = Gpu::FontStyle_Bold;
-	}
-
-	std::string shortFamily(family.svalue);
-	std::wstring wideFamily(shortFamily.begin(),shortFamily.end());
-
-	Gpu::Api * gpu = interpreter->GetApp()->gpu;
-	Gpu::Font * font = gpu->CreateGpuFont((int)size.nvalue,wideFamily.c_str(),styleValue);
-
-	if(isPixelSpace.type == ScriptParam::BOOL || isPixelSpace.type == ScriptParam::INT)
-	{
-		font->pixelSpace = isPixelSpace.nvalue > 0;
-	}
-
-	if(font) interpreter->PushParam(ScriptParam(font, typeHandles[TypeGpuFont]));
-}
-
-void ScriptCallbacks::DrawText(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,font,TypeGpuFont);
-	POP_PARAM(2,text,STRING);
-	POP_NUMPARAM(3,x);
-	POP_NUMPARAM(4,y);
-	ScriptParam center = interpreter->PopParam();
-	ScriptParam surface = interpreter->PopParam();
-
-	bool centered = false;
-
-	if(center.type != ScriptParam::NONE) centered = center.nvalue > 0.0;
-
-	Gpu::Font * gpuFont = font.GetPointer<Gpu::Font>();
-
-	std::string shortText(text.svalue);
-	std::wstring wideText(shortText.begin(),shortText.end());
-
-	Gpu::DrawSurface * drawSurface = 0;
-	if(CheckPtrType(surface, TypeGpuDrawSurface))
-	{
-		drawSurface = surface.GetPointer<Gpu::DrawSurface>();
-	}
-
-	Gpu::Api * gpu = interpreter->GetApp()->gpu;
-	gpu->DrawGpuText(gpuFont,wideText.c_str(),(float)x.nvalue,(float)y.nvalue,centered,drawSurface);
-}
-
-void ScriptCallbacks::SetFontColor(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,font,TypeGpuFont);
-	POP_NUMPARAM(2,r);
-	POP_NUMPARAM(3,g);
-	POP_NUMPARAM(4,b);
-	ScriptParam a = interpreter->PopParam();
-
-	Gpu::Font * gpuFont = font.GetPointer<Gpu::Font>();
-
-	gpuFont->color.r = float(r.nvalue);
-	gpuFont->color.g = float(g.nvalue);
-	gpuFont->color.b = float(b.nvalue);
-	if(a.type == ScriptParam::DOUBLE) gpuFont->color.a = float(a.nvalue);
-}
-
-void ScriptCallbacks::CreateLight(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1,type,STRING);
-
-	Gpu::LightType gpuType = Gpu::LightType_Directional;
-	Gpu::Light * result;
-
-	if(_stricmp(type.svalue,"point") == 0) gpuType = Gpu::LightType_Point;
-	if(_stricmp(type.svalue,"spot") == 0)  gpuType = Gpu::LightType_Spot;
-	
-	switch(gpuType)
-	{
-	case Gpu::LightType_Point:
-		result = new Gpu::PointLight();
-		break;
-	case Gpu::LightType_Spot:
-		result = new Gpu::SpotLight();
-		break;
-	default:
-		result = new Gpu::DirectionalLight();
-	}
-
-	interpreter->PushParam(ScriptParam(result,typeHandles[TypeGpuLight]));
-}
-
-void ScriptCallbacks::SetLightColor(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,light,TypeGpuLight);
-	POP_NUMPARAM(2,r);
-	POP_NUMPARAM(3,g);
-	POP_NUMPARAM(4,b);
-
-	Gpu::Light * gpuLight = light.GetPointer<Gpu::Light>();
-
-	if(!gpuLight) return;
-
-	gpuLight->color.r = (float)r.nvalue;
-	gpuLight->color.g = (float)g.nvalue;
-	gpuLight->color.b = (float)b.nvalue;
-}
-
-void ScriptCallbacks::SetLightPosition(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,light,TypeGpuLight);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-	
-	Gpu::Light * gpuLight = light.GetPointer<Gpu::Light>();
-
-	switch(gpuLight->GetType())
-	{
-	case Gpu::LightType_Point:
-		{
-			Gpu::PointLight * pointLight = static_cast<Gpu::PointLight*>(gpuLight);
-			pointLight->position.x = (float)x.nvalue;
-			pointLight->position.y = (float)y.nvalue;
-			pointLight->position.z = (float)z.nvalue;
-		}
-		break;
-	case Gpu::LightType_Spot:
-		{
-			Gpu::SpotLight * spotLight = static_cast<Gpu::SpotLight*>(gpuLight);
-			spotLight->position.x = (float)x.nvalue;
-			spotLight->position.y = (float)y.nvalue;
-			spotLight->position.z = (float)z.nvalue;
-		}
-		break;
-	}
-}
-
-void ScriptCallbacks::SetLightDirection(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,light,TypeGpuLight);
-	POP_NUMPARAM(2,x);
-	POP_NUMPARAM(3,y);
-	POP_NUMPARAM(4,z);
-
-	Gpu::Light * gpuLight = light.GetPointer<Gpu::Light>();
-
-	switch(gpuLight->GetType())
-	{
-	case Gpu::LightType_Directional:
-		{
-			Gpu::DirectionalLight * dirLight = static_cast<Gpu::DirectionalLight*>(gpuLight);
-			dirLight->direction.x = (float)x.nvalue;
-			dirLight->direction.y = (float)y.nvalue;
-			dirLight->direction.z = (float)z.nvalue;
-		}
-		break;
-	case Gpu::LightType_Spot:
-		{
-			Gpu::SpotLight * spotLight = static_cast<Gpu::SpotLight*>(gpuLight);
-			spotLight->direction.x = (float)x.nvalue;
-			spotLight->direction.y = (float)y.nvalue;
-			spotLight->direction.z = (float)z.nvalue;
-		}
-		break;
-	}
-}
-
-void ScriptCallbacks::SetLightAttenuation(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,light,TypeGpuLight);
-	POP_NUMPARAM(2,atten);
-
-	Gpu::Light * gpuLight = light.GetPointer<Gpu::Light>();
-
-	switch(gpuLight->GetType())
-	{
-	case Gpu::LightType_Point:
-		{
-			Gpu::PointLight * pointLight = static_cast<Gpu::PointLight*>(gpuLight);
-			pointLight->atten = (float) atten.nvalue;
-		}
-		break;
-	case Gpu::LightType_Spot:
-		{
-			Gpu::SpotLight * spotLight = static_cast<Gpu::SpotLight*>(gpuLight);
-			spotLight->atten = (float) atten.nvalue;
-		}
-		break;
-	}
-}
-
-void ScriptCallbacks::SetMeshPosition(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_NUMPARAM(3,x);
-	POP_NUMPARAM(4,y);
-	POP_NUMPARAM(5,z);
-	interpreter->ClearParams();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-	gpuModel->models[meshnumber].position = glm::vec4(float(x.nvalue),float(y.nvalue),float(z.nvalue),1.0f);
-}
-
-void ScriptCallbacks::SetMeshRotation(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, model, TypeGpuComplexModel);
-	POP_NUMPARAM(2, meshnum);
-	POP_NUMPARAM(3, x);
-	POP_NUMPARAM(4, y);
-	POP_NUMPARAM(5, z);
-	interpreter->ClearParams();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned)meshnum.nvalue;
-	gpuModel->models[meshnumber].rotation = glm::vec4(float(x.nvalue), float(y.nvalue), float(z.nvalue), 0.0f);
-}
-
-void ScriptCallbacks::SetMeshMatrix(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, model, TypeGpuComplexModel);
-	POP_NUMPARAM(2, meshnum);
-	POP_SPTRPARAM(3, matrix, TypeMatrix4);
-	interpreter->ClearParams();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	glm::mat4 * meshMatrix = matrix.GetPointer<glm::mat4>();
-	unsigned meshNumber = unsigned(meshnum.nvalue);
-	gpuModel->models[meshNumber].SetMatrix(*meshMatrix);
-}
-
-void ScriptCallbacks::SetMeshEffect(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	ScriptParam effect = interpreter->PopParam();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-	Gpu::Effect * gpuEffect = 0;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		if(CheckPtrType(effect, TypeGpuEffect))
-		{
-			gpuEffect = effect.GetPointer<Gpu::Effect>();
-		}
-		gpuModel->models[meshnumber].effect = gpuEffect;
-	}
-}
-
-void ScriptCallbacks::CreateEffect(ScriptInterpreter * interpreter)
-{
-	ScriptParam nameOrShader = interpreter->PopParam();
-	interpreter->ClearParams();
-	Gpu::Shader * shader = 0;
-
-	if(nameOrShader.type == ScriptParam::STRING)
-	{
-		shader = interpreter->GetApp()->assets->GetAsset<Gpu::Shader>(nameOrShader.svalue);
-	}
-	if(nameOrShader.type == ScriptParam::POINTER)
-	{
-		if(!CheckPtrType(nameOrShader,TypeGpuShader))
-		{
-			interpreter->ThrowError("CreateEffect: Pointer parameter is not of type GpuShader");
-			return;
-		}
-		shader = nameOrShader.GetPointer<Gpu::Shader>();
-	}
-
-	if(shader)
-	{
-		Gpu::Effect * effect = new Gpu::Effect(shader);
-
-		interpreter->PushParam(ScriptParam(effect,typeHandles[TypeGpuEffect]));
-	}
-}
-
-void ScriptCallbacks::SetMeshTexture(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_PTRPARAM(3,texture,TypeGpuTexture);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	Gpu::Texture * gpuTexture = texture.GetPointer<Gpu::Texture>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].texture = gpuTexture;
-	}
-}
-
-void ScriptCallbacks::SetMeshNormal(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_PTRPARAM(3,normal,TypeGpuTexture);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	Gpu::Texture * gpuNormal = normal.GetPointer<Gpu::Texture>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].normalMap = gpuNormal;
-	}
-}
-
-void ScriptCallbacks::SetMeshCubeMap(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_PTRPARAM(3,cubemap,TypeGpuCubeMap);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	Gpu::CubeMap * gpuCubeMap = cubemap.GetPointer<Gpu::CubeMap>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].cubeMap = gpuCubeMap;
-	}
-}
-
-void ScriptCallbacks::SetMeshColor(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_NUMPARAM(3,r);
-	POP_NUMPARAM(4,g);
-	POP_NUMPARAM(5,b);
-	ScriptParam a = interpreter->PopParam();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].color.r = (float) r.nvalue;
-		gpuModel->models[meshnumber].color.g = (float) g.nvalue;
-		gpuModel->models[meshnumber].color.b = (float) b.nvalue;
-		if(a.type == ScriptParam::DOUBLE)
-		{
-			gpuModel->models[meshnumber].color.a = (float) a.nvalue;
-		}
-	}
-}
-
-void ScriptCallbacks::SetMeshSpecular(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-	POP_NUMPARAM(2,meshnum);
-	POP_NUMPARAM(3,specular);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned) meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].specPower = (float) specular.nvalue;
-	}
-}
-
-void ScriptCallbacks::SetMeshFactors(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, model, TypeGpuComplexModel);
-	POP_NUMPARAM(2, meshnum);
-	POP_NUMPARAM(3, diffuse);
-	POP_NUMPARAM(3, specular);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned)meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		gpuModel->models[meshnumber].diffuseFactor = (float)diffuse.nvalue;
-		gpuModel->models[meshnumber].specFactor = (float)specular.nvalue;
-	}
-}
-
-void ScriptCallbacks::GetMeshBounds(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, model, TypeGpuComplexModel);
-	POP_NUMPARAM(2, meshnum);
-	interpreter->ClearParams();
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned meshnumber = (unsigned)meshnum.nvalue;
-
-	if(meshnumber < gpuModel->numModels)
-	{
-		Gpu::BoundingSphere& sphere = gpuModel->models[meshnumber].boundingSphere;
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, (double)sphere.origin.x));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, (double)sphere.origin.y));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, (double)sphere.origin.z));
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, (double)sphere.radius));
-	}
-}
-
-void ScriptCallbacks::GetNumMeshes(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,model,TypeGpuComplexModel);
-
-	Gpu::ComplexModel * gpuModel = model.GetPointer<Gpu::ComplexModel>();
-	unsigned numMeshes = gpuModel->numModels;
-
-	interpreter->PushParam(ScriptParam(ScriptParam::INT,numMeshes));
-}
-
-void ScriptCallbacks::SetEffectParam(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,effect,TypeGpuEffect);
-	POP_NUMPARAM(2,paramnum);
-	ScriptParam value = interpreter->PopParam();
-
-	Gpu::Effect * gpuEffect = effect.GetPointer<Gpu::Effect>();
-
-	if(!gpuEffect) return;
-
-	unsigned paramIndex = (unsigned) paramnum.nvalue;
-
-	if(value.type == ScriptParam::NONE)
-	{
-		interpreter->ThrowError("Attempted to set null parameter to effect");
-	}
-	if(value.type == ScriptParam::DOUBLE)
-	{
-		gpuEffect->SetParam(paramIndex,(float)value.nvalue);
-	}
-	if(value.type == ScriptParam::POINTER)
-	{
-		if(value.pvalue->type == typeHandles[TypeGpuTexture])
-		{
-			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::Texture>());
-		}
-		else if(value.pvalue->type == typeHandles[TypeGpuCubeMap])
-		{
-			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::CubeMap>());
-		}
-		else if(value.pvalue->type == typeHandles[TypeGpuVolumeTexture])
-		{
-			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::VolumeTexture>());
-		}
-		else if(value.pvalue->type == typeHandles[TypeGpuDrawSurface])
-		{
-			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::DrawSurface>());
-		}
-		else if(value.pvalue->type == typeHandles[TypeFloatArray])
-		{
-			gpuEffect->SetParam(paramIndex, &(value.GetPointer<ScriptFloatArray>()->gpuFloatArray));
-		}
-		else
-		{
-			// Warn ?
-			std::stringstream error;
-			error << "Could not identify type of effect parameter " << paramIndex;
-			interpreter->ThrowError(error.str().c_str());
-		}
-	}
-}
-
-void ScriptCallbacks::SetSamplerParam(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, effect, TypeGpuEffect);
-	POP_NUMPARAM(2, paramnum);
-	POP_PARAM(3, key, STRING);
-	ScriptParam value = interpreter->PopParam();
-
-	Gpu::Effect * gpuEffect = effect.GetPointer<Gpu::Effect>();
-
-	if(!gpuEffect) return;
-
-	unsigned paramIndex = (unsigned)paramnum.nvalue;
-
-	interpreter->ThrowError("SetSamplerParam not yet implemented!!!");
-
-}
-
-void ScriptCallbacks::CreateFloatArray(ScriptInterpreter * interpreter)
-{
-	ScriptParam content = interpreter->PopParam();
-
-	ScriptFloatArray * floatArray = 0;
-
-	if(content.IsNumber())
-	{
-		if(content.nvalue < 0.0)
-		{
-			interpreter->ThrowError("Attempted to create FloatArray of negative length!");
-			return;
-		}
-		floatArray = new ScriptFloatArray(unsigned(content.nvalue));
-	}
-	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4)))
-	{
-		floatArray = new ScriptFloatArray(4);
-		*((glm::vec4*)floatArray->floats) = *(content.GetPointer<glm::vec4>());
-	}
-	if(content.CheckPointer(interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4)))
-	{
-		floatArray = new ScriptFloatArray(16);
-		*((glm::mat4*)floatArray->floats) = *(content.GetPointer<glm::mat4>());
-	}
-
-	interpreter->PushParam(ScriptParam(floatArray, typeHandles[TypeFloatArray]));
-}
-
-void ScriptCallbacks::SetFloatArray(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, floatArray, TypeFloatArray);
-	POP_NUMPARAM(2, index);
-	POP_NUMPARAM(3, value);
-
-	ScriptFloatArray * scriptFloatArray = floatArray.GetPointer<ScriptFloatArray>();
-	unsigned uindex = unsigned(index.nvalue);
-
-	while(value.IsNumber())
-	{
-		if(index.nvalue < 0.0 || uindex >= scriptFloatArray->length)
-		{
-			interpreter->ThrowError("Attempted to set a FloatArray index out of range");
-			return;
-		}
-
-		scriptFloatArray->floats[uindex++] = float(value.nvalue);
-
-		value = interpreter->PopParam();
-	}
-}
-
-void ScriptCallbacks::GetFloatArray(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, floatArray, TypeFloatArray);
-	POP_NUMPARAM(2, index);
-	ScriptParam numValues = interpreter->PopParam();
-
-	ScriptFloatArray * scriptFloatArray = floatArray.GetPointer<ScriptFloatArray>();
-	unsigned uindex = unsigned(index.nvalue);
-	unsigned numVals = 1;
-	if(numValues.IsNumber()) numVals = unsigned(numValues.nvalue);
-
-	if(index.nvalue < 0.0 || uindex + numVals >= scriptFloatArray->length)
-	{
-		interpreter->ThrowError("Attempted to get a FloatArray index out of range");
-		return;
-	}
-
-	for(unsigned i = uindex; i < uindex + numVals; ++i)
-	{
-		interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(scriptFloatArray->floats[i])));
-	}
-}
-
-void ScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
-{
-	static const char * surfaceTypeStrings[Gpu::DrawSurface::Format_Total] = {
-		"4x8i",
-		"4x16f",
-		"3x10f",
-		"1x16f",
-		"typeless"
-	};
-
-	ScriptParam width = interpreter->PopParam();
-	ScriptParam height = interpreter->PopParam();
-	ScriptParam screen = interpreter->PopParam();
-	ScriptParam format = interpreter->PopParam();
-
-	Gpu::DrawSurface * surface;
-	Gpu::DrawSurface::Format surfaceFormat = Gpu::DrawSurface::Format_4x8int;
-
-	if(format.type == ScriptParam::STRING)
-	{
-		for(unsigned i = 0; i < Gpu::DrawSurface::Format_Total; ++i)
-		{
-			if(strcmp(format.svalue, surfaceTypeStrings[i]) == 0)
-			{
-				surfaceFormat = (Gpu::DrawSurface::Format) i;
-				break;
-			}
-		}
-	}
-
-	if(width.type == ScriptParam::DOUBLE && height.type == ScriptParam::DOUBLE)
-	{
-		if(screen.type == ScriptParam::BOOL && screen.nvalue > 0.0)
-		{
-			surface = interpreter->GetApp()->gpu->CreateRelativeDrawSurface(
-				float(width.nvalue), 
-				float(height.nvalue),
-				surfaceFormat);
-		}
-		else
-		{
-			surface = interpreter->GetApp()->gpu->CreateDrawSurface(
-				(unsigned)width.nvalue,
-				(unsigned)height.nvalue,
-				surfaceFormat);
-		}
-	}
-	else
-	{
-		surface = interpreter->GetApp()->gpu->CreateRelativeDrawSurface();
-	}
-
-	interpreter->PushParam(ScriptParam(surface,typeHandles[TypeGpuDrawSurface]));
-};
-
-void ScriptCallbacks::ShadeSurface(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,inSurface,TypeGpuDrawSurface);
-	POP_PTRPARAM(2,effect,TypeGpuEffect);
-	POP_PTRPARAM(3,outSurface,TypeGpuDrawSurface);
-
-	Gpu::DrawSurface * gpuInSurface = inSurface.GetPointer<Gpu::DrawSurface>();
-	Gpu::Effect * gpuEffect = effect.GetPointer<Gpu::Effect>();
-	Gpu::DrawSurface * gpuOutSurface = outSurface.GetPointer<Gpu::DrawSurface>();
-
-	Gpu::Api * gpu = interpreter->GetApp()->gpu;
-
-	gpu->DrawGpuSurface(gpuInSurface,gpuEffect,gpuOutSurface);
-}
-
-void ScriptCallbacks::DrawSurface(ScriptInterpreter * interpreter) 
-{
-	POP_PTRPARAM(1,surface,TypeGpuDrawSurface);
-
-	Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-
-	Gpu::Sprite surfaceSprite;
-	surfaceSprite.pixelSpace = true;
-	surfaceSprite.texture = gpuSurface->GetTexture();
-	
-	interpreter->GetApp()->gpu->DrawGpuSprite(&surfaceSprite);
-}
-
-void ScriptCallbacks::ClearSurface(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,surface,TypeGpuDrawSurface);
-	ScriptParam r = interpreter->PopParam();
-	ScriptParam g = interpreter->PopParam();
-	ScriptParam b = interpreter->PopParam();
-	ScriptParam a = interpreter->PopParam();
-	interpreter->ClearParams();
-
-	Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-
-	if(r.IsNumber() && g.IsNumber() && b.IsNumber())
-	{
-		glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		clearColor.r = float(r.nvalue);
-		clearColor.g = float(g.nvalue);
-		clearColor.b = float(b.nvalue);
-		if(a.type == ScriptParam::DOUBLE)
-		{
-			clearColor.a = float(a.nvalue);
-		}
-		gpuSurface->Clear(clearColor);
-	}
-	else
-	{
-		gpuSurface->Clear();
-	}
-}
-
-void ScriptCallbacks::GetSurfaceTexture(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,surface,TypeGpuDrawSurface);
-
-	Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
-
-	Gpu::Texture * texture = gpuSurface->GetTexture();
-
-	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(texture,typeHandles[TypeGpuTexture])));
 }
 
 void ScriptCallbacks::LoadAssets(ScriptInterpreter * interpreter)
@@ -1787,55 +918,55 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case TextureAsset:
 			{
 				Gpu::Texture * texAsset = dynamic_cast<Gpu::Texture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(texAsset, typeHandles[TypeGpuTexture])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(texAsset, ScriptTypes::GetHandle(TypeGpuTexture))));
 				break;
 			}
 			case CubeMapAsset:
 			{
 				Gpu::CubeMap * cubeAsset = dynamic_cast<Gpu::CubeMap*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(cubeAsset, typeHandles[TypeGpuCubeMap])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(cubeAsset, ScriptTypes::GetHandle(TypeGpuCubeMap))));
 				break;
 			}
 			case VolumeTexAsset:
 			{
 				Gpu::VolumeTexture * vTexAsset = dynamic_cast<Gpu::VolumeTexture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(vTexAsset, typeHandles[TypeGpuVolumeTexture])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(vTexAsset, ScriptTypes::GetHandle(TypeGpuVolumeTexture))));
 				break;
 			}
 			case ShaderAsset:
 			{
 				Gpu::Shader * shdrAsset = dynamic_cast<Gpu::Shader*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(shdrAsset, typeHandles[TypeGpuShader])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(shdrAsset, ScriptTypes::GetHandle(TypeGpuShader))));
 				break;
 			}
 			case ModelAsset:
 			{
 				Gpu::ComplexModel * mdlAsset = dynamic_cast<Gpu::ComplexModel*>(asset);
-				interpreter->PushParam(ScriptParam(mdlAsset, typeHandles[TypeGpuComplexModel]));
+				interpreter->PushParam(ScriptParam(mdlAsset, ScriptTypes::GetHandle(TypeGpuComplexModel)));
 				break;
 			}
 			case RawHeightMapAsset:
 			{
 				HeightParser * heightParser = dynamic_cast<HeightParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(heightParser, typeHandles[TypeHeightParser])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(heightParser, ScriptTypes::GetHandle(TypeHeightParser))));
 				break;
 			}
 			case ImageAsset:
 			{
 				Image::Buffer * imgAsset = dynamic_cast<Image::Buffer*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(imgAsset, typeHandles[TypeImageBuffer])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(imgAsset, ScriptTypes::GetHandle(TypeImageBuffer))));
 				break;
 			}
 			case AudioAsset:
 			{
 				Audio::Item * audioItem = dynamic_cast<Audio::Item*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(audioItem, typeHandles[TypeAudioItem])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(audioItem, ScriptTypes::GetHandle(TypeAudioItem))));
 				break;
 			}
 			case SvgAsset:
 			{
 				SvgParser * svgParser = dynamic_cast<SvgParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(svgParser, typeHandles[TypeSVGParser])));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(svgParser, ScriptTypes::GetHandle(TypeSVGParser))));
 				break;
 			}
 		}
@@ -1884,31 +1015,6 @@ void ScriptCallbacks::GetDirectoryFiles(ScriptInterpreter * interpreter)
 		}
 
 		interpreter->PushParam(mapref);
-	}
-}
-
-void ScriptCallbacks::CreateModel(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1,type,STRING);
-	ScriptParam vertices = interpreter->PopParam();
-	ScriptParam indices = interpreter->PopParam();
-
-	LocalMesh * localMesh = FloatsToLocalMesh(interpreter, type, vertices, indices);
-
-	if(localMesh)
-	{
-		Gpu::Mesh * mesh = interpreter->GetApp()->gpu->CreateGpuMesh(localMesh->vertexBuffer, localMesh->numTriangles, localMesh->indexBuffer);
-
-		if(mesh)
-		{
-			Gpu::ComplexModel * complexModel = new Gpu::ComplexModel(1);
-			complexModel->models[0].mesh = mesh;
-			complexModel->models[0].destructMesh = true;
-
-			interpreter->PushParam(ScriptParam(complexModel, typeHandles[TypeGpuComplexModel]));
-		}
-
-		delete localMesh;
 	}
 }
 
@@ -1961,7 +1067,7 @@ void ScriptCallbacks::GetHeightmapModel(ScriptInterpreter * interpreter)
 		model->models[0].mesh = mesh;
 		model->models[0].destructMesh = true;
 		
-		interpreter->PushParam(ScriptParam(model,typeHandles[TypeGpuComplexModel]));
+		interpreter->PushParam(ScriptParam(model, ScriptTypes::GetHandle(TypeGpuComplexModel)));
 	}
 }
 
@@ -1987,7 +1093,7 @@ void ScriptCallbacks::GetSVGModel(ScriptInterpreter * interpreter)
 	interpreter->ClearParams();
 	if(model)
 	{
-		interpreter->PushParam(ScriptParam(model, typeHandles[TypeGpuComplexModel]));
+		interpreter->PushParam(ScriptParam(model, ScriptTypes::GetHandle(TypeGpuComplexModel)));
 	}
 }
 
@@ -2022,119 +1128,6 @@ void ScriptCallbacks::GetWavefrontMesh(ScriptInterpreter * interpreter)
 			}
 		}
 	}
-}
-
-void ScriptCallbacks::SetClearColor(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,r);
-	POP_NUMPARAM(2,g);
-	POP_NUMPARAM(3,b);
-	ScriptParam a = interpreter->PopParam();
-
-	float alpha = 1.0f;
-	if(a.type == ScriptParam::DOUBLE)
-	{
-		alpha = (float) a.nvalue;
-	}
-
-	interpreter->GetApp()->gpu->SetClearColor(
-		(float) r.nvalue,
-		(float) g.nvalue,
-		(float) b.nvalue,
-		alpha);
-}
-
-void ScriptCallbacks::SetBlendMode(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1,mode,STRING);
-
-	const char * modeChars = mode.svalue;
-	bool success = false;
-
-	if(_stricmp(modeChars, "alpha") == 0)
-	{
-		interpreter->GetApp()->gpu->SetBlendMode(Gpu::BlendMode_Alpha);
-		success = true;
-	}
-	if(_stricmp(modeChars, "additive") == 0)
-	{
-		interpreter->GetApp()->gpu->SetBlendMode(Gpu::BlendMode_Additive);
-		success = true;
-	}
-	if(_stricmp(modeChars, "none") == 0)
-	{
-		interpreter->GetApp()->gpu->SetBlendMode(Gpu::BlendMode_None);
-		success = true;
-	}
-
-	if(!success)
-	{
-		interpreter->ThrowError("Unrecognized blend mode!");
-	}
-}
-
-void ScriptCallbacks::SetWireframe(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,wireframe);
-
-	interpreter->GetApp()->gpu->SetDrawWireframe(wireframe.nvalue > 0.0f);
-}
-
-void ScriptCallbacks::SetMultisampling(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,level);
-
-	interpreter->GetApp()->gpu->SetMultisampling(unsigned(level.nvalue));
-}
-
-void ScriptCallbacks::SetAnisotropy(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1, level);
-	
-	interpreter->GetApp()->gpu->SetAnisotropy(unsigned(level.nvalue));
-}
-
-void ScriptCallbacks::GetScreenSize(ScriptInterpreter * interpreter)
-{
-	ScriptParam windowOrIndex = interpreter->PopParam();
-	interpreter->ClearParams();
-
-	unsigned width = 0, height = 0;
-	const PlatformApi * platform = interpreter->GetApp()->platform;
-
-	if(CheckPtrType(windowOrIndex, TypePlatformWindow))
-	{
-		platform->GetScreenSize(width, height, windowOrIndex.GetPointer<PlatformWindow>());
-	}
-	else if(windowOrIndex.IsNumber())
-	{
-		platform->GetScreenSize(width, height, unsigned(windowOrIndex.nvalue));
-	}
-	else
-	{
-		platform->GetScreenSize(width, height);
-	}
-
-	interpreter->PushParam(ScriptParam(ScriptParam::INT, width));
-	interpreter->PushParam(ScriptParam(ScriptParam::INT, height));
-}
-
-void ScriptCallbacks::GetBackbufferSize(ScriptInterpreter * interpreter)
-{
-	ScriptParam window = interpreter->PopParam();
-	PlatformWindow * platformWindow = 0;
-	if(window.CheckPointer(typeHandles[TypePlatformWindow]))
-	{
-		platformWindow = window.GetPointer<PlatformWindow>();
-	}
-
-	unsigned width, height;
-	interpreter->GetApp()->gpu->GetBackbufferSize(width, height, platformWindow);
-
-	interpreter->ClearParams();
-
-	interpreter->PushParam(ScriptParam(ScriptParam::INT, width));
-	interpreter->PushParam(ScriptParam(ScriptParam::INT, height));
 }
 
 void ScriptCallbacks::GetMousePosition(ScriptInterpreter * interpreter)
@@ -2210,310 +1203,6 @@ void ScriptCallbacks::GetTypedText(ScriptInterpreter * interpreter)
 	KeyState & keyboard = input->GetKeyState();
 
 	interpreter->PushParam(ScriptParam(ScriptParam::STRING, keyboard.text.data()));
-}
-
-void ScriptCallbacks::CreateRect(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,x);
-	POP_NUMPARAM(2,y);
-	POP_NUMPARAM(3,w);
-	POP_NUMPARAM(4,h);
-	ScriptParam updateRect = interpreter->PopParam();
-
-	GeoBuilder builder;
-	LocalMesh * localMesh = builder.BuildRect(
-		float(x.nvalue),
-		float(y.nvalue),
-		float(w.nvalue),
-		float(h.nvalue));
-
-	Gpu::ComplexModel * gpuModel = 0;
-	Gpu::Mesh * gpuMesh = 0;
-
-	if(CheckPtrType(updateRect, TypeGpuComplexModel))
-	{
-		gpuModel = updateRect.GetPointer<Gpu::ComplexModel>();
-		gpuMesh = gpuModel->models[0].mesh;
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->vertexBuffer);
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->numTriangles, localMesh->indexBuffer);
-	}
-	else
-	{
-		gpuMesh = localMesh->ToGpuMesh(interpreter->GetApp()->gpu,true);
-		gpuModel = new Gpu::ComplexModel(1);
-		gpuModel->models[0].mesh = gpuMesh;
-		gpuModel->models[0].backFaceCull = false;
-		gpuModel->models[0].destructMesh = true;
-
-		interpreter->PushParam(ScriptParam(gpuModel,typeHandles[TypeGpuComplexModel]));
-	}
-
-	delete localMesh;
-}
-
-void ScriptCallbacks::CreateRectStroke(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,x);
-	POP_NUMPARAM(2,y);
-	POP_NUMPARAM(3,w);
-	POP_NUMPARAM(4,h);
-	POP_NUMPARAM(5,weight);
-	ScriptParam updateRect = interpreter->PopParam();
-
-	GeoBuilder builder;
-	LocalMesh * localMesh = builder.BuildRectStroke(
-		float(x.nvalue),
-		float(y.nvalue),
-		float(w.nvalue),
-		float(h.nvalue),
-		float(weight.nvalue));
-
-	Gpu::ComplexModel * gpuModel = 0;
-
-	if(CheckPtrType(updateRect, TypeGpuComplexModel))
-	{
-		gpuModel = updateRect.GetPointer<Gpu::ComplexModel>();
-		Gpu::Mesh * gpuMesh = gpuModel->models[0].mesh;
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->vertexBuffer);
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->numTriangles, localMesh->indexBuffer);
-	}
-	else
-	{
-		Gpu::Mesh * gpuMesh = localMesh->ToGpuMesh(interpreter->GetApp()->gpu,true);
-		gpuModel = new Gpu::ComplexModel(1);
-		gpuModel->models[0].mesh = gpuMesh;
-		gpuModel->models[0].backFaceCull = false;
-		gpuModel->models[0].destructMesh = true;
-
-		interpreter->PushParam(ScriptParam(gpuModel,typeHandles[TypeGpuComplexModel]));
-	}
-
-	delete localMesh;
-}
-
-void ScriptCallbacks::CreateEllipse(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,x);
-	POP_NUMPARAM(2,y);
-	POP_NUMPARAM(3,rx);
-	POP_NUMPARAM(4,ry);
-	ScriptParam updateEllipse = interpreter->PopParam();
-
-	GeoBuilder builder;
-	LocalMesh * localMesh = builder.BuildEllipse(
-		float(x.nvalue),
-		float(y.nvalue),
-		float(rx.nvalue),
-		float(ry.nvalue));
-
-	if(localMesh)
-	{
-		Gpu::ComplexModel * gpuModel = 0;
-
-		if(CheckPtrType(updateEllipse,TypeGpuComplexModel))
-		{
-			gpuModel = updateEllipse.GetPointer<Gpu::ComplexModel>();
-			Gpu::Mesh * gpuMesh = gpuModel->models[0].mesh;
-			interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->vertexBuffer);
-			interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->numTriangles, localMesh->indexBuffer);
-		}
-		else
-		{
-			Gpu::Mesh * gpuMesh = localMesh->ToGpuMesh(interpreter->GetApp()->gpu,true);
-			gpuModel = new Gpu::ComplexModel(1);
-			gpuModel->models[0].mesh = gpuMesh;
-			gpuModel->models[0].backFaceCull = false;
-			gpuModel->models[0].destructMesh = true;
-
-			interpreter->PushParam(ScriptParam(gpuModel,typeHandles[TypeGpuComplexModel]));
-		}
-
-		delete localMesh;
-	}
-}
-
-void ScriptCallbacks::CreateEllipseStroke(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1,x);
-	POP_NUMPARAM(2,y);
-	POP_NUMPARAM(3,rx);
-	POP_NUMPARAM(4,ry);
-	POP_NUMPARAM(5,weight);
-	ScriptParam updateEllipse = interpreter->PopParam();
-
-	GeoBuilder builder;
-	LocalMesh * localMesh = builder.BuildEllipseStroke(
-		float(x.nvalue),
-		float(y.nvalue),
-		float(rx.nvalue),
-		float(ry.nvalue),
-		float(weight.nvalue));
-
-	Gpu::ComplexModel * gpuModel = 0;
-
-	if(CheckPtrType(updateEllipse, TypeGpuComplexModel))
-	{
-		gpuModel = updateEllipse.GetPointer<Gpu::ComplexModel>();
-		Gpu::Mesh * gpuMesh = gpuModel->models[0].mesh;
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->vertexBuffer);
-		interpreter->GetApp()->gpu->UpdateDynamicMesh(gpuMesh, localMesh->numTriangles, localMesh->indexBuffer);
-	}
-	else
-	{
-		Gpu::Mesh * gpuMesh = localMesh->ToGpuMesh(interpreter->GetApp()->gpu,true);
-		gpuModel = new Gpu::ComplexModel(1);
-		gpuModel->models[0].mesh = gpuMesh;
-		gpuModel->models[0].backFaceCull = false;
-		gpuModel->models[0].destructMesh = true;
-
-		interpreter->PushParam(ScriptParam(gpuModel,typeHandles[TypeGpuComplexModel]));
-	}
-
-	delete localMesh;
-}
-
-void ScriptCallbacks::CreateIsoSurface(ScriptInterpreter * interpreter)
-{
-	POP_NUMPARAM(1, gridSize);
-	ScriptParam threshold = interpreter->PopParam();
-
-	if(gridSize.nvalue < 2.0f)
-		interpreter->ThrowError("Cannot create IsoSurface, grid size is too small!");
-
-	IsoSurface * isoSurface = new IsoSurface(unsigned(gridSize.nvalue), interpreter->GetApp()->gpu);
-	if(threshold.IsNumber()) isoSurface->SetThreshold(float(threshold.nvalue));
-
-	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(isoSurface, typeHandles[TypeIsoSurface]));
-}
-
-void ScriptCallbacks::AddIsoSurfaceBall(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, iso, TypeIsoSurface);
-	POP_NUMPARAM(2, x);
-	POP_NUMPARAM(3, y);
-	POP_NUMPARAM(4, z);
-	POP_NUMPARAM(5, r);
-
-	IsoSurface * isoSurface = iso.GetPointer<IsoSurface>();
-
-	glm::vec3 startingVector(float(x.nvalue), float(y.nvalue), float(z.nvalue));
-	float radius = float(r.nvalue);
-	isoSurface->AddMetaball(startingVector, radius * radius);
-}
-void ScriptCallbacks::AddIsoSurfacePlane(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, iso, TypeIsoSurface);
-	POP_NUMPARAM(2, x);
-	POP_NUMPARAM(3, y);
-	POP_NUMPARAM(4, z);
-	POP_NUMPARAM(5, nx);
-	POP_NUMPARAM(6, ny);
-	POP_NUMPARAM(7, nz);
-
-	IsoSurface * isoSurface = iso.GetPointer<IsoSurface>();
-
-	glm::vec3 pos(float(x.nvalue), float(y.nvalue), float(z.nvalue));
-	glm::vec3 nor(float(nx.nvalue), float(ny.nvalue), float(nz.nvalue));
-	isoSurface->AddMetaPlane(pos, nor);
-}
-
-void ScriptCallbacks::ClearIsoSurface(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, iso, TypeIsoSurface);
-	IsoSurface * isoSurface = iso.GetPointer<IsoSurface>();
-
-	isoSurface->Clear();
-}
-
-void ScriptCallbacks::GetIsoSurfaceModel(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, iso, TypeIsoSurface);
-	IsoSurface * isoSurface = iso.GetPointer<IsoSurface>();
-
-	isoSurface->UpdateObjects();
-	isoSurface->UpdateMesh(interpreter->GetApp()->gpu);
-
-	Gpu::Mesh * surfaceMesh = isoSurface->GetMesh();
-	Gpu::ComplexModel * complexModel = new Gpu::ComplexModel(1);
-	complexModel->models[0].mesh = surfaceMesh;
-	
-	interpreter->PushParam(ScriptParam(complexModel, typeHandles[TypeGpuComplexModel]));
-}
-
-void ScriptCallbacks::CreateScene(ScriptInterpreter * interpreter)
-{
-	ScriptParam type = interpreter->PopParam();
-	
-	Gpu::Scene * scene = 0;
-
-	if(type.type == ScriptParam::STRING)
-	{
-		if(strcmp(type.svalue,"instanced") == 0)
-		{
-			// FIXME - Should be able to define the instance type, maybe?
-			scene = new Gpu::InstancedScene<Instance_PosCol>(interpreter->GetApp()->gpu); 
-		}
-	}
-
-	if(!scene) scene = new Gpu::LinearScene();
-
-	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(scene,typeHandles[TypeGpuScene]));
-}
-
-void ScriptCallbacks::AddToScene(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,scene,TypeGpuScene);
-	ScriptParam object = interpreter->PopParam();
-
-	Gpu::Scene * gpuScene = scene.GetPointer<Gpu::Scene>();
-
-	if(object.type == ScriptParam::POINTER)
-	{
-		if(CheckPtrType(object,TypeGpuComplexModel))
-		{
-			Gpu::ComplexModel * model = object.GetPointer<Gpu::ComplexModel>();
-			for(unsigned i = 0; i < model->numModels; ++i)
-			{
-				gpuScene->Add(&model->models[i]);
-			}
-		}
-		if(CheckPtrType(object, TypeGpuTexture))
-		{
-			// FIXME - if I create a new sprite here, who's going to delete it when the scene is destroyed?
-		}
-		if(CheckPtrType(object,TypeGpuLight))
-		{
-			Gpu::Light * light = object.GetPointer<Gpu::Light>();
-			gpuScene->Add(light);
-		}
-	}
-	
-}
-
-void ScriptCallbacks::ClearScene(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,scene,TypeGpuScene);
-
-	Gpu::Scene * gpuScene = scene.GetPointer<Gpu::Scene>();
-
-	gpuScene->ClearModels();
-	gpuScene->ClearSprites();
-	gpuScene->ClearLights();
-}
-
-void ScriptCallbacks::DrawScene(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1,scene,TypeGpuScene);
-	POP_PTRPARAM(2,camera,TypeGpuCamera);
-
-	Gpu::Scene * gpuScene = scene.GetPointer<Gpu::Scene>();
-	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
-
-	gpuScene->SetCamera(gpuCamera);
-
-	interpreter->GetApp()->gpu->Draw(gpuScene);
 }
 
 void ScriptCallbacks::GetImageSize(ScriptInterpreter * interpreter)
@@ -2639,7 +1328,7 @@ void ScriptCallbacks::GetAmplitude(ScriptInterpreter * interpreter)
 	ScriptParam sound = interpreter->PopParam();
 	Audio::Item * item = 0;
 
-	if(CheckPtrType(sound,TypeAudioItem))
+	if(ScriptTypes::CheckPtrType(sound,TypeAudioItem))
 	{
 		item = sound.GetPointer<Audio::Item>();
 	}
@@ -2674,112 +1363,12 @@ void ScriptCallbacks::GetSoundProgress(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(progress)));
 }
 
-void ScriptCallbacks::BeginTimestamp(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1, name, STRING);
-	POP_NUMPARAM(2, cpu);
-	POP_NUMPARAM(3, gpu);
-
-	std::string sname(name.svalue);
-	std::wstring wname(sname.begin(), sname.end());
-
-	if(cpu.nvalue > 0.0)
-	{
-		interpreter->GetApp()->platform->BeginTimestamp(wname.c_str());
-	}
-	
-	if(gpu.nvalue > 0.0)
-	{
-		interpreter->GetApp()->gpu->BeginTimestamp(wname);
-	}
-}
-
-void ScriptCallbacks::EndTimestamp(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1, name, STRING);
-	POP_NUMPARAM(2, cpu);
-	POP_NUMPARAM(3, gpu);
-
-	std::string sname(name.svalue);
-	std::wstring wname(sname.begin(), sname.end());
-
-	if(cpu.nvalue > 0.0)
-	{
-		interpreter->GetApp()->platform->EndTimestamp(wname.c_str());
-	}
-	
-	if(gpu.nvalue > 0.0)
-	{
-		interpreter->GetApp()->gpu->EndTimestamp(wname);
-	}
-}
-
-void ScriptCallbacks::GetTimestampData(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1, name, STRING);
-	POP_NUMPARAM(2, cpu);
-
-	std::string sname(name.svalue);
-	std::wstring wname(sname.begin(), sname.end());
-	
-	float time = 0.0f;
-
-	if(cpu.nvalue > 0.0)
-	{
-		time = interpreter->GetApp()->platform->GetTimestampTime(wname.c_str());
-	}
-	else
-	{
-		Gpu::TimestampData tsData = interpreter->GetApp()->gpu->GetTimestampData(wname);
-		time = tsData.data[Gpu::TimestampData::Time];
-	}
-
-	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(time)));
-}
-
-void ScriptCallbacks::CreateInstanceBuffer(ScriptInterpreter * interpreter)
-{
-	POP_PARAM(1, type, STRING);
-	POP_NUMPARAM(2, size);
-
-	unsigned bufferSize = unsigned(size.nvalue);
-	InstanceType instanceType = InstanceType_Pos;
-
-	if(strcmp(type.svalue, "PosCol") == 0)
-	{
-		instanceType = InstanceType_PosCol;
-	}
-	if(strcmp(type.svalue, "PosSca") == 0)
-	{
-		instanceType = InstanceType_PosSca;
-	}
-	
-	Gpu::InstanceBuffer * buffer = interpreter->GetApp()->gpu->CreateInstanceBuffer(bufferSize, 0, instanceType);
-
-	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(buffer, typeHandles[TypeGpuInstanceBuffer]));
-}
-
-void ScriptCallbacks::UpdateInstanceBuffer(ScriptInterpreter * interpreter)
-{
-	POP_PTRPARAM(1, ibuf, TypeGpuInstanceBuffer);
-	POP_PTRPARAM(2, floats, TypeFloatArray);
-	POP_NUMPARAM(3, size);
-
-	Gpu::InstanceBuffer * buffer = ibuf.GetPointer<Gpu::InstanceBuffer>();
-	ScriptFloatArray * floatArray = floats.GetPointer<ScriptFloatArray>();
-	unsigned activeInstances = unsigned(size.nvalue);
-
-	interpreter->GetApp()->gpu->UpdateInstanceBuffer(buffer, activeInstances, floatArray->floats);
-}
-
 void ScriptCallbacks::CreatePhysicsWorld(ScriptInterpreter * interpreter)
 {
 	PhysicsWorld * physicsWorld = interpreter->GetApp()->physics->CreateWorld(0.0f);
 
 	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(physicsWorld, typeHandles[TypePhysicsWorld]));
+	interpreter->PushParam(ScriptParam(physicsWorld, ScriptTypes::GetHandle(TypePhysicsWorld)));
 }
 
 void ScriptCallbacks::UpdatePhysicsWorld(ScriptInterpreter * interpreter)
@@ -2809,14 +1398,14 @@ void ScriptCallbacks::CreatePhysicsMaterial(ScriptInterpreter * interpreter)
 
 	PhysicsMaterial * material = interpreter->GetApp()->physics->CreateMaterial(properties);
 
-	interpreter->PushParam(ScriptParam(material, typeHandles[TypePhysicsMaterial]));
+	interpreter->PushParam(ScriptParam(material, ScriptTypes::GetHandle(TypePhysicsMaterial)));
 }
 
 void ScriptCallbacks::CreatePhysicsAnchor(ScriptInterpreter * interpreter)
 {
 	interpreter->ClearParams();
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateAnchor();
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsCuboid(ScriptInterpreter * interpreter)
@@ -2831,7 +1420,7 @@ void ScriptCallbacks::CreatePhysicsCuboid(ScriptInterpreter * interpreter)
 
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateCuboid(size, kinematic.nvalue > 0.0);
 
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsSphere(ScriptInterpreter * interpreter)
@@ -2842,7 +1431,7 @@ void ScriptCallbacks::CreatePhysicsSphere(ScriptInterpreter * interpreter)
 
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateSphere(float(r.nvalue), kinematic.nvalue > 0.0);
 
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsCapsule(ScriptInterpreter * interpreter)
@@ -2853,7 +1442,7 @@ void ScriptCallbacks::CreatePhysicsCapsule(ScriptInterpreter * interpreter)
 	
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateCapsule(float(r.nvalue), float(l.nvalue), kinematic.nvalue > 0.0);
 
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsMesh(ScriptInterpreter * interpreter)
@@ -2867,7 +1456,7 @@ void ScriptCallbacks::CreatePhysicsMesh(ScriptInterpreter * interpreter)
 
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateMesh(localMesh, false, true);
 
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsHeightmap(ScriptInterpreter * interpreter)
@@ -2878,7 +1467,7 @@ void ScriptCallbacks::CreatePhysicsHeightmap(ScriptInterpreter * interpreter)
 	HeightParser * heightParser = heightmap.GetPointer<HeightParser>();
 	PhysicsObject * physicsObject = interpreter->GetApp()->physics->CreateHeightmap(heightParser);
 
-	interpreter->PushParam(ScriptParam(physicsObject, typeHandles[TypePhysicsObject]));
+	interpreter->PushParam(ScriptParam(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject)));
 }
 
 void ScriptCallbacks::CreatePhysicsSpring(ScriptInterpreter * interpreter)
@@ -2898,7 +1487,7 @@ void ScriptCallbacks::CreatePhysicsSpring(ScriptInterpreter * interpreter)
 	PhysicsSpring * spring = physics->CreateSpring(physObj1, physObj2,
 		glm::vec3(attachVec1), glm::vec3(attachVec2));
 
-	interpreter->PushParam(ScriptParam(spring, typeHandles[TypePhysicsSpring]));
+	interpreter->PushParam(ScriptParam(spring, ScriptTypes::GetHandle(TypePhysicsSpring)));
 }
 
 void ScriptCallbacks::AddToPhysicsWorld(ScriptInterpreter * interpreter)
@@ -3048,11 +1637,29 @@ void ScriptCallbacks::GetPhysicsPosition(ScriptInterpreter * interpreter)
 void ScriptCallbacks::GetPhysicsMatrix(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, object, TypePhysicsObject);
+	ScriptParam isLocal = interpreter->PopParam();
 	interpreter->ClearParams();
 
 	PhysicsObject * physicsObject = object.GetPointer<PhysicsObject>();
 	PhysicsApi * physics = interpreter->GetApp()->physics;
-	glm::mat4 matrix = physics->GetMatrix(physicsObject);
+
+	glm::mat4 matrix;
+	if(isLocal.type == ScriptParam::BOOL)
+	{
+		if(isLocal.nvalue > 0.0)
+		{
+			matrix = physics->GetLocalMatrix(physicsObject);
+		}
+		else
+		{
+			matrix = physics->GetGlobalMatrix(physicsObject);
+		}
+	}
+	else
+	{
+		matrix = physics->GetMatrix(physicsObject);
+	}
+
 	const unsigned matrixTypeHandle = interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4);
 	interpreter->PushParam(new BufferCopyPtr(&matrix, sizeof(glm::mat4), matrixTypeHandle));
 }
@@ -3081,7 +1688,7 @@ void ScriptCallbacks::SetPhysicsSpringProperty(ScriptInterpreter * interpreter)
 	}
 	if(strcmp(name.svalue, "damping") == 0)
 	{
-		prop = PhysicsSpring::Damping;
+		prop = PhysicsSpring::ForceDamping;
 	}
 	if(strcmp(name.svalue, "length") == 0)
 	{
@@ -3113,7 +1720,7 @@ void ScriptCallbacks::CreatePhysicsRagdoll(ScriptInterpreter * interpreter)
 	PhysicsWorld * physicsWorld = world.GetPointer<PhysicsWorld>();
 	PhysicsRagdoll * physicsRagdoll = interpreter->GetApp()->physics->CreateRagdoll(physicsWorld);
 
-	interpreter->PushParam(ScriptParam(physicsRagdoll, typeHandles[TypePhysicsRagdoll]));
+	interpreter->PushParam(ScriptParam(physicsRagdoll, ScriptTypes::GetHandle(TypePhysicsRagdoll)));
 }
 
 void ScriptCallbacks::AddPhysicsRagdollBone(ScriptInterpreter * interpreter)
@@ -3152,7 +1759,7 @@ void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, typeHandles[TypePhysicsObject])));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
 	}
 }
 
@@ -3189,7 +1796,7 @@ void ScriptCallbacks::PickPhysicsObject(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, typeHandles[TypePhysicsObject])));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&posVec4, sizeof(glm::vec4), 
 			interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&norVec4, sizeof(glm::vec4), 
@@ -3210,7 +1817,7 @@ void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 	complexModel->models[0].mesh = localMesh->GpuOnly(interpreter->GetApp()->gpu);
 	complexModel->models[0].destructMesh = true;
 
-	interpreter->PushParam(ScriptParam(complexModel, typeHandles[TypeGpuComplexModel]));
+	interpreter->PushParam(ScriptParam(complexModel, ScriptTypes::GetHandle(TypeGpuComplexModel)));
 }
 
 #ifdef USE_LEAPMOTION_HELPER
@@ -3219,7 +1826,7 @@ void ScriptCallbacks::CreateLeapHelper(ScriptInterpreter * interpreter)
 {
 	LeapMotionHelper * leapHelper = new LeapMotionHelper();
 
-	interpreter->PushParam(ScriptParam(leapHelper, typeHandles[TypeLeapHelper]));
+	interpreter->PushParam(ScriptParam(leapHelper, ScriptTypes::GetHandle(TypeLeapHelper)));
 }
 
 void ScriptCallbacks::GetLeapFrameTime(ScriptInterpreter * interpreter)

@@ -194,6 +194,7 @@
     <ClInclude Include="AssimpLoader.h">
       <Filter>Loaders/Parsers</Filter>
     </ClInclude>
+    <ClInclude Include="SpriteManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -297,6 +298,7 @@
     <ClCompile Include="AssimpLoader.cpp">
       <Filter>Loaders/Parsers</Filter>
     </ClCompile>
+    <ClCompile Include="SpriteManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -503,6 +505,9 @@
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTexPosRotSca.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
   </ItemGroup>

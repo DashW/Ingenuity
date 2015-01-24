@@ -183,10 +183,6 @@ class Api : public Gpu::Api
 	IDXGISwapChain * mainSwapChain;
 	DX11::BackbufferSurface * mainDrawSurface;
 
-	//ID3D11RenderTargetView * mainRenderTargetView;
-	//ID3D11DepthStencilView * mainDepthStencilView;
-	//ID3D11Texture2D * mainDepthStencilBuffer;
-
 	ID3D11DepthStencilState * depthStencilState;
 	ID3D11RasterizerState * wireframeState;
 	ID3D11RasterizerState * defaultRasterState;
@@ -199,22 +195,20 @@ class Api : public Gpu::Api
 
 	DirectX::SpriteBatch * spriteBatch;
 	DirectX::CommonStates * commonStates;
+	ID3D11BlendState * blendStates[Gpu::BlendMode_Count];
 
-	ModelShader * baseShader;
+	//ModelShader * baseShader;
 	TextureShader * texCopyShader;
 	Mesh * texShaderQuad;
 
-	void SetupVertexInformation();
+	static const D3D11_INPUT_ELEMENT_DESC * vertexDescs[VertexType_Count];
+	static const unsigned vertexDescSizes[VertexType_Count];
+	static const D3D11_INPUT_ELEMENT_DESC * instanceDescs[InstanceType_Count];
+	static const unsigned instanceDescSizes[InstanceType_Count];
 
-	const D3D11_INPUT_ELEMENT_DESC * vertexDescs[VertexType_Count];
-	unsigned vertexDescSizes[VertexType_Count];
-	const D3D11_INPUT_ELEMENT_DESC * instanceDescs[InstanceType_Count];
-	unsigned instanceDescSizes[InstanceType_Count];
 	ID3D11InputLayout * texShaderLayout;
 	ID3D11VertexShader * texVertexShader;
 	bool texVertexShaderRequested;
-
-	Files::Api * files;
 
 	std::list<Gpu::IDeviceListener*> deviceListeners;
 
@@ -262,7 +256,7 @@ class Api : public Gpu::Api
 	float clearColor[4];
 
 public:
-	Api(Files::Api * files, PlatformWindow * window);
+	Api(PlatformWindow * window);
 	~Api();
 
 	virtual void Initialize(AssetMgr * assets) override;
@@ -272,7 +266,6 @@ public:
 	virtual void EndScene() override;
 	virtual void Present() override;
 
-	virtual void DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface = 0) override;
 	virtual void DrawGpuText(Gpu::Font * font, LPCWSTR text, float x, float y, bool center, Gpu::DrawSurface * surface = 0) override;
 	virtual void DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights,
 		unsigned numLights, Gpu::DrawSurface * surface = 0, Gpu::InstanceBuffer * instances = 0, Gpu::Effect * overrideEffect = 0) override;
@@ -282,14 +275,14 @@ public:
 	virtual Gpu::Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) override;
 	virtual Gpu::CubeMap * CreateGpuCubeMap(char * data, unsigned dataSize) override;
 	virtual Gpu::VolumeTexture * CreateGpuVolumeTexture(char * data, unsigned dataSize) override;
-	virtual Gpu::ShaderLoader * CreateGpuShaderLoader(Files::Directory * directory, const wchar_t * path) override;
+	virtual Gpu::ShaderLoader * CreateGpuShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path) override;
 
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, unsigned numTriangles, unsigned* indexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) override;
 	virtual Gpu::DrawSurface * CreateDrawSurface(unsigned width, unsigned height, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
-	virtual Gpu::DrawSurface * CreateRelativeDrawSurface(float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int, PlatformWindow * window = 0) override;
-	virtual Gpu::DrawSurface * GetWindowDrawSurface(PlatformWindow * window);
+	virtual Gpu::DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
+	virtual Gpu::DrawSurface * GetWindowDrawSurface(PlatformWindow * window = 0);
 
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer) override;
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData) override;

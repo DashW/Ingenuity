@@ -5,6 +5,13 @@
 namespace Ingenuity
 {
 
+struct Vertex_Pos;
+struct Vertex_PosCol;
+struct Vertex_PosNor;
+struct Vertex_PosTex;
+struct Vertex_PosNorTex;
+struct Vertex_PosNorTanTex;
+
 enum VertexType
 {
 	VertexType_Pos = 0,
@@ -15,6 +22,15 @@ enum VertexType
 	VertexType_PosNorTanTex,
 
 	VertexType_Count
+};
+static const char * VertexType_Names[VertexType_Count] =
+{
+	"Pos",
+	"PosCol",
+	"PosNor",
+	"PosTex",
+	"PosNorTex",
+	"PosNorTanTex"
 };
 
 struct Vertex_Pos
@@ -29,7 +45,7 @@ struct Vertex_Pos
 	Vertex_Pos(float x, float y, float z) :
 		position(x, y, z) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 	}
@@ -49,7 +65,7 @@ struct Vertex_PosCol
 		float r, float g, float b) :
 		position(x, y, z), color(r, g, b) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 	}
@@ -71,7 +87,7 @@ struct Vertex_PosNor
 		float u, float v, float w) :
 		position(x, y, z), normal(u, v, w) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
@@ -92,7 +108,7 @@ struct Vertex_PosTex
 		float tx, float ty) :
 		position(x, y, z), texCoord(tx, ty) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 	}
@@ -116,7 +132,7 @@ struct Vertex_PosNorTex
 		float tx, float ty) :
 		position(x, y, z), normal(u, v, w), texCoord(tx, ty) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
@@ -144,7 +160,7 @@ struct Vertex_PosNorTanTex
 		tangent(tanx, tany, tanz), tanChirality(tanc),
 		texCoord(tx, ty) {}
 
-	void Transform(glm::mat4 matrix, glm::mat4 invTraMatrix)
+	void Transform(const glm::mat4 & matrix, const glm::mat4 & invTraMatrix)
 	{
 		position = glm::vec3(matrix * glm::vec4(position, 1.0f));
 		normal = glm::normalize(glm::vec3(invTraMatrix * glm::vec4(normal, 1.0f)));
@@ -163,7 +179,7 @@ public:
 	virtual unsigned GetElementSize() = 0;
 	virtual unsigned GetLength() { return length; };
 	virtual VertexType GetVertexType() = 0;
-	virtual void Transform(glm::mat4 matrix) = 0;
+	virtual void Transform(const glm::mat4 & matrix) = 0;
 };
 
 template <class VERTEX>
@@ -172,7 +188,6 @@ class VertexBuffer : public IVertexBuffer
 	VertexType type;
 
 	VERTEX * buffer;
-	//const unsigned numVertices;
 
 public:
 	VertexBuffer(unsigned length) :
@@ -187,7 +202,7 @@ public:
 	virtual void * GetData() override { return buffer; }
 	virtual unsigned GetElementSize() override { return sizeof(VERTEX); }
 	virtual VertexType GetVertexType() override { return type; }
-	virtual void Transform(glm::mat4 matrix) override
+	virtual void Transform(const glm::mat4 & matrix) override
 	{
 		const glm::mat4 invTraMatrix = glm::inverse(glm::transpose(matrix));
 		for(unsigned i = 0; i < length; i++)
@@ -198,14 +213,28 @@ public:
 	VERTEX & Get(unsigned index) { return buffer[index]; }
 };
 
+struct Instance_Pos;
+struct Instance_PosCol;
+struct Instance_PosSca;
+struct Instance_PosRotSca;
+
 enum InstanceType
 {
 	InstanceType_None,
 	InstanceType_Pos,
 	InstanceType_PosCol,
 	InstanceType_PosSca,
+	InstanceType_PosRotSca,
 
 	InstanceType_Count
+};
+static const char * InstanceType_Names[InstanceType_Count] = 
+{
+	"",
+	"Pos",
+	"PosCol",
+	"PosSca",
+	"PosRotSca"
 };
 
 struct Instance_Pos
@@ -232,6 +261,8 @@ struct Instance_PosCol
 		position = glm::vec3(model->position);
 		color = model->color;
 	}
+
+	Instance_PosCol() : color(1.0f) {}
 };
 
 struct Instance_PosSca
@@ -247,58 +278,68 @@ struct Instance_PosSca
 		scale = glm::vec3(model->scale);
 	}
 
-	//Instance_PosSca() : scale(1.0f) {}
+	Instance_PosSca() : scale(1.0f) {}
+};
+
+struct Instance_PosRotSca
+{
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::vec3 scale;
+	static const InstanceType type = InstanceType_PosRotSca;
+
+	void UpdateFromModel(Gpu::Model * model)
+	{
+		if(model->useMatrix) return;
+		position = glm::vec3(model->position);
+		rotation = glm::vec3(model->rotation);
+		scale = glm::vec3(model->scale);
+	}
+
+	Instance_PosRotSca() : scale(1.0f) {}
+};
+
+static const unsigned VertexType_Sizes[VertexType_Count] =
+{
+	sizeof(Vertex_Pos),
+	sizeof(Vertex_PosCol),
+	sizeof(Vertex_PosNor),
+	sizeof(Vertex_PosTex),
+	sizeof(Vertex_PosNorTex),
+	sizeof(Vertex_PosNorTanTex)
+};
+
+static const unsigned InstanceType_Sizes[InstanceType_Count] =
+{
+	0,
+	sizeof(Instance_Pos),
+	sizeof(Instance_PosCol),
+	sizeof(Instance_PosSca),
+	sizeof(Instance_PosRotSca)
 };
 
 class VertApi {
+
 public:
 
 	inline static unsigned GetVertexSize(VertexType type)
 	{
-		switch(type)
-		{
-		case VertexType_Pos:
-			return sizeof(Vertex_Pos);
-		case VertexType_PosCol:
-			return sizeof(Vertex_PosCol);
-		case VertexType_PosNor:
-			return sizeof(Vertex_PosNor);
-		case VertexType_PosTex:
-			return sizeof(Vertex_PosTex);
-		case VertexType_PosNorTex:
-			return sizeof(Vertex_PosNorTex);
-		case VertexType_PosNorTanTex:
-			return sizeof(Vertex_PosNorTanTex);
-		};
-		return 0;
+		return VertexType_Sizes[type];
 	}
 
 	inline static const char * GetVertexName(VertexType type)
 	{
-		switch(type)
-		{
-		case VertexType_Pos:          return "Pos";
-		case VertexType_PosCol:       return "PosCol";
-		case VertexType_PosNor:       return "PosNor";
-		case VertexType_PosTex:       return "PosTex";
-		case VertexType_PosNorTex:    return "PosNorTex";
-		case VertexType_PosNorTanTex: return "PosNorTanTex";
-		default:                      return 0;
-		}
+		return VertexType_Names[type];
 	}
 
 	inline static unsigned GetInstanceSize(InstanceType type)
 	{
-		switch(type)
-		{
-		case InstanceType_Pos:
-			return sizeof(Instance_Pos);
-		case InstanceType_PosCol:
-			return sizeof(Instance_PosCol);
-		case InstanceType_PosSca:
-			return sizeof(Instance_PosSca);
-		}
-		return 0;
+		return InstanceType_Sizes[type];
+	}
+
+	inline static const char * GetInstanceName(InstanceType type)
+	{
+		return InstanceType_Names[type];
 	}
 
 	static unsigned GetTechniqueKey(VertexType vType, InstanceType iType) { return (iType * VertexType_Count) + vType; }

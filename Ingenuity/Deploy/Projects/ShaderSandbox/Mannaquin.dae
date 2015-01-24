@@ -281,7 +281,7 @@
     </material>
   </library_materials>
   <library_geometries>
-    <geometry id="Plane-mesh" name="Plane">
+<!--    <geometry id="Plane-mesh" name="Plane">
       <mesh>
         <source id="Plane-mesh-positions">
           <float_array id="Plane-mesh-positions-array" count="12">1 1 0 1 -1 0 -1 -0.9999998 0 -0.9999997 1 0</float_array>
@@ -314,7 +314,7 @@
         </polylist>
       </mesh>
       <extra><technique profile="MAYA"><double_sided>1</double_sided></technique></extra>
-    </geometry>
+    </geometry>-->
     <geometry id="Sphere-mesh" name="Sphere">
       <mesh>
         <source id="Sphere-mesh-positions">
@@ -831,13 +831,13 @@
     <visual_scene id="Scene" name="Scene">
       <node id="Plane" name="Plane" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
-        <instance_geometry url="#Plane-mesh">
+<!--        <instance_geometry url="#Plane-mesh">
           <bind_material>
             <technique_common>
               <instance_material symbol="Drevo-material" target="#Drevo-material"/>
             </technique_common>
           </bind_material>
-        </instance_geometry>
+        </instance_geometry>-->
       </node>
       <node id="Lamp" name="Lamp" type="NODE">
         <matrix sid="transform">-0.2908646 -0.7711008 0.5663932 -13.46215 0.9551712 -0.1998834 0.2183912 -20.56148 -0.05518906 0.6045247 0.7946723 6.09547 0 0 0 1</matrix>

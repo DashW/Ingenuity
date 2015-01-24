@@ -17,11 +17,19 @@ class LuaInterpreter : public ScriptInterpreter
 	static LuaInterpreter * GetInstance(lua_State * state);
 
 	static int CreateVector(lua_State * state);
+	static int CreateMatrix(lua_State * state);
 	static int GetVector(lua_State * state);
+	static int GetMatrix(lua_State * state);
+	static int SetMatrix(lua_State * state);
 	static int RotationMatrix(lua_State * state);
 	static int AddMatrix(lua_State * state);
 	static int MultiplyMatrix(lua_State * state);
 	static int InverseMatrix(lua_State * state);
+	static int TransposeMatrix(lua_State * state);
+
+	static int CreateFloatArray(lua_State * state);
+	static int SetFloatArray(lua_State * state);
+	static int GetFloatArray(lua_State * state);
 
 	void PushLuaParam(ScriptParam param);
 	ScriptParam PopLuaParam();
@@ -37,6 +45,7 @@ class LuaInterpreter : public ScriptInterpreter
 	std::vector<unsigned> structSizes;
 	unsigned vector4type;
 	unsigned matrix4type;
+	unsigned floatArrayType;
 
 public:
 	LuaInterpreter(RealtimeApp * app);

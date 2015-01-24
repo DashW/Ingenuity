@@ -108,6 +108,7 @@ struct SamplerParam
 		Filter,
 		Anisotropy,
 		Comparison,
+		MipDisable,
 
 		KeyMAX
 	}

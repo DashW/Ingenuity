@@ -5,8 +5,8 @@
 
 namespace Ingenuity {
 
-DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Directory * directory, const wchar_t * path) :
-	Gpu::ShaderLoader(gpu->files, directory, path),
+DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path) :
+	Gpu::ShaderLoader(files, directory, path),
 	gpu(gpu),
 	numVertexShaders(0),
 	numPixelShaders(0),
@@ -201,21 +201,16 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 		}
 
 		InstanceType instanceType = InstanceType_None;
-
 		const char * instanceTypeChars = techniqueElement->Attribute("instanceType");
 		if(instanceTypeChars)
 		{
-			if(strcmp(instanceTypeChars, "Pos") == 0)
+			for(unsigned i = 0; i < InstanceType_Count; ++i)
 			{
-				instanceType = InstanceType_Pos;
-			}
-			if(strcmp(instanceTypeChars, "PosCol") == 0)
-			{
-				instanceType = InstanceType_PosCol;
-			}
-			if(strcmp(instanceTypeChars, "PosSca") == 0)
-			{
-				instanceType = InstanceType_PosSca;
+				if(strcmp(instanceTypeChars, VertApi::GetInstanceName((InstanceType)i)) == 0)
+				{
+					instanceType = (InstanceType)i;
+					break;
+				}
 			}
 		}
 

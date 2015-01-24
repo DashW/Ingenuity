@@ -160,7 +160,7 @@ struct Model
 
 	Model() :
 		mesh(0), texture(0), normalMap(0), cubeMap(0), effect(0),
-		position(0.0f), rotation(0.0f), scale(1.0f), matrixPadding(0.0f), color(1.0f), 
+		position(0.0f,0.0f,0.0f,1.0f), rotation(0.0f), scale(1.0f), matrixPadding(0.0f), color(1.0f), 
 		diffuseFactor(1.0f), specPower(16.0f), specFactor(1.0f), useMatrix(false),
 		wrapTexture(false), wireframe(false), backFaceCull(true), frontFaceCull(false), 
 		destructMesh(false), destructEffect(false) {}
@@ -228,7 +228,7 @@ struct SpotLight : public Light
 			*  glm::lookAt(position, position + direction, up));
 	}
 
-	SpotLight() : atten(Light::DefaultAtten()), power(0) {}
+	SpotLight() : atten(Light::DefaultAtten()), power(12.0f) {}
 
 	virtual LightType GetType() override
 	{
@@ -268,6 +268,8 @@ struct Camera
 	{
 		glm::mat4 viewMatrix = GetViewMatrix();
 		viewMatrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+		// How did I figure out to use the inverse-transpose view matrix here?
 
 		return glm::normalize(glm::unProject(
 			glm::vec3(x, 1.0f-y, 0.0f), 
@@ -312,6 +314,8 @@ struct DrawSurface
 	virtual Type GetSurfaceType() = 0;
 	virtual Texture * GetTexture() = 0;
 	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f,0.0f,0.0f,1.0f)) = 0;
+	virtual unsigned GetWidth() = 0;
+	virtual unsigned GetHeight() = 0;
 };
 
 struct InstanceBuffer

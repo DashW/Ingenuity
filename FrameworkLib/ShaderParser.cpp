@@ -134,15 +134,15 @@ void Gpu::ShaderParser::ParseSamplerParams(unsigned paramIndex, tinyxml2::XMLEle
 		{
 			comparisonFunc = Gpu::SamplerParam::ComparisonLess;
 		}
-		if(strcmp(comparisonText, "greater") == 0)
+		else if(strcmp(comparisonText, "greater") == 0)
 		{
 			comparisonFunc = Gpu::SamplerParam::ComparisonGreater;
 		}
-		if(strcmp(comparisonText, "always") == 0)
+		else if(strcmp(comparisonText, "always") == 0)
 		{
 			comparisonFunc = Gpu::SamplerParam::ComparisonAlways;
 		}
-		if(strcmp(comparisonText, "never") == 0)
+		else if(strcmp(comparisonText, "never") == 0)
 		{
 			comparisonFunc = Gpu::SamplerParam::ComparisonNever;
 		}

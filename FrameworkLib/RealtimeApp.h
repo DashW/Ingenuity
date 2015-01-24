@@ -4,24 +4,25 @@
 
 namespace Ingenuity {
 
+namespace Audio {
+	class Api;
+}
+namespace Files {
+	class Api;
+}
+namespace Gpu {
+	class Api;
+}
+namespace Image {
+	class Api;
+}
+
 class AssetMgr;
 class InputState;
+class SpriteMgr;
 class StepMgr;
 class PlatformApi;
 class PhysicsApi;
-
-namespace Audio {
-class Api;
-}
-namespace Files {
-class Api;
-}
-namespace Gpu {
-class Api;
-}
-namespace Image {
-class Api;
-}
 
 class RealtimeApp 
 {
@@ -35,6 +36,7 @@ public:
 
 	AssetMgr    * assets;
 	InputState  * input;
+	SpriteMgr   * sprites;
 	StepMgr     * steppables;
 
 	float currentTime;
@@ -52,6 +54,7 @@ public:
 		input(0),
 		steppables(0),
 		running(true) {}
+
 	virtual ~RealtimeApp() {}
 	virtual void Begin();
 	virtual void End();

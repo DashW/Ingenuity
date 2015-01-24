@@ -16,7 +16,7 @@ class LeapMotionHelper::InternalListener : public Leap::Listener
 public:
 	static const unsigned FINGERS_PER_HAND = 5;
 	static const unsigned BONES_PER_FINGER = 4;
-	static const unsigned BONES_PER_HAND = (FINGERS_PER_HAND * BONES_PER_FINGER) + 1;
+	static const unsigned BONES_PER_HAND = (FINGERS_PER_HAND * BONES_PER_FINGER) + 2;
 	static const unsigned MAX_BONES = BONES_PER_HAND * 2;
 	static const unsigned VIS_BUFFER_FRAMES = 2;
 
@@ -100,7 +100,7 @@ public:
 
 			{
 				glm::mat4 boneMatrix = ConstructMatrix(hand.basis().toArray4x4(), hand.palmPosition(), hand.isLeft());
-				unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + BONES_PER_HAND - 1;
+				unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + BONES_PER_HAND - 2;
 
 				bones[boneIndex].visTimeout = VIS_BUFFER_FRAMES;
 				bones[boneIndex].length = 0.0f;
@@ -109,7 +109,18 @@ public:
 			}
 
 			// Get the Arm bone
-			//Leap::Arm arm = hand.arm();
+			Leap::Arm arm = hand.arm();
+			//const Leap::Vector direction = arm.direction();
+
+			{
+				glm::mat4 boneMatrix = ConstructMatrix(arm.basis().toArray4x4(), arm.center(), hand.isLeft());
+				unsigned boneIndex = (hand.isLeft() ? 0 : BONES_PER_HAND) + BONES_PER_HAND - 1;
+
+				bones[boneIndex].visTimeout = VIS_BUFFER_FRAMES;
+				bones[boneIndex].length = arm.wristPosition().distanceTo(arm.elbowPosition());
+				bones[boneIndex].width = arm.width() * 0.5f;
+				bones[boneIndex].matrix = boneMatrix;
+			}
 
 			// Get fingers
 			const Leap::FingerList fingers = hand.fingers();

@@ -33,6 +33,7 @@ Ingenuity/Deploy/*
 !Ingenuity/Deploy/Common
 !Ingenuity/Deploy/Projects
 !Ingenuity/Deploy/config.xml
+Ingenuity/Deploy/Projects/**/Workshop Room
 
 Ingenuity Win8/Debug/
 Ingenuity Win8/Release/

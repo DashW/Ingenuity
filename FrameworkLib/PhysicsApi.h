@@ -66,7 +66,8 @@ struct PhysicsSpring
 	enum Property
 	{
 		Stiffness,
-		Damping,
+		ForceDamping,
+		TorqueDamping,
 		Length,
 		Extends,
 		Compresses
@@ -110,6 +111,8 @@ public:
 	virtual glm::vec3 GetPosition(PhysicsObject * object) = 0;
 	//virtual glm::vec3 GetRotation(PhysicsObject * object) = 0;
 	virtual glm::mat4 GetMatrix(PhysicsObject * object) = 0;
+	virtual glm::mat4 GetGlobalMatrix(PhysicsObject * object) = 0;
+	virtual glm::mat4 GetLocalMatrix(PhysicsObject * object) = 0;
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) = 0;
 
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) = 0;

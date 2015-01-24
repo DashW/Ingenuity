@@ -25,6 +25,7 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 
 	DX11::Api * gpu;
 	DX11::Texture * texture;
+	PlatformWindow * relativeWindow;
 	ID3D11RenderTargetView * renderTargetView;
 	ID3D11Texture2D * depthStencilTexture;
 	ID3D11DepthStencilView * depthStencilView;
@@ -32,11 +33,10 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 	Format format;
 	float widthFactor;
 	float heightFactor;
-	bool screenRelative;
 	bool generateMips;
 
 	TextureSurface(DX11::Api * gpu, ID3D11Device * device, ID3D11DeviceContext * context,
-		Format format, bool screenRelative, float width, float height, bool mips = false);
+		Format format, PlatformWindow * relativeWindow, float width, float height, bool mips = false);
 	virtual ~TextureSurface();
 
 	virtual void Begin() override;
@@ -46,6 +46,8 @@ struct TextureSurface : public DrawSurface, public Gpu::IDeviceListener
 	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
 	virtual Gpu::DrawSurface::Type GetSurfaceType() override;
 	virtual Gpu::Texture * GetTexture() override { return texture; }
+	virtual unsigned GetWidth() override { return texture->GetWidth(); }
+	virtual unsigned GetHeight() override { return texture->GetHeight(); }
 };
 
 struct BackbufferSurface : public DrawSurface
@@ -64,34 +66,38 @@ struct BackbufferSurface : public DrawSurface
 	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
 	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeBackbuffer; }
 	virtual Gpu::Texture * GetTexture() override { return 0; }
+	virtual unsigned GetWidth() override { return width; }
+	virtual unsigned GetHeight() override { return height; }
 	float GetAspect() { return float(width) / float(height); }
 };
 
-struct StencilSurface : public DX11::DrawSurface
-{
-	StencilSurface(ID3D11Device * device, ID3D11DeviceContext * context) : DX11::DrawSurface(device, context), stencilState(0) {}
-	virtual ~StencilSurface() { if(stencilState) stencilState->Release(); }
-	virtual void Begin() override;
-	virtual void End() override;
-	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
-	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencil; }
-	virtual Gpu::Texture * GetTexture() override { return 0; }
+// THIS MEANS YOU CAN'T DRAW TO THE STENCIL BUFFER OF A SECOND WINDOW!!! //
 
-	ID3D11DepthStencilState * stencilState;
-};
-
-struct StencilClipSurface : public DX11::DrawSurface
-{
-	StencilClipSurface(ID3D11Device * device, ID3D11DeviceContext * context) : DX11::DrawSurface(device, context), stencilClipState(0) {}
-	virtual ~StencilClipSurface() { if(stencilClipState) stencilClipState->Release(); }
-	virtual void Begin() override;
-	virtual void End() override;
-	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
-	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencilClip; }
-	virtual Gpu::Texture * GetTexture() override { return 0; }
-
-	ID3D11DepthStencilState * stencilClipState;
-};
+//struct StencilSurface : public DX11::DrawSurface
+//{
+//	StencilSurface(ID3D11Device * device, ID3D11DeviceContext * context) : DX11::DrawSurface(device, context), stencilState(0) {}
+//	virtual ~StencilSurface() { if(stencilState) stencilState->Release(); }
+//	virtual void Begin() override;
+//	virtual void End() override;
+//	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+//	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencil; }
+//	virtual Gpu::Texture * GetTexture() override { return 0; }
+//
+//	ID3D11DepthStencilState * stencilState;
+//};
+//
+//struct StencilClipSurface : public DX11::DrawSurface
+//{
+//	StencilClipSurface(ID3D11Device * device, ID3D11DeviceContext * context) : DX11::DrawSurface(device, context), stencilClipState(0) {}
+//	virtual ~StencilClipSurface() { if(stencilClipState) stencilClipState->Release(); }
+//	virtual void Begin() override;
+//	virtual void End() override;
+//	virtual void Clear(glm::vec4 & color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) override;
+//	virtual Gpu::DrawSurface::Type GetSurfaceType() override { return Gpu::DrawSurface::TypeStencilClip; }
+//	virtual Gpu::Texture * GetTexture() override { return 0; }
+//
+//	ID3D11DepthStencilState * stencilClipState;
+//};
 
 } // namespace DX11
 } // namespace Ingenuity

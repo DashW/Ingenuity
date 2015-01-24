@@ -61,8 +61,12 @@ void DX11::SamplerMgr::UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam
 		lower = MAX_ANISO;
 		break;
 	case Gpu::SamplerParam::Comparison:
-		upper = MAX__BITS;
+		upper = MIPMAPOFF;
 		lower = COMP_FUNC;
+		break;
+	case Gpu::SamplerParam::MipDisable:
+		upper = MAX__BITS;
+		lower = MIPMAPOFF;
 		break;
 	}
 
@@ -77,7 +81,8 @@ void DX11::SamplerMgr::ApplySamplerParams(
 	ID3D11DeviceContext * direct3Dcontext, 
 	DX11::Shader::ParamMap & paramMappings, 
 	std::vector<Gpu::SamplerParam> * samplerParams, 
-	bool isModelShader)
+	bool isModelShader, 
+	bool forced)
 {
 	unsigned samplerKeys[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 	ZeroMemory(&samplerKeys, sizeof(unsigned)*D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT);
@@ -134,7 +139,8 @@ void DX11::SamplerMgr::ApplySamplerParams(
 
 	for(unsigned i = 0; i < D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT; ++i)
 	{
-		//if(currentSamplerKeys[i] == samplerKeys[i]) continue;
+		// Important! This allows sampler params to have an amortised cost.
+		if(currentSamplerKeys[i] == samplerKeys[i] && !forced) continue;
 
 		ID3D11SamplerState * samplerState = 0;
 		unsigned samplerKey = samplerKeys[i];
@@ -163,7 +169,7 @@ void DX11::SamplerMgr::ApplySamplerParams(
 			unsigned anisotropy = (samplerKey & GetBitmask(COMP_FUNC, MAX_ANISO)) >> MAX_ANISO;
 			samDesc.MaxAnisotropy = anisotropy;
 
-			unsigned comparisonFunc = (samplerKey & GetBitmask(MAX__BITS, COMP_FUNC)) >> COMP_FUNC;
+			unsigned comparisonFunc = (samplerKey & GetBitmask(MIPMAPOFF, COMP_FUNC)) >> COMP_FUNC;
 			samDesc.ComparisonFunc = GPU_COMPARISON_FUNCS_TO_DX11_COMPARISON_FUNCS[comparisonFunc];
 
 			unsigned filterMode = (samplerKey & GetBitmask(MAX_ANISO, FILTER_MD)) >> FILTER_MD;
@@ -171,6 +177,9 @@ void DX11::SamplerMgr::ApplySamplerParams(
 				samDesc.Filter = GPU_FILTER_MODES_TO_DX11_FILTERS[filterMode];
 			else
 				samDesc.Filter = GPU_FILTER_MODES_TO_DX11_COMPARISON_FILTERS[filterMode];
+
+			unsigned mipDisabled = (samplerKey & GetBitmask(MAX__BITS, MIPMAPOFF)) >> MIPMAPOFF;
+			if(mipDisabled > 0) samDesc.MinLOD = samDesc.MaxLOD = 0.0f;
 
 			if(SUCCEEDED(direct3Ddevice->CreateSamplerState(&samDesc, &samplerState)))
 			{
@@ -213,6 +222,11 @@ void DX11::SamplerMgr::SetAnisotropy(
 	{
 		direct3Dcontext->PSSetSamplers(i, 1, &defaultSampler);
 	}
+}
+
+void DX11::SamplerMgr::ResetSamplerParams()
+{
+	ZeroMemory(&currentSamplerKeys, sizeof(unsigned)*D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT);
 }
 
 } // namespace Ingenuity

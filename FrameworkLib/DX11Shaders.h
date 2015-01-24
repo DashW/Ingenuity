@@ -64,8 +64,6 @@ struct ModelShader : public Shader
 		~Technique();
 
 		bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
-
-		void ApplySamplerParams(ID3D11Device * device, ID3D11DeviceContext * context, std::vector<Gpu::SamplerParam> & samplerParams);
 	};
 
 	struct VertexConstants

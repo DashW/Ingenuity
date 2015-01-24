@@ -183,3 +183,24 @@ function CreateSkyCube()
 	SetModelScale(skyCube,50);
 	return skyCube;
 end
+
+function UpdatePixelCamera(camera,window,centerOrigin,yUpwards,near,far)
+	local windowWidth,windowHeight = GetBackbufferSize(window);
+	local pixOffsetX = windowWidth % 2;
+	local pixOffsetY = windowHeight % 2;
+	local cameraHeight = windowHeight;
+	
+	if centerOrigin then
+		SetCameraPosition(camera,pixOffsetX,pixOffsetY,-1);
+		SetCameraTarget(camera,pixOffsetX,pixOffsetY,0);
+	else
+		SetCameraPosition(camera,windowWidth/2,windowHeight/2,-1);
+		SetCameraTarget(camera,windowWidth/2,windowHeight/2,0);
+	end
+	
+	if not yUpwards then
+		cameraHeight = cameraHeight * -1;
+	end
+	
+	SetCameraClipHeight(camera,near,far,cameraHeight);
+end

@@ -9,7 +9,6 @@ Require("ProjectDir","../../Common/IngenUtils.lua");
 Require("ProjectDir","../../Common/IngenUI.lua");
 Require("ProjectDir","../../Common/XmlHelper.lua");
 
-camRadius = 2.5;
 lightRadius = 2.5;
 rotSpeed = 0.4;
 pendingTex = "";
@@ -156,6 +155,8 @@ function Begin()
 	
 	modelx = 0.0;
 	camera = CreateCamera();
+	camRadius = 2.5;
+	camRot = 0;
 	SetCameraPosition(camera, 0, camRadius, -camRadius);
 	orthoCam = CreateCamera(true);
 	SetCameraPosition(orthoCam, 0, 0, -1);
@@ -205,9 +206,9 @@ function Begin()
 				pendingModel = data;
 				print("Loading Model: "..data);
 				local modelType = "ColladaModel";
-				if data:sub(-4) == ".obj" then
-					modelType = "WavefrontModel";
-				end
+				--if data:sub(-4) == ".obj" then
+				--	modelType = "WavefrontModel";
+				--end
 				modelTicket = LoadAssets("ProjectDir",pendingModel,modelType,pendingModel);
 			end
 		end);
@@ -274,7 +275,7 @@ function Begin()
 	
 	rotSlider = CreateUISlider();
 	rotSlider.x = -150;
-	rotSlider.y = -80;
+	rotSlider.y = -130;
 	rotSlider.width = 300;
 	rotSlider.height = 50;
 	rotSlider.anchor = INGENUI_ANCHOR_BOTTOM + INGENUI_ANCHOR_CENTERX;
@@ -282,9 +283,23 @@ function Begin()
 	rotSlider.maxValue = -math.pi;
 	rotSlider.value = 0;
 	rotSlider.action = function(slider)
-		SetCameraPosition(camera,math.sin(slider.value) * camRadius, camRadius, -math.cos(slider.value) * camRadius);
+		camRot = slider.value;
 	end;
 	AddUIComponent(rotSlider);
+	
+	zoomSlider = CreateUISlider();
+	zoomSlider.x = -150;
+	zoomSlider.y = -80;
+	zoomSlider.width = 300;
+	zoomSlider.height = 50;
+	zoomSlider.anchor = INGENUI_ANCHOR_BOTTOM + INGENUI_ANCHOR_CENTERX;
+	zoomSlider.minValue = 0;
+	zoomSlider.maxValue = camRadius * 2;
+	zoomSlider.value = camRadius;
+	zoomSlider.action = function(slider)
+		camRadius = slider.value;
+	end;
+	AddUIComponent(zoomSlider);
 	
 	maxAmplitude = 0;
 	
@@ -306,7 +321,7 @@ end
 
 function Reload()
 	-- Begin();
-	
+
 	print("reloaded!");
 end
 
@@ -569,6 +584,8 @@ function Update(delta)
 	SetLightDirection(light,math.sin(modelx-0.5),-0.4,math.cos(modelx-0.5));
 	SetLightPosition(light,-math.sin(modelx-0.5) * lightRadius,0.5 * lightRadius,-math.cos(modelx-0.5) * lightRadius);
 	
+	SetCameraPosition(camera,math.sin(camRot) * camRadius, camRadius, -math.cos(camRot) * camRadius);
+	
 	screenWidth, screenHeight = GetBackbufferSize();
 	SetCameraClipHeight(orthoCam,1,5000,screenHeight);
 	
@@ -600,7 +617,7 @@ function Draw()
 	-- DrawComplexModel(sphere,camera,0,screenSurface1);
 	
 	if screenEffect then
-		ShadeSurface(screenSurface1,screenEffect,screenSurface2);
+		DrawSurface(screenSurface1,screenEffect,screenSurface2);
 	end
 	
 	if uiVisible then
@@ -608,7 +625,6 @@ function Draw()
 		DrawUI();
 	end
 	
-	--DrawSprite(tex,0,0);
 	DrawText(font,frameTimeText,0,0,0);
 	-- DrawText(font,amplitudeString,0,40,0);
 	

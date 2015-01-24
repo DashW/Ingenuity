@@ -4,6 +4,7 @@
 #include "Win32FileApi.h"
 #include "Win32PlatformApi.h"
 #include "InputState.h"
+#include "SpriteManager.h"
 
 #include "RealtimeApp.h"
 
@@ -72,7 +73,7 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 	app->gpu = new DX9::Api(app->files, app->steppables, window);
 #else
 #ifdef USE_DX11_GPUAPI
-	app->gpu = new DX11::Api(app->files, mainWindow);
+	app->gpu = new DX11::Api(mainWindow);
 #else
 #ifdef USE_GL_GPUAPI
 	app->gpu = new GL::Api(app->files, window->getHandle());
@@ -110,6 +111,8 @@ Win32::AppController::AppController(HINSTANCE instance, RealtimeApp * realtimeAp
 	app->assets = new AssetMgr(app->files, app->gpu, app->imaging, app->steppables, app->audio);
 
 	app->gpu->Initialize(app->assets);
+
+	app->sprites = new SpriteMgr(app->gpu);
 }
 
 Win32::AppController::~AppController()
@@ -118,6 +121,7 @@ Win32::AppController::~AppController()
 	delete app->physics;
 	delete app->steppables;
 	delete app->assets;
+	delete app->sprites;
 	if(app->audio) delete app->audio; app->audio = 0;
 	delete app->platform;
 	delete app->files;

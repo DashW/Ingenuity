@@ -23,6 +23,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GpuScriptCallbacks.cpp" />
     <ClCompile Include="IngenuityHelper.cpp" />
     <ClCompile Include="PythonInterpreter.cpp" />
     <ClCompile Include="ScriptCallbacks.cpp" />
@@ -132,10 +133,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GpuScriptCallbacks.h" />
     <ClInclude Include="IngenuityHelper.h" />
     <ClInclude Include="PythonInterpreter.h" />
     <ClInclude Include="ScriptCallbacks.h" />
     <ClInclude Include="ScriptConsole.h" />
+    <ClInclude Include="ScriptTypes.h" />
     <ClInclude Include="TinypyWrapper.h" />
     <ClInclude Include="Tinypy\tp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">true</ExcludedFromBuild>

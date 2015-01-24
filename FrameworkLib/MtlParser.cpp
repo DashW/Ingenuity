@@ -64,7 +64,9 @@ void MtlParser::ParseLine(std::string line)
 		WavefrontMtl &mtl = materials[materials.size() - 1];
 
 		std::string args = GetArguments(line, "map_bump ", pos);
-		std::wstring texPath = (subDirectory + std::wstring(args.begin(), args.end()));
+		std::wstring wargs = std::wstring(args.begin(), args.end());
+		unsigned spaceChar = wargs.find(L" ");
+		std::wstring texPath = (subDirectory + wargs.substr(0,spaceChar < wargs.size() ? spaceChar : wargs.size()));
 
 		mtl.normalPath = texPath;
 		textureTicket = assets->Load(directory, texPath.c_str(), TextureAsset, 0, textureTicket);
@@ -74,7 +76,9 @@ void MtlParser::ParseLine(std::string line)
 		WavefrontMtl &mtl = materials[materials.size() - 1];
 
 		std::string args = GetArguments(line, "bump ", pos);
-		std::wstring texPath = (subDirectory + std::wstring(args.begin(), args.end()));
+		std::wstring wargs = std::wstring(args.begin(), args.end());
+		unsigned firstSpaceOffset = wargs.find(L" ");
+		std::wstring texPath = (subDirectory + wargs.substr(0, firstSpaceOffset));
 
 		mtl.normalPath = texPath;
 		textureTicket = assets->Load(directory, texPath.c_str(), TextureAsset, 0, textureTicket);

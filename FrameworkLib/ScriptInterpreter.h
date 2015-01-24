@@ -95,8 +95,6 @@ public:
 	enum Operator
 	{
 		Call,
-		IndexGet,
-		IndexSet,
 		Add,
 		Sub,
 		Mul,
@@ -104,7 +102,10 @@ public:
 		Pow,
 		Neg,
 		Equals,
-		ToString
+		ToString,
+		IndexGet,
+		IndexSet,
+		Length
 	};
 
 	enum SpecialPtrType
@@ -167,6 +168,16 @@ public:
 	virtual void RegisterCallback(const char * name, ScriptCallback callback) = 0;
 	virtual void RegisterCallback(const char * name, ScriptCallback callback, const char * help)
 	{
+		for(unsigned i = 0; i < callbackMeta.size(); ++i)
+		{
+			if(strcmp(name, callbackMeta[i].name) == 0)
+			{
+				std::string error = "Module function registered twice: ";
+				error += name;
+				ThrowError(error.c_str());
+				break;
+			}
+		}
 		callbackMeta.push_back(ScriptCallbackMeta(name, help));
 		RegisterCallback(name, callback);
 	}

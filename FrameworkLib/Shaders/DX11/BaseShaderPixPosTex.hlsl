@@ -8,7 +8,11 @@ struct VertexOutPosTex {
 	float2 _TexCoord : TEXCOORD2;
 };
 
+static const float epsilon = 0.00001f;
+
 float4 main(VertexOutPosTex vtx) : SV_TARGET
 {
-	return tex.Sample(_textureSampler, vtx._TexCoord);
+	float4 texColor = tex.Sample(_textureSampler, vtx._TexCoord);
+	clip(texColor.a < epsilon ? -1 : 1);
+	return float4(texColor.rgb, texColor.a);
 }

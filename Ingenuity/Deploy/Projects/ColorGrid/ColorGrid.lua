@@ -41,7 +41,7 @@ function Update(delta)
 	end
 
 	mouseX, mouseY = GetMousePosition();
-	screenWidth, screenHeight = GetScreenSize();
+	screenWidth, screenHeight = GetBackbufferSize();
 	
 	mouseX = mouseX + 1;
 	mouseY = mouseY + 1;
@@ -70,7 +70,7 @@ end
 
 function Draw()
 	if ticket == -1 then
-		screenWidth, screenHeight = GetScreenSize();
+		screenWidth, screenHeight = GetBackbufferSize();
 		SetCameraClipHeight(camera,1,5000,screenHeight);
 		SetCameraPosition(camera,screenWidth/2,-screenHeight/2,-1000);
 		SetCameraTarget(camera,screenWidth/2,-screenHeight/2,0);

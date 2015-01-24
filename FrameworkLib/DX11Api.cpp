@@ -31,7 +31,7 @@ namespace Ingenuity {
 
 float secsPerCnt;
 
-DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
+DX11::Api::Api(PlatformWindow * window) :
 	direct3Ddevice(0),
     direct3Dcontext(0),
 	mainSwapChain(0),
@@ -41,13 +41,11 @@ DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
 	stencilClipState(0),
 	spriteBatch(0),
 	commonStates(0),
-	baseShader(0),
 	texCopyShader(0),
 	texShaderQuad(0),
 	texShaderLayout(0),
 	texVertexShader(0),
 	texVertexShaderRequested(false),
-	files(files),
 	currFrame(0)
 {
 	UINT creationFlags = 0;
@@ -112,9 +110,9 @@ DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
 
 	OnWindowResized(window, 0, 0);
 
-	direct3Ddevice->CreateDepthStencilState(
-		&CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT()),
-		&depthStencilState);
+	CD3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+	direct3Ddevice->CreateDepthStencilState(&depthStencilDesc,&depthStencilState);
 
 	CD3D11_RASTERIZER_DESC rasterDesc(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.0f, 0.0f, true, false, false, false);
 	direct3Ddevice->CreateRasterizerState(&rasterDesc, &defaultRasterState);
@@ -122,20 +120,6 @@ DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
 	samplerMgr = new SamplerMgr(direct3Ddevice, direct3Dcontext);
 
 	spriteBatch = new SpriteBatch(direct3Dcontext);
-
-	SetupVertexInformation();
-
-	//baseShader = static_cast<DX11_ModelShader*>(GetShader("BaseShader"));
-	//if(!baseShader)
-	//{
-	//	OutputDebugString(L"Failed to load BaseShader!!\n");
-	//	//exit(1); // Windows 8, appropriate thing to do is crash!
-	//}
-	//texCopyShader = static_cast<DX11_TextureShader*>(GetShader("TextureCopy"));
-	//if(!texCopyShader)
-	//{
-	//	OutputDebugString(L"Failed to load TextureCopy shader!!\n");
-	//}
 
 	//LocalMesh * quad = GeoBuilder().BuildRect(0.0f, 0.0f, 1.0f, 1.0f, true);
 	//texShaderQuad = static_cast<DX11::Mesh*>(quad->GpuOnly(this));
@@ -151,8 +135,13 @@ DX11::Api::Api(Files::Api * files, PlatformWindow * window) :
 
 	clearColor[0] = 0.0f; clearColor[1] = 0.0f; clearColor[2] = 0.0f; clearColor[3] = 1.0f;
 
-	stencilSurface = new DX11::StencilSurface(direct3Ddevice,direct3Dcontext);
-	stencilClipSurface = new DX11::StencilClipSurface(direct3Ddevice,direct3Dcontext);
+	for(unsigned i = 0; i < Gpu::BlendMode_Count; ++i)
+	{
+		blendStates[i] = 0;
+	}
+
+	//stencilSurface = new DX11::StencilSurface(direct3Ddevice,direct3Dcontext);
+	//stencilClipSurface = new DX11::StencilClipSurface(direct3Ddevice,direct3Dcontext);
 
 	//initialised = true;
 
@@ -170,6 +159,11 @@ DX11::Api::~Api()
 		delete windowDrawSurfaces[swapIt->first];
 	}
 
+	for(unsigned i = 0; i < Gpu::BlendMode_Count; ++i)
+	{
+		if(blendStates[i]) blendStates[i]->Release();
+	}
+
 	CoUninitialize();
 
 	if(texVertexShader) texVertexShader->Release();
@@ -185,6 +179,7 @@ DX11::Api::~Api()
 	if(commonStates) delete commonStates;
 	if(spriteBatch) delete spriteBatch;
 	if(samplerMgr) delete samplerMgr;
+	if(baseEffect) delete baseEffect;
 
 	if(direct3Dcontext) {
 		direct3Dcontext->ClearState();
@@ -239,49 +234,52 @@ const D3D11_INPUT_ELEMENT_DESC instPosSca[] = {
 	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 	{ "COLOR", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 12, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
 };
+const D3D11_INPUT_ELEMENT_DESC instPosRotSca[] = {
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	{ "COLOR", 1, DXGI_FORMAT_R32G32B32_FLOAT, 1, 12, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	{ "COLOR", 2, DXGI_FORMAT_R32G32B32_FLOAT, 1, 24, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+};
 
-void DX11::Api::SetupVertexInformation()
+const D3D11_INPUT_ELEMENT_DESC * DX11::Api::vertexDescs[VertexType_Count] =
 {
-	for(unsigned i = 0; i < VertexType_Count; ++i)
-	{
-		vertexDescs[i] = 0;
-		vertexDescSizes[i] = 0;
-	}
-	for(unsigned i = 0; i < InstanceType_Count; ++i)
-	{
-		instanceDescs[i] = 0;
-		instanceDescSizes[i] = 0;
-	}
-
-	vertexDescs[VertexType_Pos] = vtxPos;
-	vertexDescSizes[VertexType_Pos] = 1;
-	vertexDescs[VertexType_PosCol] = vtxPosCol;
-	vertexDescSizes[VertexType_PosCol] = 2;
-	vertexDescs[VertexType_PosNor] = vtxPosNor;
-	vertexDescSizes[VertexType_PosNor] = 2;
-	vertexDescs[VertexType_PosTex] = vtxPosTex;
-	vertexDescSizes[VertexType_PosTex] = 2;
-	vertexDescs[VertexType_PosNorTex] = vtxPosNorTex;
-	vertexDescSizes[VertexType_PosNorTex] = 3;
-	vertexDescs[VertexType_PosNorTanTex] = vtxPosNorTanTex;
-	vertexDescSizes[VertexType_PosNorTanTex] = 4;
-
-	instanceDescs[InstanceType_Pos] = instPos;
-	instanceDescSizes[InstanceType_Pos] = 1;
-	instanceDescs[InstanceType_PosCol] = instPosCol;
-	instanceDescSizes[InstanceType_PosCol] = 2;
-	instanceDescs[InstanceType_PosSca] = instPosSca;
-	instanceDescSizes[InstanceType_PosSca] = 2;
-}
+	vtxPos,
+	vtxPosCol,
+	vtxPosNor,
+	vtxPosTex,
+	vtxPosNorTex,
+	vtxPosNorTanTex
+};
+const unsigned DX11::Api::vertexDescSizes[VertexType_Count] =
+{
+	1,
+	2,
+	2,
+	2,
+	3,
+	4
+};
+const D3D11_INPUT_ELEMENT_DESC * DX11::Api::instanceDescs[InstanceType_Count] =
+{
+	0,
+	instPos,
+	instPosCol,
+	instPosSca,
+	instPosRotSca
+};
+const unsigned DX11::Api::instanceDescSizes[InstanceType_Count] =
+{
+	0,
+	1,
+	2,
+	2,
+	3
+};
 
 void DX11::Api::Initialize(AssetMgr * assets)
 {
 	// Load the default shaders
 
-	Files::Directory * frameworkDir = files->GetKnownDirectory(Files::FrameworkDir);
-
-	//assets->LoadCriticalShader(frameworkDir, L"BaseShader.xml");
-	//assets->LoadCriticalShader(frameworkDir, L"TextureCopy.xml");
+	Files::Directory * frameworkDir = assets->GetFileApi()->GetKnownDirectory(Files::FrameworkDir);
 
 	assets->Load(frameworkDir, L"BaseShader.xml", ShaderAsset, 0, AssetMgr::CRITICAL_TICKET);
 	assets->Load(frameworkDir, L"TextureCopy.xml", ShaderAsset, 0, AssetMgr::CRITICAL_TICKET);
@@ -289,19 +287,20 @@ void DX11::Api::Initialize(AssetMgr * assets)
 
 void DX11::Api::OnCriticalLoad(AssetMgr * assets)
 {
-	Files::Directory * frameworkDir = files->GetKnownDirectory(Files::FrameworkDir);
+	Files::Directory * frameworkDir = assets->GetFileApi()->GetKnownDirectory(Files::FrameworkDir);
 
 	Gpu::Shader * gpuBaseShader = assets->GetAsset<Gpu::Shader>(frameworkDir, L"BaseShader.xml");
 	Gpu::Shader * gpuTexCopyShader = assets->GetAsset<Gpu::Shader>(frameworkDir, L"TextureCopy.xml");
 
-	baseShader = static_cast<DX11::ModelShader*>(gpuBaseShader);
+	baseEffect = new Gpu::Effect(gpuBaseShader);
 	texCopyShader = static_cast<DX11::TextureShader*>(gpuTexCopyShader);
 }
 
 void DX11::Api::Clear() 
 {
-	mainDrawSurface->Clear();
+	mainDrawSurface->Clear(glm::vec4(clearColor[0],clearColor[1],clearColor[2],clearColor[3]));
 }
+
 void DX11::Api::BeginScene() 
 {
 	mainDrawSurface->Begin();
@@ -310,15 +309,24 @@ void DX11::Api::BeginScene()
 	direct2Dtarget->BeginDraw();
 #endif
 
+	SetBlendMode(Gpu::BlendMode_Alpha);
+
+	direct3Dcontext->OMSetDepthStencilState(depthStencilState, 0);
+
 	spriteBatch->Begin(SpriteSortMode_BackToFront,commonStates->NonPremultiplied());
 }
+
 void DX11::Api::EndScene()
 {
+	spriteBatch->End();
+
+#ifdef USE_DIRECT2D
+	direct2Dtarget->EndDraw();
+#endif
+
 	profileTimes.clear();
 
-	currFrame = (currFrame + 1) % QUERY_LATENCY;    
-
-	XMMATRIX transform = XMMatrixTranslation(25.0f, 100.0f, 0.0f);
+	currFrame = (currFrame + 1) % QUERY_LATENCY;
 
 	float queryTime = 0.0f;
 
@@ -367,19 +375,21 @@ void DX11::Api::EndScene()
 		profileTimes[iter->first] = time;
 	}
 
-	spriteBatch->End();
-
-#ifdef USE_DIRECT2D
-	direct2Dtarget->EndDraw();
-#endif
-
-	direct3Dcontext->OMSetDepthStencilState(0,0);
 	//direct3Dcontext->RSSetState(0);
 
-	// Reset all shader resource views
+	// Reset all shader resource views to revert changes made by last SpriteBatch flush
 	ID3D11ShaderResourceView * nullResources[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT];
 	memset(nullResources, 0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT * sizeof(void*));
 	direct3Dcontext->PSSetShaderResources(0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, nullResources);
+
+	// Reset and force all sampler params to revert changes made by last SpriteBatch flush
+	samplerMgr->ResetSamplerParams();
+	samplerMgr->ApplySamplerParams(
+		direct3Dcontext,
+		Shader::ParamMap(),
+		&baseEffect->samplerParams,
+		true,
+		true);
 
 	// Release the backbuffers for any windows destroyed this frame
 	for(unsigned i = 0; i < destroyedWindows.size(); ++i)
@@ -401,78 +411,6 @@ void DX11::Api::Present()
 	for(it = windowSwapChains.begin(); it != windowSwapChains.end(); ++it)
 	{
 		it->second->Present(0, 0);
-	}
-}
-
-void DX11::Api::DrawGpuSprite(Gpu::Sprite * sprite, Gpu::DrawSurface * surface) 
-{
-	if(!sprite || !sprite->texture) return;
-
-	DX11::Texture* dx11tex = static_cast<DX11::Texture*>(sprite->texture);
-	//ID3D11BlendState* blendState;
-	//if(sprite->brightAsAlpha)
-	//	blendState = commonStates->Additive();
-	//else
-	//	blendState = commonStates->AlphaBlend();
-
-	D3D11_TEXTURE2D_DESC & desc = dx11tex->desc;
-	RECT sampleRect = {
-		(long)(((float)desc.Width)*sprite->clipRect.left),
-		(long)(((float)desc.Height)*sprite->clipRect.top),
-		(long)(((float)desc.Width)*sprite->clipRect.right),
-		(long)(((float)desc.Height)*sprite->clipRect.bottom)};
-
-	XMFLOAT2 position;
-	XMFLOAT2 scale;
-	float w = static_cast<float>(mainDrawSurface->width/2);
-	float h = static_cast<float>(mainDrawSurface->height/2);
-	if(sprite->pixelSpace)
-	{
-		position.x = sprite->position.x; 
-		position.y = sprite->position.y;
-		scale.x = sprite->scale.x;
-		scale.y = sprite->scale.y;
-	}
-	else
-	{
-		float deviceIndependentSize = h/((float)standardScreenHeight);
-		position.x = w + (sprite->position.x * h);
-		position.y = h + (sprite->position.y * h);
-		scale.x = sprite->scale.x * deviceIndependentSize;
-		scale.y = sprite->scale.y * deviceIndependentSize;
-	}
-
-	//direct3Dcontext->OMSetDepthStencilState(commonStates->DepthRead(),0);
-
-	XMVECTORF32 color = {{{(sprite->color.r),(sprite->color.g),(sprite->color.b),(sprite->color.a)}}};
-
-	DX11::DrawSurface * dx11surface = static_cast<DX11::DrawSurface*>(surface);
-	if(dx11surface)
-	{
-		spriteBatch->End();
-		dx11surface->Begin();
-		spriteBatch->Begin(DirectX::SpriteSortMode_Immediate);
-	}
-
-	spriteBatch->Draw(dx11tex->shaderView, position,
-		&sampleRect,color,sprite->rotation, 
-		XMFLOAT2(sprite->center.x,sprite->center.y),
-		scale,SpriteEffects_None,sprite->position.z);
-
-	if(dx11surface)
-	{
-		spriteBatch->End();
-		dx11surface->End();
-		spriteBatch->Begin(SpriteSortMode_BackToFront, commonStates->NonPremultiplied());
-	}
-
-	//direct3Dcontext->OMSetDepthStencilState(0,0);
-	//direct3Dcontext->RSSetState(0);
-
-	ProfileList::iterator profileIt = activeProfiles.begin();
-	for(; profileIt != activeProfiles.end(); profileIt++)
-	{
-		(*profileIt)->drawCalls++;
 	}
 }
 
@@ -499,8 +437,8 @@ void DX11::Api::DrawGpuText(Gpu::Font* font, LPCWSTR text, float x, float y, boo
 
 	if(!font->pixelSpace)
 	{
-		position.x = (screenWidth + (x * screenHeight)) * 0.5f;
-		position.y = (screenHeight + (y * screenHeight)) * 0.5f;
+		position.x = (screenWidth + ((2.0f * x) * screenHeight)) * 0.5f;
+		position.y = (screenHeight + ((2.0f * y) * screenHeight)) * 0.5f;
 		//size *= float(backBufferHeight)/float(standardScreenHeight);
 	}
 
@@ -546,14 +484,18 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 									 unsigned numLights, Gpu::DrawSurface * surface, 
 									 Gpu::InstanceBuffer * instances, Gpu::Effect * overrideEffect) 
 {
+	// SANITY CHECKS - FREE //
+
 	if(!model) return;
 	if(!model->mesh) return;
 	if(model->backFaceCull && model->frontFaceCull) return;
-	if(!baseShader) return;
+	if(!baseEffect) return;
 
 	//if(numLights > 0) numLights = 1;
 
 	DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
+
+	// SETTING RASTERIZER STATE - MINOR COST - ~3us //
 
 	if(model->wireframe || drawEverythingWireframe)
 	{
@@ -578,13 +520,24 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 	{
 		direct3Dcontext->RSSetState(defaultRasterState);
 	}
-
-	direct3Dcontext->OMSetDepthStencilState(0, 0);
+	
+	// SETTING VERTEX & INDEX BUFFERS - MINOR COST - ~7us //
 
 	direct3Dcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // Not necessary - do this once ?
 
 	UINT offset = 0;
 	direct3Dcontext->IASetVertexBuffers(0, 1, &dx11mesh->vertexBuffer, &dx11mesh->vertexSize, &offset);
+
+	if(dx11mesh->IsIndexed())
+	{
+		direct3Dcontext->IASetIndexBuffer(dx11mesh->indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	}
+	else
+	{
+		direct3Dcontext->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
+	}
+
+	// SETTING INSTANCE BUFFER - MINOR COST - ~7us //
 
 	VertexType vertexType = dx11mesh->vertexType;
 	InstanceType instanceType = InstanceType_None;
@@ -596,56 +549,59 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 
 		instanceType = dx11instances->GetType();
 	}
-	else
-	{
-		direct3Dcontext->IASetVertexBuffers(1, 0, 0, 0, 0);
-	}
 
-	if(dx11mesh->IsIndexed())
-	{
-		direct3Dcontext->IASetIndexBuffer(dx11mesh->indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	}
-	else
-	{
-		direct3Dcontext->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
-	}
+	// GETTING EFFECT AND SHADER - FREE //
 
-	DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(baseShader);
-	Gpu::Effect * effect = 0;
+	Gpu::Effect * effect = baseEffect;
 
 	if(overrideEffect && overrideEffect->shader && overrideEffect->shader->IsModelShader())
 	{
-		shader = static_cast<DX11::ModelShader*>(overrideEffect->shader);
 		effect = overrideEffect;
 	}
 	else if(model->effect && model->effect->shader && model->effect->shader->IsModelShader()) 
 	{
-		shader = static_cast<DX11::ModelShader*>(model->effect->shader);
 		effect = model->effect;
 	}
 
-	if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
+	DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(effect->shader);
+
+	// GETTING TARGET AND CALCULATING ASPECT - MINOR COST - ~4us //
 
 	float aspect = float(mainDrawSurface->width)/float(mainDrawSurface->height);
-	DX11::DrawSurface * dx11surface = surface ? static_cast<DX11::DrawSurface*>(surface) : mainDrawSurface;
-	if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeTexture)
+	DX11::DrawSurface * dx11surface = 0;
+	if(surface)
 	{
-		Gpu::Texture * surfaceTex = dx11surface->GetTexture();
-		aspect = float(surfaceTex->GetWidth())/float(surfaceTex->GetHeight());
-	}
-	else if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeBackbuffer)
-	{
-		DX11::BackbufferSurface * backbufferSurface = static_cast<DX11::BackbufferSurface*>(dx11surface);
-		aspect = backbufferSurface->GetAspect();
+		dx11surface = static_cast<DX11::DrawSurface*>(surface);
+		if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeTexture 
+			|| dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeRelativeTexture)
+		{
+			Gpu::Texture * surfaceTex = dx11surface->GetTexture();
+			aspect = float(surfaceTex->GetWidth()) / float(surfaceTex->GetHeight());
+		}
+		else if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeBackbuffer)
+		{
+			DX11::BackbufferSurface * backbufferSurface = static_cast<DX11::BackbufferSurface*>(dx11surface);
+			aspect = backbufferSurface->GetAspect();
+		}
 	}
 
+	// SWITCHING SHADER TECHNIQUE - MINOR COST - ~5us //
+
+	if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
+
+	// APPLYING SHADER PARAMS - SIGNIFICANT COST - ~32us //
+
 	if(!shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect, effect)) return;
+
+	// APPLYING SAMPLER PARAMS - AMORTISED! //
 
 	samplerMgr->ApplySamplerParams(
 		direct3Dcontext, 
 		shader->currentTechnique->paramMappings, 
 		effect ? &effect->samplerParams : 0,
 		true);
+
+	// DRAWING - SIGNIFICANT COST - ~18us //
 
 	if(dx11surface) dx11surface->Begin();
 	if(dx11mesh->IsIndexed())
@@ -676,6 +632,13 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 		mainDrawSurface->Begin();
 	}
 
+	if(instances)
+	{
+		direct3Dcontext->IASetVertexBuffers(1, 0, 0, 0, 0);
+	}
+
+	// UPDATING PROFILES - MINOR COST //
+
 	ProfileList::iterator profileIt = activeProfiles.begin();
 	for(; profileIt != activeProfiles.end(); profileIt++)
 	{
@@ -685,8 +648,9 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 
 void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, Gpu::DrawSurface * dest)
 {
-	if(!(source && dest)) return;
+	if(!source) return;
 	if(!texCopyShader) return;
+	if(dest && dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencil) return;
 	
 	UINT stride = texShaderQuad->vertexSize;
 	UINT offset = 0;
@@ -696,7 +660,7 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 	direct3Dcontext->IASetInputLayout(texShaderLayout);
 	direct3Dcontext->VSSetShader(texVertexShader,0,0);
 
-	direct3Dcontext->OMSetDepthStencilState(commonStates->DepthNone(), 0);
+	//direct3Dcontext->OMSetDepthStencilState(commonStates->DepthNone(), 0);
 
 	DX11::TextureShader * texShader = texCopyShader;
 	if(effect && effect->shader)
@@ -712,14 +676,18 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 		effect ? &effect->samplerParams : 0, 
 		false);
 
-	if(dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencil) return;
-	DX11::TextureSurface * destSurface = static_cast<DX11::TextureSurface*>(dest);
-	//if(destSurface->texture->GetWidth() != dx11tex->GetWidth() 
-	//	|| destSurface->texture->GetWidth() != dx11tex->GetWidth()) return;
+	if(dest)
+	{
+		static_cast<DX11::TextureSurface*>(dest)->Begin();
+	}
 
-	destSurface->Begin();
 	direct3Dcontext->DrawIndexed(texShaderQuad->numTriangles * 3, 0, 0);
-	destSurface->End();
+
+	if(dest)
+	{
+		static_cast<DX11::TextureSurface*>(dest)->End();
+		mainDrawSurface->Begin();
+	}
 
 	ProfileList::iterator profileIt = activeProfiles.begin();
 	for(; profileIt != activeProfiles.end(); profileIt++)
@@ -861,12 +829,12 @@ Gpu::VolumeTexture * DX11::Api::CreateGpuVolumeTexture(char * data, unsigned dat
 	return 0;
 }
 
-Gpu::ShaderLoader * DX11::Api::CreateGpuShaderLoader(Files::Directory * directory, const wchar_t * path)
+Gpu::ShaderLoader * DX11::Api::CreateGpuShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path)
 {
-	return new DX11::ShaderLoader(this, directory, path);
+	return new DX11::ShaderLoader(this, files, directory, path);
 }
 
-Gpu::Mesh * DX11::Api::CreateGpuMesh(unsigned numVertices, void* vertexData, VertexType type, bool dynamic) 
+Gpu::Mesh * DX11::Api::CreateGpuMesh(unsigned numVertices, void * vertexData, VertexType type, bool dynamic) 
 {
 	DX11::Mesh * createdMesh = new DX11::Mesh();
 
@@ -994,15 +962,17 @@ Gpu::DrawSurface * DX11::Api::CreateDrawSurface(unsigned width, unsigned height,
 	return new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, false, float(width), float(height));
 }
 
-Gpu::DrawSurface * DX11::Api::CreateRelativeDrawSurface(float widthFactor, float heightFactor, Gpu::DrawSurface::Format format, PlatformWindow * window)
+Gpu::DrawSurface * DX11::Api::CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor, float heightFactor, Gpu::DrawSurface::Format format)
 {
-	DX11::TextureSurface * surface = new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, true, widthFactor, heightFactor);
+	DX11::TextureSurface * surface = new DX11::TextureSurface(this, direct3Ddevice, direct3Dcontext, format, window, widthFactor, heightFactor);
 	deviceListeners.push_back(surface);
 	return surface;
 }
 
 Gpu::DrawSurface * DX11::Api::GetWindowDrawSurface(PlatformWindow * window)
 {
+	if(!window) return mainDrawSurface;
+
 	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
 	if(it != windowDrawSurfaces.end())
 	{
@@ -1257,18 +1227,52 @@ void DX11::Api::SetMultisampling(unsigned multisampleLevel)
 
 void DX11::Api::SetBlendMode(Gpu::BlendMode blendMode)
 {
-	ID3D11BlendState * blendState = commonStates->AlphaBlend(); // ONE, INV_SRC_ALPHA
+	ID3D11BlendState * blendState = 0;
 
-	switch(blendMode)
+	if(blendStates[blendMode] == 0)
 	{
-	case Gpu::BlendMode_None:
-		blendState = commonStates->Opaque(); // ONE, ZERO
-		break;
-	case Gpu::BlendMode_Additive:
-		blendState = commonStates->Additive(); // SRC_ALPHA, ONE
-		break;
-	default:
-		break;
+		D3D11_BLEND_DESC desc;
+		ZeroMemory(&desc, sizeof(desc));
+
+		D3D11_BLEND srcBlend;
+		D3D11_BLEND dstBlend;
+
+		switch(blendMode)
+		{
+		case Gpu::BlendMode_None:
+			srcBlend = D3D11_BLEND_ONE;
+			dstBlend = D3D11_BLEND_ZERO;
+			break;
+		case Gpu::BlendMode_Additive:
+			srcBlend = D3D11_BLEND_SRC_ALPHA;
+			dstBlend = D3D11_BLEND_ONE;
+			break;
+		case Gpu::BlendMode_Premultiplied:
+			srcBlend = D3D11_BLEND_ONE;
+			dstBlend = D3D11_BLEND_INV_SRC_ALPHA;
+			break;
+		default:
+			srcBlend = D3D11_BLEND_SRC_ALPHA;
+			dstBlend = D3D11_BLEND_INV_SRC_ALPHA;
+			break;
+		}
+
+		desc.RenderTarget[0].BlendEnable = (srcBlend != D3D11_BLEND_ONE) || (dstBlend != D3D11_BLEND_ZERO);
+
+		desc.RenderTarget[0].SrcBlend = srcBlend;
+		desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		desc.RenderTarget[0].DestBlend = dstBlend;
+		desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+		desc.RenderTarget[0].BlendOp = desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+		desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+		direct3Ddevice->CreateBlendState(&desc, &blendState);
+		blendStates[blendMode] = blendState;
+	}
+	else
+	{
+		blendState = blendStates[blendMode];
 	}
 
 	direct3Dcontext->OMSetBlendState(blendState, 0, 0xFFFFFFFF);
@@ -1290,10 +1294,10 @@ float DX11::Api::MeasureGpuText(Gpu::Font* font, const wchar_t* text)
 	XMFLOAT2 dimensions; 
 	XMStoreFloat2(&dimensions, dx11font->fontObject->MeasureString(text));
 
-	if(font->pixelSpace)
+	//if(font->pixelSpace)
 		return dimensions.x * (dx11font->fontSize/95.f);
-	else
-		return dimensions.x * 2.0f * (dx11font->fontSize/95.f)/((float)standardScreenHeight);
+	//else
+	//	return dimensions.x * 2.0f * (dx11font->fontSize/95.f)/((float)standardScreenHeight);
 }
 
 DX11::Font::~Font()

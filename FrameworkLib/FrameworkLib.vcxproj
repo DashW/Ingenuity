@@ -159,6 +159,7 @@
       <AdditionalDependencies>DirectXTK.lib;dwmapi.lib;lua51.lib;windowscodecs.lib;shlwapi.lib;comctl32.lib;Leap.lib;assimpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\Third Party\DirectXTK 2014-04\Bin\Desktop_2013\Win32\Debug;$(ProjectDir)..\Third Party\LuaJIT-2.0.2\src;$(ProjectDir)..\Third Party\newton-dynamics-master\coreLibrary_300\projects\windows\project_vs2012_static_mt\Win32\newton\debug;$(ProjectDir)..\Third Party\LeapSDK\lib\x86;$(ProjectDir)..\Third Party\assimp-cmake\code\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT;LIBCMTD</IgnoreSpecificDefaultLibraries>
+      <AdditionalOptions>/ignore:4006 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -302,6 +303,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClInclude Include="ScriptLogger.h" />
     <ClInclude Include="ScriptParam.h" />
     <ClInclude Include="ShaderParser.h" />
+    <ClInclude Include="SpriteManager.h" />
     <ClInclude Include="StepMgr.h" />
     <ClInclude Include="AudioApi.h" />
     <ClInclude Include="DummyAudioApi.h" />
@@ -358,6 +360,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <ClCompile Include="NewtonApi.cpp" />
     <ClCompile Include="ScriptLogger.cpp" />
     <ClCompile Include="ShaderParser.cpp" />
+    <ClCompile Include="SpriteManager.cpp" />
     <ClCompile Include="StepMgr.cpp" />
     <ClCompile Include="WICImageApi.cpp" />
     <ClCompile Include="Win32FileApi.cpp" />
@@ -534,6 +537,10 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTexPosRotSca.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\BlurShaderPixPosTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>

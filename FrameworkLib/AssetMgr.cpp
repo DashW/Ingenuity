@@ -139,7 +139,7 @@ int AssetMgr::Load(Files::Directory * directory, const wchar_t * path, AssetType
 		loader = new Gpu::TextureLoader(gpu, files, directory, path, type);
 		break;
 	case ShaderAsset:
-		loader = gpu->CreateGpuShaderLoader(directory, path);
+		loader = gpu->CreateGpuShaderLoader(files, directory, path);
 		break;
 	case WavefrontModelAsset:
 		loader = new WavefrontLoader(steppables, this, gpu, directory, path);

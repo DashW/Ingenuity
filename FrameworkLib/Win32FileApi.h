@@ -69,7 +69,7 @@ class FileApi : public Files::Api
 
 	std::vector<PendingFile> pendingFiles;
 
-	std::vector<Directory> createdDirectories;
+	std::vector<Directory*> createdDirectories;
 
 	Directory * tempKnownDirectory;
 

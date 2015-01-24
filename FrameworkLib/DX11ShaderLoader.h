@@ -25,7 +25,7 @@ class ShaderLoader : public Gpu::ShaderLoader
 	DX11::TextureShader * ParseTextureShaderXML(tinyxml2::XMLElement * element, Gpu::ShaderParser * parser);
 
 public:
-	ShaderLoader(Api * gpu, Files::Directory * directory, const wchar_t * path);
+	ShaderLoader(Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path);
 
 	void ParseXml() override
 	{

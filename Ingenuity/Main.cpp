@@ -10,6 +10,8 @@
 #include "ScriptConsole.h"
 #include "ScriptInterpreter.h"
 #include "ScriptCallbacks.h"
+#include "ScriptTypes.h"
+#include "GpuScriptCallbacks.h"
 //#include "PythonInterpreter.h"
 #include "InputState.h"
 #include "LuaInterpreter.h"
@@ -174,8 +176,12 @@ class Engine : public RealtimeApp
 		if(interpreterType == Lua) interpreter = new LuaInterpreter(this);
 		if(!interpreter) interpreter = new LuaInterpreter(this);
 
-		ScriptCallbacks::RegisterWith(interpreter);
 		interpreter->RegisterMathObjects();
+
+		ScriptTypes::RegisterWith(interpreter);
+		ScriptCallbacks::RegisterWith(interpreter);
+		GpuScriptCallbacks::RegisterWith(interpreter);
+
 		interpreter->GetLogger().SetLogFile(L"log.txt");
 		console = new ScriptConsole(interpreter, gpu);
 

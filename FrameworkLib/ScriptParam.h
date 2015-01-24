@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GpuShaders.h"
+
 #include <string>
 #include <map>
 
@@ -84,7 +86,7 @@ struct ScriptParam
 		}
 	}
 	ScriptParam(IDeletingPtr * p)
-		: type(p != 0 ? POINTER : NONE), pvalue(p)
+		: type(p != 0 && p->ptr != 0 ? POINTER : NONE), pvalue(p)
 	{
 		if(p)
 		{
@@ -133,11 +135,11 @@ struct ScriptParam
 		}
 	}
 
-	bool CheckPointer(unsigned ptrType) const
+	inline bool CheckPointer(unsigned ptrType) const
 	{
 		return type == POINTER && pvalue->type == ptrType;
 	}
-	bool IsNumber() const
+	inline bool IsNumber() const
 	{
 		return type == INT || type == DOUBLE;
 	}
@@ -145,6 +147,19 @@ struct ScriptParam
 	{
 		return static_cast<CLASS*>(pvalue->ptr);
 	}
+};
+
+struct ScriptFloatArray
+{
+	float * floats;
+	unsigned length;
+	Gpu::FloatArray gpuFloatArray;
+
+	ScriptFloatArray(unsigned length) :
+		floats(new float[length]),
+		length(length),
+		gpuFloatArray(floats, length) {}
+	~ScriptFloatArray() { delete[] floats; }
 };
 
 } // namespace Ingenuity

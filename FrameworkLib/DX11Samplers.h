@@ -32,8 +32,9 @@ class SamplerMgr
 	static const unsigned ADDRESS_W = ADDRESS_V + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
 	static const unsigned FILTER_MD = ADDRESS_W + ((Gpu::SamplerParam::AddressModeMAX + 1) / 2);
 	static const unsigned MAX_ANISO = FILTER_MD + ((Gpu::SamplerParam::FilterModeMAX + 1) / 2);
-	static const unsigned COMP_FUNC = MAX_ANISO + ((Gpu::SamplerParam::ComparisonMAX + 1) / 2);
-	static const unsigned MAX__BITS = 16;
+	static const unsigned COMP_FUNC = MAX_ANISO + 4;
+	static const unsigned MIPMAPOFF = COMP_FUNC + ((Gpu::SamplerParam::ComparisonMAX + 1) / 2);
+	static const unsigned MAX__BITS = MIPMAPOFF + 1; 
 
 	void UpdateSamplerKey(unsigned & samplerKey, Gpu::SamplerParam & param);
 
@@ -45,11 +46,14 @@ public:
 		ID3D11DeviceContext * direct3Dcontext, 
 		DX11::Shader::ParamMap & paramMappings, 
 		std::vector<Gpu::SamplerParam> * samplerParams = 0, 
-		bool isModelShader = true);
+		bool isModelShader = true, 
+		bool forced = false);
 
 	void SetAnisotropy(
 		ID3D11DeviceContext * direct3Dcontext, 
 		unsigned anisotropy);
+
+	void ResetSamplerParams();
 };
 
 } // namespace DX11

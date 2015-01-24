@@ -18,7 +18,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include "GpuVertices.h"
 
-#define MAX_PHYSICS_FPS 120.0f
+#define MIN_PHYSICS_FPS 120.0f
 #define MAX_PHYSICS_LOOPS 2
 
 class RagDollManager : public CustomArticulaledTransformManager
@@ -309,7 +309,12 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 			NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &collisionMatrix[0][0]);
 			NewtonBodyGetCentreOfMass(body, &com[0]);
 
-			glm::mat4 matrix = bodyMatrix * collisionMatrix;
+			glm::mat4 matrix = glm::inverse(glm::transpose(bodyMatrix * collisionMatrix));
+
+			//glm::vec4 centerPoint = matrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+			//com.w = 1.0f;
+			//com = glm::inverse(collisionMatrix) * com;
 
 			if(NewtonBodyGetType(body) != NEWTON_KINEMATIC_BODY)
 			{
@@ -330,7 +335,7 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 					(spring->compression && glm::length(displacement) < spring->length))
 				{
 					glm::vec4 force(offsetDisplacement * mass * spring->stiffness);
-					glm::vec4 forceDamping(veloc * mass * spring->damping);
+					glm::vec4 forceDamping(veloc * mass * spring->forceDamping);
 					force -= forceDamping;
 
 					//matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, matrix[3][3]);
@@ -340,7 +345,7 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 					glm::vec4 point(matrix * (glm::vec4(localAttachPoint,0.0f) - com));
 					//glm::vec4 point(glm::inverse(glm::transpose(matrix)) * (m_pickedBodyLocalAtachmentPoint - com));
 					glm::vec4 torque(glm::cross(glm::vec3(point),glm::vec3(force)), 1.0f);
-					glm::vec4 torqueDamping(omega * mass * 0.5f);
+					glm::vec4 torqueDamping(omega * mass * spring->torqueDamping);
 					torque -= torqueDamping;
 
 					NewtonBodyAddForce(body, &force.x);
@@ -852,12 +857,12 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 	// update the physics
 	if(physicsWorld->newtonWorld) 
 	{
-		dFloat timestepInSeconds = 1.0f / MAX_PHYSICS_FPS;
+		dFloat timestepInSeconds = 1.0f / MIN_PHYSICS_FPS;
 		int loops = 0;
 
 		physicsWorld->pendingTime += deltaTime;
 
-		while(physicsWorld->pendingTime > timestepInSeconds && loops < MAX_PHYSICS_LOOPS) 
+		while(physicsWorld->pendingTime > 0.0f && loops < MAX_PHYSICS_LOOPS) 
 		{
 			loops++;
 
@@ -865,12 +870,12 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 			if(!reentrantUpdate) {
 				reentrantUpdate = true;
 
-				NewtonUpdate(physicsWorld->newtonWorld, timestepInSeconds);
+				NewtonUpdate(physicsWorld->newtonWorld, min(physicsWorld->pendingTime, timestepInSeconds));
 
 				reentrantUpdate = false;
 			}
 
-			physicsWorld->pendingTime -= timestepInSeconds;
+			physicsWorld->pendingTime = max(physicsWorld->pendingTime - timestepInSeconds, 0.0f);
 		}
 		
 		if(loops >= MAX_PHYSICS_LOOPS)
@@ -928,7 +933,7 @@ void NewtonApi::FinalizeRagdoll(PhysicsRagdoll * ragdoll)
 {
 	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
 
-	glm::mat4 matrix;
+	glm::mat4 matrix;// = glm::eulerAngleY(glm::half_pi<float>());
 	physicsRagdoll->manager->FinalizeRagDoll((float*)&matrix);
 }
 
@@ -987,24 +992,37 @@ glm::vec3 NewtonApi::GetPosition(PhysicsObject * object)
 
 glm::mat4 NewtonApi::GetMatrix(PhysicsObject * object)
 {
-	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
+	return GetGlobalMatrix(object) * GetLocalMatrix(object);
+}
 
+glm::mat4 NewtonApi::GetGlobalMatrix(PhysicsObject * object)
+{
+	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
 	if(!physicsObject->newtonBody) return glm::mat4();
 
 	glm::mat4 matrix;
 	NewtonBodyGetMatrix(physicsObject->newtonBody, (float*)&matrix);
 
+	return matrix;
+}
+
+glm::mat4 NewtonApi::GetLocalMatrix(PhysicsObject * object)
+{
+	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
+	if(!physicsObject->newtonBody) return glm::mat4();
+
 	glm::mat4 localMatrix;
 	NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), (float*)&localMatrix);
 
 	// HACK to orientate capsule collisions consistently with their graphics and Leap Motion counterparts
-	glm::mat4 correctionMatrix;
-	if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
-	{
-		correctionMatrix = glm::eulerAngleY(float(M_PI / 2.0));
-	}
+	// BUG! 
+	//glm::mat4 correctionMatrix;
+	//if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
+	//{
+	//	correctionMatrix = glm::eulerAngleY(float(M_PI / 2.0));
+	//}
 
-	return matrix * localMatrix * correctionMatrix;
+	return localMatrix /** correctionMatrix*/;
 }
 
 PhysicsObject * NewtonApi::GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index)
@@ -1102,11 +1120,12 @@ void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix)
 	if(!physicsObject->newtonBody) return;
 
 	// HACK to orientate capsule collisions consistently with their graphics and Leap Motion counterparts
-	if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
-	{
-		glm::mat4 correctionMatrix = glm::eulerAngleY(float(M_PI / -2.0));
-		matrix = matrix * correctionMatrix;
-	}
+	// BUG!
+	//if(physicsObject->spec->GetType() == NewtonPhysicsSpec::Capsule)
+	//{
+	//	glm::mat4 correctionMatrix = glm::eulerAngleY(float(M_PI / -2.0));
+	//	matrix = matrix * correctionMatrix;
+	//}
 
 	for(unsigned i = 0; i < 3; i++)
 	{
@@ -1152,8 +1171,11 @@ void NewtonApi::SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Propert
 	case PhysicsSpring::Stiffness:
 		physicsSpring->stiffness = value;
 		break;
-	case PhysicsSpring::Damping:
-		physicsSpring->damping = value;
+	case PhysicsSpring::ForceDamping:
+		physicsSpring->forceDamping = value;
+		break;
+	case PhysicsSpring::TorqueDamping:
+		physicsSpring->torqueDamping = value;
 		break;
 	case PhysicsSpring::Length:
 		physicsSpring->length = value;

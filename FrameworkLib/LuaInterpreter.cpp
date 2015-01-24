@@ -3,6 +3,7 @@
 #include <string>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
 namespace Ingenuity {
@@ -396,6 +397,17 @@ int LuaInterpreter::CreateVector(lua_State * state)
 	lua_setmetatable(state, -2);
 	return 1;
 }
+int LuaInterpreter::CreateMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
+	glm::mat4 * matrix4 = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+	float initialValue = 1.0f;
+	if(lua_type(state, 2) == LUA_TNUMBER) initialValue = float(lua_tonumber(state, 2));
+	*matrix4 = glm::mat4(initialValue);
+	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+	lua_setmetatable(state, -2);
+	return 1;
+}
 int LuaInterpreter::GetVector(lua_State * state)
 {
 	LuaInterpreter * interpreter = GetInstance(state);
@@ -406,18 +418,62 @@ int LuaInterpreter::GetVector(lua_State * state)
 	glm::vec4 * vector4 = (glm::vec4*) lua_touserdata(state, 1);
 	const char* i = luaL_checkstring(state, 2);
 	switch(*i) {		/* lazy! */
-	case '1': case 'x': case 'r': lua_pushnumber(state, vector4->x); break;
-	case '2': case 'y': case 'g': lua_pushnumber(state, vector4->y); break;
-	case '3': case 'z': case 'b': lua_pushnumber(state, vector4->z); break;
-	case '4': case 'w': case 'a': lua_pushnumber(state, vector4->w); break;
+	case '0': case 'x': case 'r': lua_pushnumber(state, vector4->x); break;
+	case '1': case 'y': case 'g': lua_pushnumber(state, vector4->y); break;
+	case '2': case 'z': case 'b': lua_pushnumber(state, vector4->z); break;
+	case '3': case 'w': case 'a': lua_pushnumber(state, vector4->w); break;
 	default: lua_pushnil(state); break;
 	}
 	return 1;
 }
-//int LuaInterpreter::GetMatrix(lua_State * state)
-//{
-//
-//}
+int LuaInterpreter::GetMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
+	if(interpreter->CheckType(state, interpreter->matrix4type, 1))
+	{
+		const glm::mat4 * matrix4 = (glm::mat4*) lua_touserdata(state, 1);
+		glm::vec4 * result = (glm::vec4*) lua_newuserdata(state, sizeof(glm::vec4));
+		const char* i = luaL_checkstring(state, 2);
+		switch(*i)
+		{
+		case '0': *result = (*matrix4)[0]; break;
+		case '1': *result = (*matrix4)[1]; break;
+		case '2': *result = (*matrix4)[2]; break;
+		case '3': *result = (*matrix4)[3]; break;
+		default: luaL_error(state, "matrix index out of range"); return 0;
+		}
+		lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
+		lua_setmetatable(state, -2);
+	}
+	return 1;
+}
+int LuaInterpreter::SetMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
+	if(interpreter->CheckType(state, interpreter->matrix4type, 1))
+	{
+		glm::mat4 * matrix4 = (glm::mat4*) lua_touserdata(state, 1);
+		const char* i = luaL_checkstring(state, 2);
+
+		if(interpreter->CheckType(state, interpreter->vector4type, 3))
+		{
+			const glm::vec4 * vector4 = (glm::vec4*) lua_touserdata(state, 3);
+			switch(*i)
+			{
+			case '0': (*matrix4)[0] = *vector4; break;
+			case '1': (*matrix4)[1] = *vector4; break;
+			case '2': (*matrix4)[2] = *vector4; break;
+			case '3': (*matrix4)[3] = *vector4; break;
+			default: luaL_error(state, "matrix index out of range"); return 0;
+			}
+		}
+		else
+		{
+			luaL_error(state, "expected vector4");
+		}
+	}
+	return 1;
+}
 int LuaInterpreter::RotationMatrix(lua_State * state)
 {
 	LuaInterpreter * interpreter = GetInstance(state);
@@ -486,8 +542,6 @@ int LuaInterpreter::AddMatrix(lua_State * state)
 		luaL_error(state, "expected vector/matrix for parameter 1");
 	}
 
-	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
-	lua_setmetatable(state, -2);
 	return 1;
 }
 int LuaInterpreter::MultiplyMatrix(lua_State * state)
@@ -565,8 +619,6 @@ int LuaInterpreter::MultiplyMatrix(lua_State * state)
 		luaL_error(state, "expected vector/matrix for parameter 1");
 	}
 
-	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
-	lua_setmetatable(state, -2);
 	return 1;
 }
 int LuaInterpreter::InverseMatrix(lua_State * state)
@@ -584,21 +636,65 @@ int LuaInterpreter::InverseMatrix(lua_State * state)
 	return 1;
 }
 
+int LuaInterpreter::TransposeMatrix(lua_State * state)
+{
+	LuaInterpreter * interpreter = GetInstance(state);
+	
+	glm::vec4 translation;
+	bool preserveTranslation = false;
+	if(lua_type(state, 2) == LUA_TBOOLEAN)
+	{
+		preserveTranslation = lua_toboolean(state, 2) > 0;
+	}
+
+	if(!interpreter->CheckType(state, interpreter->matrix4type, 1)) luaL_error(state, "expected matrix4");
+	
+	const glm::mat4 * matrix4 = (glm::mat4*) lua_touserdata(state, 1);
+	glm::mat4 * result = (glm::mat4*) lua_newuserdata(state, sizeof(glm::mat4));
+	if(preserveTranslation)
+	{
+		translation = (*matrix4)[3];
+	}
+	*result = glm::transpose(*matrix4);
+	if(preserveTranslation)
+	{
+		(*result)[3] = translation;
+	}
+	lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->matrix4type]);
+	lua_setmetatable(state, -2);
+	
+	return 1;
+}
+
 void LuaInterpreter::RegisterMathObjects()
 {
 	vector4type = RegisterPointerType(sizeof(glm::vec4));
 	matrix4type = RegisterPointerType(sizeof(glm::mat4));
 
 	lua_register(state, "CreateVector", CreateVector);
+	lua_register(state, "CreateMatrix", CreateMatrix);
 	lua_register(state, "GetVector", GetVector);
+	lua_register(state, "GetMatrix", GetMatrix);
+	lua_register(state, "SetMatrix", SetMatrix);
 	lua_register(state, "RotMatrix", RotationMatrix);
 	lua_register(state, "AddMatrix", AddMatrix);
 	lua_register(state, "MulMatrix", MultiplyMatrix);
 	lua_register(state, "InvMatrix", InverseMatrix);
+	lua_register(state, "TraMatrix", TransposeMatrix);
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::vector4type]);
 	lua_pushstring(state, "__index");
 	lua_pushcfunction(state, GetVector);
+	lua_settable(state, -3);
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::matrix4type]);
+	lua_pushstring(state, "__index");
+	lua_pushcfunction(state, GetMatrix);
+	lua_settable(state, -3);
+
+	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::matrix4type]);
+	lua_pushstring(state, "__newindex");
+	lua_pushcfunction(state, SetMatrix);
 	lua_settable(state, -3);
 
 	lua_rawgeti(state, LUA_REGISTRYINDEX, metatableRefs[LuaInterpreter::vector4type]);
@@ -646,12 +742,6 @@ void LuaInterpreter::RegisterOperator(unsigned ptrType, Operator op, ScriptCallb
 	case Call:
 		metaFuncName = "__call";
 		break;
-	case IndexGet:
-		metaFuncName = "__index";
-		break;
-	case IndexSet:
-		metaFuncName = "__newindex";
-		break;
 	case Add:
 		metaFuncName = "__add";
 		break;
@@ -666,6 +756,15 @@ void LuaInterpreter::RegisterOperator(unsigned ptrType, Operator op, ScriptCallb
 		break;
 	case ToString:
 		metaFuncName = "__tostring";
+		break;
+	case IndexGet:
+		metaFuncName = "__index";
+		break;
+	case IndexSet:
+		metaFuncName = "__newindex";
+		break;
+	case Length:
+		metaFuncName = "__len";
 		break;
 	}
 

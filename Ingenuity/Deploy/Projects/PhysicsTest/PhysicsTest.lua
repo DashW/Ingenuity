@@ -86,7 +86,7 @@ function Update(delta)
 		floorTex = GetAsset("floortex");
 		
 		vaseModel = GetAsset("vasemodel");
-		SetModelScale(vaseModel,0.02);
+		SetMeshScale(vaseModel,0,0.02);
 		
 		physicsVase = CreatePhysicsMesh(GetWavefrontMesh("vasemodel",0));
 		AddToPhysicsWorld(physicsWorld,physicsVase,false);
@@ -126,14 +126,13 @@ function Update(delta)
 	UpdatePhysicsWorld(physicsWorld,delta);
 	
 	cubeMatrix = GetPhysicsMatrix(physicsCube);
-	SetMeshMatrix(cubeModel,0,cubeMatrix);
+	SetModelMatrix(cubeModel,cubeMatrix);
 	
 	springCubePoint = cubeMatrix * CreateVector(1,-1,0,1);
 	StretchModelBetween(springModel, 0.1, springCubePoint.x, springCubePoint.y, springCubePoint.z, 0, 10, 0);
 	
-	--SyncPhysicsMatrix(physicsCapsule,capsuleModel);
 	if assetTicket == -1 then
-		SetMeshMatrix(vaseModel,0,GetPhysicsMatrix(physicsVase));
+		SetModelMatrix(vaseModel,GetPhysicsMatrix(physicsVase));
 	end
 	
 	local down,pressed,released = GetKeyState('r');
@@ -148,7 +147,7 @@ function Update(delta)
 		--SetPhysicsRotation(physicsCapsule, 0, 0, 0);
 	end
 	
-	local sWidth, sHeight = GetScreenSize();
+	local sWidth, sHeight = GetBackbufferSize();
 	local mouseX, mouseY = GetMousePosition();
 	local leftDown, leftPressed, leftReleased = GetMouseLeft();
 	

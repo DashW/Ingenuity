@@ -41,7 +41,7 @@ class Window : public PlatformWindow
 	static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 public:
-	Window(HINSTANCE instance, unsigned width = 1024, unsigned height = 600);
+	Window(HINSTANCE instance, unsigned width = 1020, unsigned height = 600);
 	virtual ~Window();
 
 	void Show()

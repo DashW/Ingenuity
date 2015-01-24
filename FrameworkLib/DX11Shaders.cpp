@@ -268,15 +268,13 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 		return false;
 	}
 
-	//DX11::Mesh * dx11mesh = static_cast<DX11::Mesh*>(model->mesh);
+	// MATRIX OPS - SIGNIFICANT COST - ~9us //
 
-	//XMMATRIX world = GetWorld(model
 	glm::mat4 modelMatrix = model->GetMatrix();
 	XMMATRIX world((float*)&modelMatrix);
 
 	XMStoreFloat4x4(&vertexConstData.world, world);
 
-	//XMMATRIX viewProj = GetView(camera) * GetProjection(camera, aspect);
 	glm::mat4 camMatrix = camera->GetProjMatrix(aspect) * camera->GetViewMatrix();
 	XMMATRIX viewProj((float*)&camMatrix);
 
@@ -299,7 +297,7 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 		direct3Dcontext->PSSetShaderResources(0, 1, &nullResource);
 	}
 	
-	// BEGIN LIGHTING
+	// BEGIN LIGHTING - VARIABLE COST //
 
 	if(model->cubeMap)
 	{
@@ -402,13 +400,17 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 		pixelConstData.ambient = 1.0f;
 	}
 
-	// END LIGHTING
+	// END LIGHTING //
+
+	// UPDATING CONSTANT BUFFERS - SIGNIFICANT COST - 17us //
 
 	direct3Dcontext->UpdateSubresource(pixelConstBuffer, 0, 0, &pixelConstData, 0, 0);
 	direct3Dcontext->PSSetConstantBuffers(0, 1, &pixelConstBuffer);
 
 	direct3Dcontext->UpdateSubresource(vertexConstBuffer, 0, 0, &vertexConstData, 0, 0);
 	direct3Dcontext->VSSetConstantBuffers(0, 1, &vertexConstBuffer);
+
+	// SETTING EXTRA PARAMS - VARIABLE COST //
 
 	if(effect)
 	{

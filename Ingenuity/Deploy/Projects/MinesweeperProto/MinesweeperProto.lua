@@ -2,19 +2,7 @@
 --
 -- Richard Copperwaite 2013
 
-text = "";
-numDeltas = 0;
-sumDeltas = 0;
-function UpdateFrameTime(delta)
-	sumDeltas = sumDeltas + delta;
-	numDeltas = numDeltas + 1;
-	if sumDeltas > 0.5 then
-		local avgDeltas = sumDeltas / numDeltas;
-		text = string.format("%2.2fms %3.2f%%",avgDeltas * 1000,(avgDeltas * 100000) / 16);
-		sumDeltas = 0;
-		numDeltas = 0;
-	end	
-end
+Require("ProjectDir","../../Common/IngenUtils.lua");
 
 -- Ultimate Random Seed(TM) http://lua-users.org/wiki/MathLibraryTutorial
 -- math.randomseed( tonumber(tostring(os.time()):reverse():sub(1,6)) )
@@ -115,12 +103,15 @@ function PickStartPoint()
 end
 
 function Begin()
-	-- square = GetTexture("Square.png");
-	-- flag = GetTexture("Flag.png");
+	SetClearColor(1,1,1);
+	
+	camera = CreateSpriteCamera(false,true,false);
+	
 	ticket = LoadAssets(
 		{"ProjectDir","Square.png","Texture","square"},
 		{"ProjectDir","Flag.png",  "Texture","flag"  }
 	);
+	
 	debugFont = GetFont(35,"Courier New","regular",false);
 	SetFontColor(debugFont,0,0,1);
 	
@@ -134,12 +125,12 @@ function Begin()
 	
 	clicked = false;
 	rightClicked = false;
-	showCursor = false;
+	showCursor = true;
 end
 
 function UpdateParams()
 	scale = idealRows / rows;
-	unit = 2.0 * scale * (78 / 768);
+	unit = scale * (78 / 768);
 	xOffset = -(columns+2) * unit * 0.5;
 	yOffset = -(rows+2) * unit * 0.5;
 end
@@ -150,14 +141,14 @@ function Reload()
 end
 
 function PixelToDIC(x,y)
-	local DICx = (x / (screenHeight/2)) - (screenWidth/screenHeight);
-	local DICy = (y / (screenHeight/2)) - 1;
+	local DICx = (x / screenHeight) - (0.5 * (screenWidth/screenHeight));
+	local DICy = (y / screenHeight) - (0.5);
 	return DICx, DICy;
 end
 
 function DICToPixel(x,y)
-	local pixelx = (x + (screenWidth/screenHeight)) * (screenHeight/2);
-	local pixely = (y + 1) * (screenHeight/2);
+	local pixelx = (x + ((screenWidth/screenHeight)/2)) * (screenHeight);
+	local pixely = (y + 0.5) * (screenHeight);
 	return pixelx, pixely;
 end
 
@@ -176,18 +167,20 @@ end
 function Update(delta)
 	if IsLoaded(ticket) then
 		print("Ticket Loaded!");
-		square = GetAsset("square");
-		flag = GetAsset("flag");
+		square = CreateSpriteModel(GetAsset("square"));
+		flag = CreateSpriteModel(GetAsset("flag"));
+		SetMeshScale(square,0,78/768);
+		SetMeshScale(flag,0,78/768);
 		ticket = -1;
 	end
 
 	UpdateFrameTime(delta);
 	UpdateParams();
 	
-	screenWidth, screenHeight = GetScreenSize();
+	screenWidth, screenHeight = GetBackbufferSize();
 	mouseX, mouseY = PixelToDIC(GetMousePosition()); -- Could we not use a flag to return mouse position in DIC ?
 	
-	if GetMouseLeft() then -- Could there be a better interface for this kind of input? MouseLeft/MouseLeftDown/MouseLeftUp...
+	if GetMouseLeft() then
 		if not clicked then
 			local clickedCell = GetCellAtPoint(mouseX,mouseY);
 			print(clickedCell);
@@ -214,11 +207,9 @@ function Update(delta)
 	else
 		rightClicked = false;
 	end
-end
-
--- THIS IS A BAAAD IDEA! WHY? BECAUSE IT CAN BE UPDATED IN CONSOLE MODE!!!
-function KeyDown(key)
-	if key == 82 then -- 'r'
+	
+	local down, pressed, released = GetKeyState('r');
+	if pressed then
 		GenerateGrid();
 		PickStartPoint();
 	end
@@ -226,6 +217,9 @@ end
 
 function Draw()
 	if square then
+		SetModelScale(square, scale, scale, 0);
+		SetModelScale(flag, scale, scale, 1);
+		
 		for cellX = 1,columns do
 			for cellY = 1,rows do
 				local cellPosX = xOffset + (cellX*unit);
@@ -243,18 +237,22 @@ function Draw()
 						end
 					end
 				else
-					DrawSprite(square, cellPosX, cellPosY, scale); -- SCALING!
+					SetModelPosition(square, cellPosX, cellPosY, 0);
+					DrawComplexModel(square, camera);
 					
 					if grid[gridIndex].hasFlag or gridIndex == startPoint then
-						DrawSprite(flag, cellPosX, cellPosY, scale);
+						SetModelPosition(flag, cellPosX, cellPosY, 0);
+						DrawComplexModel(flag, camera);
 					end
 				end
 			end
 		end
-	end
-	
-	if showCursor then
-		DrawSprite(square, mouseX, mouseY); -- CURSOR
+		
+		if showCursor then
+			mouseDICx, mouseDICy = PixelToDIC(mouseX, mouseY);
+			SetModelPosition(square, mouseX, mouseY, 0);
+			DrawComplexModel(square, camera); -- CURSOR
+		end
 	end
 	
 	DrawText(debugFont,"Minesweeper Proto",PixelToDIC(0,0)); -- SCALING!
