@@ -6,7 +6,20 @@
 
 namespace Ingenuity {
 
+static const char * paramTypeStrings[Gpu::ShaderParam::TypeCount] = 
+{
+	"integer",
+	"float",
+	"floatArray",
+	"tex2D",
+	"texCube",
+	"tex3D",
+	"drawSurface",
+	"paramBuffer"
+};
+
 Gpu::ShaderParser::ShaderParser(char * buffer, unsigned bufferSize)
+	: isModelShader(true), isComputeShader(false)
 {
 	document = new tinyxml2::XMLDocument();
 
@@ -28,7 +41,7 @@ void Gpu::ShaderParser::ParseParams(tinyxml2::XMLElement * element)
 	tinyxml2::XMLElement * paramElement = element->FirstChildElement("param");
 	while(paramElement)
 	{
-		Gpu::ShaderParamSpec paramSpec;
+		ShaderParamSpec paramSpec;
 		unsigned index = paramElement->UnsignedAttribute("index");
 		const char * type = paramElement->Attribute("type");
 
@@ -37,9 +50,17 @@ void Gpu::ShaderParser::ParseParams(tinyxml2::XMLElement * element)
 
 		if(type)
 		{
-			if(strcmp(type, "float") == 0)
+			for(unsigned i = 0; i < ShaderParam::TypeCount; ++i)
 			{
-				paramSpec.type = Gpu::ShaderParam::TypeFloat;
+				if(strcmp(type, paramTypeStrings[i]) == 0)
+				{
+					paramSpec.type = (ShaderParam::Type) i;
+					break;
+				}
+			}
+
+			if(paramSpec.type == ShaderParam::TypeFloat)
+			{
 				paramSpec.defaultFValue = paramElement->FloatAttribute("default");
 				if(paramElement->Attribute("min") || paramElement->Attribute("max"))
 				{
@@ -54,25 +75,12 @@ void Gpu::ShaderParser::ParseParams(tinyxml2::XMLElement * element)
 					}
 				}
 			}
-			if(strcmp(type, "floatArray") == 0)
-			{
-				paramSpec.type = Gpu::ShaderParam::TypeFloatArray;
 
-				// validate float array length ??
-			}
-			if(strcmp(type, "tex2D") == 0)
-			{
-				paramSpec.type = Gpu::ShaderParam::TypeTexture;
+			// validate float array length ??
 
+			if(paramSpec.type == ShaderParam::TypeTexture)
+			{
 				ParseSamplerParams(index, paramElement);
-			}
-			if(strcmp(type, "texCube") == 0)
-			{
-				paramSpec.type = Gpu::ShaderParam::TypeCubeTexture;
-			}
-			if(strcmp(type, "tex3D") == 0)
-			{
-				paramSpec.type = Gpu::ShaderParam::TypeVolumeTexture;
 			}
 		}
 
@@ -178,6 +186,7 @@ tinyxml2::XMLElement * Gpu::ShaderParser::GetApiElement(const char * targetApi)
 
 	shaderName = shaderNameChars;
 	isModelShader = strcmp(shaderTypeChars, "model") == 0;
+	isComputeShader = strcmp(shaderTypeChars, "compute") == 0;
 
 	tinyxml2::XMLElement * paramsRoot = shaderRoot->FirstChildElement("params");
 	if(paramsRoot) ParseParams(paramsRoot);

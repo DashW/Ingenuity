@@ -5,14 +5,16 @@
 
 namespace Ingenuity {
 
-DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path) :
-	Gpu::ShaderLoader(files, directory, path),
-	gpu(gpu),
-	numVertexShaders(0),
-	numPixelShaders(0),
-	vertexShadersLoaded(0),
-	pixelShadersLoaded(0)
+DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path) 
+	: Gpu::ShaderLoader(files, directory, path)
+	, gpu(gpu)
+	, pendingComputeResponse(0)
 {
+}
+
+DX11::ShaderLoader::~ShaderLoader()
+{
+	DeleteResponses();
 }
 
 bool DX11::ShaderLoader::ParseParamMappingsXML(
@@ -23,7 +25,7 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 	tinyxml2::XMLElement * mappingElement = element->FirstChildElement("paramMapping");
 	while(mappingElement)
 	{
-		DX11::Shader::ParamMapping mapping;
+		DX11::Shader::ParamMapping mapping = { DX11::Shader::Pixel, 0 };
 		unsigned paramIndex = mappingElement->UnsignedAttribute("index");
 
 		if(paramIndex >= shader->paramSpecs.size())
@@ -32,7 +34,7 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 			return false;
 		}
 
-		mapping.shader = DX11::Shader::Pixel;
+		mapping.shader = parser->IsComputeShader() ? DX11::Shader::Compute : DX11::Shader::Pixel;
 		const char * shaderStageChars = mappingElement->Attribute("shader");
 		if(shaderStageChars)
 		{
@@ -42,15 +44,32 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 			}
 			if(strcmp(shaderStageChars, "geometry") == 0)
 			{
-				OutputDebugString(L"Not yet implemented!\n");
+				mapping.shader = DX11::Shader::Geometry;
 			}
 		}
 
 		Gpu::ShaderParam::Type type = shader->paramSpecs[paramIndex].type;
-		if(type == Gpu::ShaderParam::TypeFloat || type == Gpu::ShaderParam::TypeFloatArray)
+		if(type == Gpu::ShaderParam::TypeFloat)
 		{
 			mapping.registerIndex = mappingElement->UnsignedAttribute("bufferIndex");
 			mapping.bufferOffset = mappingElement->UnsignedAttribute("bufferOffset");
+		}
+		else if(type == Gpu::ShaderParam::TypeFloatArray)
+		{
+			if(mappingElement->QueryUnsignedAttribute("bufferIndex", &(mapping.registerIndex)) == tinyxml2::XML_NO_ERROR)
+			{
+				mapping.bufferOffset = mappingElement->UnsignedAttribute("bufferOffset");
+			}
+			else
+			{
+				OutputDebugString(L"FloatArray parameter has no valid bufferIndex attribute!\n");
+				return false;
+			}
+		}
+		else if(type == Gpu::ShaderParam::TypeParamBuffer)
+		{
+			mapping.registerIndex = mappingElement->UnsignedAttribute("bufferIndex");
+			mapping.writeable = mappingElement->BoolAttribute("writeable");
 		}
 		else // Texture
 		{
@@ -71,18 +90,19 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 
 struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 {
-	ShaderLoader * loader;
+	DX11::Api * gpu;
 	ID3D11InputLayout ** inputLayout;
-	ID3D11VertexShader ** vertexObject;
+	ID3D11VertexShader ** shaderObject;
 	VertexType vertexType;
 	InstanceType instanceType;
+	ShaderLoadState loadState;
 
-	VertexShaderResponse(ShaderLoader * l, ID3D11InputLayout ** il, ID3D11VertexShader ** s, VertexType v, InstanceType i) :
-		loader(l), inputLayout(il), vertexObject(s), vertexType(v), instanceType(i) {}
+	VertexShaderResponse(DX11::Api * gpu, ID3D11InputLayout ** il, ID3D11VertexShader ** s, VertexType v, InstanceType i) :
+		gpu(gpu), inputLayout(il), shaderObject(s), vertexType(v), instanceType(i) {}
 
 	virtual void Respond() override
 	{
-		closeOnComplete = true; deleteOnComplete = true;
+		closeOnComplete = true;
 
 		if(buffer)
 		{
@@ -91,10 +111,10 @@ struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 			if(!(*inputLayout))
 			{
 				std::vector<D3D11_INPUT_ELEMENT_DESC> elementDescs;
-				const D3D11_INPUT_ELEMENT_DESC * desc = loader->gpu->vertexDescs[vertexType];
-				unsigned size = loader->gpu->vertexDescSizes[vertexType];
-				const D3D11_INPUT_ELEMENT_DESC * iDesc = loader->gpu->instanceDescs[instanceType];
-				unsigned iSize = loader->gpu->instanceDescSizes[instanceType];
+				const D3D11_INPUT_ELEMENT_DESC * desc = gpu->vertexDescs[vertexType];
+				unsigned size = gpu->vertexDescSizes[vertexType];
+				const D3D11_INPUT_ELEMENT_DESC * iDesc = gpu->instanceDescs[instanceType];
+				unsigned iSize = gpu->instanceDescSizes[instanceType];
 
 				for(unsigned i = 0; i < size; ++i)
 				{
@@ -107,7 +127,7 @@ struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 
 				if(elementDescs.size() > 0)
 				{
-					loader->gpu->direct3Ddevice->CreateInputLayout(
+					gpu->direct3Ddevice->CreateInputLayout(
 						elementDescs.data(),
 						elementDescs.size(),
 						buffer,
@@ -115,53 +135,99 @@ struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 						inputLayout);
 				}
 			}
-			loader->gpu->direct3Ddevice->CreateVertexShader(buffer, bufferLength, 0, vertexObject);
+			gpu->direct3Ddevice->CreateVertexShader(buffer, bufferLength, 0, shaderObject);
 
-			if(*vertexObject)
+			if(*shaderObject)
 			{
-				loader->vertexShadersLoaded++;
-			}
-			else
-			{
-				loader->failed = true;
+				loadState = SUCCEEDED;
+				return;
 			}
 		}
-		else
+		loadState = FAILED;
+	}
+};
+
+struct DX11::ShaderLoader::GeometryShaderResponse : public Files::Response
+{
+	DX11::Api * gpu;
+	ID3D11GeometryShader ** shaderObject;
+	ShaderLoadState loadState;
+
+	GeometryShaderResponse(DX11::Api * gpu, ID3D11GeometryShader ** shader) 
+		: gpu(gpu)
+		, shaderObject(shader) 
+	{}
+
+	virtual void Respond() override
+	{
+		closeOnComplete = true;
+
+		if(buffer)
 		{
-			loader->failed = true;
+			gpu->direct3Ddevice->CreateGeometryShader(buffer, bufferLength, 0, shaderObject);
+			if(*shaderObject)
+			{
+				loadState = SUCCEEDED;
+				return;
+			}
 		}
+		loadState = FAILED;
 	}
 };
 
 struct DX11::ShaderLoader::PixelShaderResponse : public Files::Response
 {
-	DX11::ShaderLoader * loader;
-	ID3D11PixelShader ** pixelObject;
+	DX11::Api * gpu;
+	ID3D11PixelShader ** shaderObject;
+	ShaderLoadState loadState;
 
-	PixelShaderResponse(DX11::ShaderLoader * l, ID3D11PixelShader ** p) :
-		loader(l), pixelObject(p) {}
+	PixelShaderResponse(DX11::Api * gpu, ID3D11PixelShader ** shader) 
+		: gpu(gpu)
+		, shaderObject(shader) 
+	{}
 
 	virtual void Respond() override
 	{
-		closeOnComplete = true; deleteOnComplete = true;
+		closeOnComplete = true;
 
 		if(buffer)
 		{
-			loader->gpu->direct3Ddevice->CreatePixelShader(buffer, bufferLength, 0, pixelObject);
-			if(*pixelObject)
+			gpu->direct3Ddevice->CreatePixelShader(buffer, bufferLength, 0, shaderObject);
+			if(*shaderObject)
 			{
-				loader->pixelShadersLoaded++;
-			}
-			else
-			{
-				loader->failed = true;
+				loadState = SUCCEEDED;
+				return;
 			}
 		}
-		else
+		loadState = FAILED;
+	}
+};
+
+struct DX11::ShaderLoader::ComputeShaderResponse : public Files::Response
+{
+	DX11::Api * gpu;
+	ID3D11ComputeShader ** shaderObject;
+	ShaderLoadState loadState;
+
+	ComputeShaderResponse(DX11::Api * gpu, ID3D11ComputeShader ** shader)
+		: gpu(gpu)
+		, shaderObject(shader)
+	{}
+
+	virtual void Respond() override
+	{
+		closeOnComplete = true;
+
+		if(buffer)
 		{
-			// Instead of failing the entire loader, could we not just fail the technique?
-			loader->failed = true;
+			gpu->direct3Ddevice->CreateComputeShader(buffer, bufferLength, 0, shaderObject);
+			if(*shaderObject)
+			{
+				loadState = SUCCEEDED;
+				return;
+			}
 		}
+		loadState = FAILED;
 	}
 };
 
@@ -215,10 +281,12 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 		}
 
 		unsigned key = VertApi::GetTechniqueKey(vertexType, instanceType);
+		pendingTechniques.emplace_back(key);
 		shader->techniques[key] = DX11::ModelShader::Technique();
 		DX11::ModelShader::Technique & technique = shader->techniques[key];
 
 		const char * vertexShaderName = techniqueElement->Attribute("vertexShader");
+		const char * geometryShaderName = techniqueElement->Attribute("geometryShader");
 		const char * pixelShaderName = techniqueElement->Attribute("pixelShader");
 
 		if(!vertexShaderName || !pixelShaderName)
@@ -228,30 +296,41 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 			return 0;
 		}
 
+		//if(techniqueElement->BoolAttribute("indirect"))
+		//{
+		//	technique.CreateIndirectArgsBuffer(gpu->direct3Ddevice);
+		//}
+
 		if(!ParseParamMappingsXML(techniqueElement, shader, technique.paramMappings))
 		{
 			delete shader;
 			return 0;
 		}
 
-		std::string vertexShaderFilename(vertexShaderName);
-		std::string pixelShaderFilename(pixelShaderName);
-		vertexShaderFilename += ".cso";
-		pixelShaderFilename += ".cso";
-
-		std::wstring vertexShaderPath(vertexShaderFilename.begin(), vertexShaderFilename.end());
-		std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
-
 		Files::Directory * rootDir = files->GetKnownDirectory(Files::FrameworkDir);
+		PendingTechnique & pendingTechnique = pendingTechniques.back();
 
-		files->OpenAndRead(rootDir, vertexShaderPath.c_str(),
-			new VertexShaderResponse(this, &(technique.inputLayout), &(technique.vertexObject), vertexType, instanceType));
+		std::string vertexShaderFilename(vertexShaderName);
+		vertexShaderFilename += ".cso";
+		std::wstring vertexShaderPath(vertexShaderFilename.begin(), vertexShaderFilename.end());
+		pendingTechnique.vertexResponse = new VertexShaderResponse(gpu, &(technique.inputLayout), &(technique.vertexObject), vertexType, instanceType);
+		files->OpenAndRead(rootDir, vertexShaderPath.c_str(), pendingTechnique.vertexResponse);
 
-		files->OpenAndRead(rootDir, pixelShaderPath.c_str(),
-			new PixelShaderResponse(this, &(technique.pixelObject)));
+		if(geometryShaderName)
+		{
+			std::string geometryShaderFilename(geometryShaderName);
+			geometryShaderFilename += ".cso";
+			std::wstring geometryShaderPath(geometryShaderFilename.begin(), geometryShaderFilename.end());
+			pendingTechnique.geometryResponse = new GeometryShaderResponse(gpu, &(technique.geometryObject));
+			files->OpenAndRead(rootDir, geometryShaderPath.c_str(), pendingTechnique.geometryResponse);
+		}
 
-		numVertexShaders++;
-		numPixelShaders++;
+		std::string pixelShaderFilename(pixelShaderName);
+		pixelShaderFilename += ".cso";
+		std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
+		pendingTechnique.pixelResponse = new PixelShaderResponse(gpu, &(technique.pixelObject));
+		files->OpenAndRead(rootDir, pixelShaderPath.c_str(), pendingTechnique.pixelResponse);
+
 
 		techniqueElement = techniqueElement->NextSiblingElement("technique");
 	}
@@ -263,6 +342,9 @@ DX11::TextureShader * DX11::ShaderLoader::ParseTextureShaderXML(tinyxml2::XMLEle
 {
 	DX11::TextureShader * shader = new DX11::TextureShader(gpu->direct3Ddevice);
 	Files::Directory * rootDir = files->GetKnownDirectory(Files::FrameworkDir);
+
+	pendingTechniques.emplace_back(0);
+	PendingTechnique & pendingTechnique = pendingTechniques.back();
 
 	for(unsigned i = 0; i < parser->GetNumParams(); ++i)
 	{
@@ -277,10 +359,12 @@ DX11::TextureShader * DX11::ShaderLoader::ParseTextureShaderXML(tinyxml2::XMLEle
 	{
 		gpu->texVertexShaderRequested = true;
 
-		files->OpenAndRead(rootDir, L"TextureCopyVtxPosTex.cso",
-			new VertexShaderResponse(this, &(gpu->texShaderLayout), &(gpu->texVertexShader), VertexType_PosTex, InstanceType_None));
+		VertexShaderResponse * texVertexShaderResponse =
+			new VertexShaderResponse(gpu, &(gpu->texShaderLayout), &(gpu->texVertexShader), VertexType_PosTex, InstanceType_None);
 
-		numVertexShaders++;
+		texVertexShaderResponse->deleteOnComplete = true;
+
+		files->OpenAndRead(rootDir, L"TextureCopyVtxPosTex.cso", texVertexShaderResponse);
 	}
 
 	const char * pixelShaderName = element->Attribute("shader");
@@ -294,12 +378,128 @@ DX11::TextureShader * DX11::ShaderLoader::ParseTextureShaderXML(tinyxml2::XMLEle
 	pixelShaderFilename += ".cso";
 	std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
 
-	files->OpenAndRead(rootDir, pixelShaderPath.c_str(),
-		new PixelShaderResponse(this, &(shader->pixelObject)));
+	pendingTechnique.pixelResponse = new PixelShaderResponse(gpu, &(shader->pixelObject));
 
-	numPixelShaders++;
+	files->OpenAndRead(rootDir, pixelShaderPath.c_str(), pendingTechnique.pixelResponse);
 
 	return shader;
+}
+
+DX11::ComputeShader * DX11::ShaderLoader::ParseComputeShaderXML(tinyxml2::XMLElement * element, Gpu::ShaderParser * parser)
+{
+	DX11::ComputeShader * shader = new DX11::ComputeShader(gpu->direct3Ddevice);
+	Files::Directory * rootDir = files->GetKnownDirectory(Files::FrameworkDir);
+
+	for(unsigned i = 0; i < parser->GetNumParams(); ++i)
+	{
+		shader->paramSpecs.push_back(parser->GetParamSpec(i));
+	}
+	for(unsigned i = 0; i < parser->GetNumSamplerParams(); ++i)
+	{
+		shader->defaultSamplerParams.push_back(parser->GetSamplerParam(i));
+	}
+
+	const char * computeShaderName = element->Attribute("shader");
+	if(!computeShaderName || !ParseParamMappingsXML(element, shader, shader->paramMappings))
+	{
+		delete shader;
+		return 0;
+	}
+
+	std::string pixelShaderFilename(computeShaderName);
+	pixelShaderFilename += ".cso";
+	std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
+
+	pendingComputeResponse = new ComputeShaderResponse(gpu, &(shader->computeObject));
+
+	files->OpenAndRead(rootDir, pixelShaderPath.c_str(), pendingComputeResponse);
+
+	return shader;
+}
+
+void DX11::ShaderLoader::DeleteResponses()
+{
+	for(unsigned i = 0; i < pendingTechniques.size(); ++i)
+	{
+		if(pendingTechniques[i].vertexResponse && pendingTechniques[i].vertexResponse->loadState != LOADING) 
+			delete pendingTechniques[i].vertexResponse;
+		if(pendingTechniques[i].geometryResponse && pendingTechniques[i].geometryResponse->loadState != LOADING) 
+			delete pendingTechniques[i].geometryResponse;
+		if(pendingTechniques[i].pixelResponse && pendingTechniques[i].pixelResponse->loadState != LOADING) 
+			delete pendingTechniques[i].pixelResponse;
+	}
+	if(pendingComputeResponse && pendingComputeResponse->loadState != LOADING) 
+		delete pendingComputeResponse;
+}
+
+bool DX11::ShaderLoader::IsFinished()
+{
+	// If ALL shaders in ALL techniques have finished loading
+	// and ANY shader in ANY technique has failed to load
+	// then remove that technique. 
+
+	if(parser->IsComputeShader())
+	{
+		if(pendingComputeResponse)
+		{
+			ShaderLoadState loadState = pendingComputeResponse->loadState;
+			if(loadState == LOADING) return false;
+			if(loadState == FAILED) loaderFailed = true;
+		}
+	}
+	else
+	{
+		for(unsigned i = 0; i < pendingTechniques.size(); ++i)
+		{
+			bool techniqueLoading = false;
+			bool techniqueFailed = false;
+
+			if(pendingTechniques[i].vertexResponse)
+			{
+				ShaderLoadState loadState = pendingTechniques[i].vertexResponse->loadState;
+				if(loadState == LOADING) techniqueLoading = true;
+				if(loadState == FAILED) techniqueFailed = true;
+			}
+			if(pendingTechniques[i].geometryResponse)
+			{
+				ShaderLoadState loadState = pendingTechniques[i].geometryResponse->loadState;
+				if(loadState == LOADING) techniqueLoading = true;
+				if(loadState == FAILED) techniqueFailed = true;
+			}
+			if(pendingTechniques[i].pixelResponse)
+			{
+				ShaderLoadState loadState = pendingTechniques[i].pixelResponse->loadState;
+				if(loadState == LOADING) techniqueLoading = true;
+				if(loadState == FAILED) techniqueFailed = true;
+			}
+
+			if(techniqueLoading)
+			{
+				return false;
+			}
+			else if(techniqueFailed)
+			{
+				if(parser->IsModelShader())
+				{
+					OutputDebugString(L"Failed to load shader technique!");
+
+					DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(asset);
+					shader->techniques.erase(pendingTechniques[i].key);
+					if(shader->techniques.size() < 1)
+					{
+						loaderFailed = true;
+					}
+				}
+				else
+				{
+					loaderFailed = true;
+				}
+			}
+		}
+	}
+
+	//DeleteResponses();
+	return true;
 }
 
 } // namespace Ingenuity

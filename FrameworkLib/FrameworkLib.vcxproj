@@ -542,6 +542,11 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\BasicCompute11.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">CSMain</EntryPointName>
+    </FxCompile>
     <FxCompile Include="Shaders\DX11\BlurShaderPixPosTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">5.0</ShaderModel>
@@ -1064,6 +1069,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <Xml Include="BaseShader.xml">
       <SubType>Designer</SubType>
     </Xml>
+    <Xml Include="BasicCompute.xml" />
     <Xml Include="BlurShader.xml" />
     <Xml Include="BrightPassFilter.xml" />
     <Xml Include="DownSample.xml" />

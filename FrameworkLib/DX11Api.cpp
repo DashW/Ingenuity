@@ -696,6 +696,56 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 	}
 }
 
+void DX11::Api::DrawIndirect(Gpu::ParamBuffer * buffer, Gpu::Effect * effect, Gpu::DrawSurface * surface)
+{
+	//DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(effect->shader);
+
+	//if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
+
+	OutputDebugString(L"Not yet implemented...");
+	__debugbreak();
+
+	if(!buffer) return;
+
+	DX11::ParamBuffer * dx11Buffer = static_cast<DX11::ParamBuffer*>(buffer);
+
+	direct3Dcontext->DrawInstancedIndirect(dx11Buffer->buffer, 0);
+
+	// HERE we should consider the possibility of using StreamOut and DrawAuto if the effect requires it!
+}
+
+void DX11::Api::Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY, unsigned groupZ)
+{
+	if(!effect || !effect->shader) return;
+
+	DX11::ComputeShader * computeShader = static_cast<DX11::ComputeShader*>(effect->shader);
+
+	computeShader->SetParameters(direct3Dcontext, effect);
+
+	direct3Dcontext->Dispatch(groupX, groupY, groupZ);
+
+	// Bear in mind, OpenCL clEnqueueNDRangeKernel works slightly differently.
+
+	// Where DirectCompute takes exact values for the NUMBER OF GROUPS and MULTIPLIES
+	// that by the number of THREADS PER GROUP to get the total number of threads...
+
+	// OpenCL takes values for the total NUMBER OF THREADS and DIVIDES that by the 
+	// number of THREADS PER GROUP to get the number of groups!
+
+	// Therefore, as specified in the documentation here:
+	// https://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html
+	// And the StackOverflow here:
+	// http://stackoverflow.com/questions/25237145/opencl-clenqueuendrangekernel-how-to-set-work-group-size-correctly
+	// The total NUMBER OF THREADS must be evenly divisible by the number of THREADS PER GROUP!
+
+	// Looks like the best way to do this is to specify the number of threads per group
+	// for OpenCL in the shader metadata, and multiply that by the number of groups to feed
+	// the total number of threads into clEnqueueNDRangeKernel. 
+	// We can't pass the number of threads per group to the function, because in DirectCompute,
+	// these values are hard-coded into the shader itself! Adding the OpenCL threads per group
+	// to the shader metadata keeps the interface and workflow consistent and simple.
+}
+
 Gpu::Font * DX11::Api::CreateGpuFont(int height, LPCWSTR facename, Gpu::FontStyle style) 
 {
 #ifdef USE_DIRECT2D
@@ -891,6 +941,82 @@ Gpu::InstanceBuffer * DX11::Api::CreateInstanceBuffer(unsigned numInstances, voi
 
 	delete instanceBuffer;
 	return 0;
+}
+
+Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, bool readback)
+{
+	ID3D11Buffer * buffer = 0;
+	ID3D11ShaderResourceView * srv = 0;
+	ID3D11UnorderedAccessView * uav = 0;
+
+	D3D11_BUFFER_DESC bufferDesc = { 0 };
+	bufferDesc.ByteWidth = structureStride > 0 ? numElements * structureStride : numElements;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	bufferDesc.MiscFlags = structureStride > 0 ? D3D11_RESOURCE_MISC_BUFFER_STRUCTURED : D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+	bufferDesc.StructureByteStride = structureStride;
+	bufferDesc.CPUAccessFlags = readback ? D3D11_CPU_ACCESS_READ : 0;
+
+	D3D11_SUBRESOURCE_DATA bufferData = { 0 };
+	bufferData.pSysMem = data;
+
+	direct3Ddevice->CreateBuffer(&bufferDesc, data ? &bufferData : 0, &buffer);
+
+	if(buffer)
+	{
+		// Create a UAV and SRV to allow use both as a source of 
+		// data and a destination for updated data.
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+		ZeroMemory(&uavDesc, sizeof(uavDesc));
+		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer.FirstElement = 0;
+		if(structureStride > 0)
+		{
+			uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+			uavDesc.Buffer.NumElements = numElements;
+		}
+		else
+		{
+			uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			uavDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+			uavDesc.Buffer.NumElements = numElements / 4;
+		}
+
+		direct3Ddevice->CreateUnorderedAccessView(buffer, &uavDesc, &uav);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+		ZeroMemory(&srvDesc, sizeof(srvDesc));
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+		srvDesc.BufferEx.FirstElement = 0;
+		if(structureStride > 0)
+		{
+			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+			srvDesc.BufferEx.NumElements = numElements;
+		}
+		else
+		{
+			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			srvDesc.BufferEx.Flags = D3D11_BUFFEREX_SRV_FLAG_RAW;
+			srvDesc.BufferEx.NumElements = numElements / 4;
+		}
+
+		direct3Ddevice->CreateShaderResourceView(buffer, &srvDesc, &srv);
+
+		return new ParamBuffer(buffer, srv, uav);
+	}
+
+	return 0;
+}
+
+void DX11::Api::GetParamBufferData(Gpu::ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes)
+{
+	DX11::ParamBuffer * dx11buf = static_cast<DX11::ParamBuffer*>(src);
+
+	D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
+	direct3Dcontext->Map(dx11buf->buffer, 0, D3D11_MAP_READ, 0, &mappedData);
+	memcpy(((char*)dst) + offset, mappedData.pData, numBytes);
+	direct3Dcontext->Unmap(dx11buf->buffer, 0);
 }
 
 void DX11::Api::UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer)

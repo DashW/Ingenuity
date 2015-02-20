@@ -27,7 +27,7 @@ struct Color
 struct Buffer : public IAsset
 {
 	virtual ~Buffer() {}
-	virtual AssetType GetType() { return ImageAsset; }
+	virtual AssetType GetAssetType() { return ImageAsset; }
 	virtual IAsset * GetAsset() { return this; }
 
 protected:

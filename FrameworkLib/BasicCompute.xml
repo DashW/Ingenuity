@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="BasicCompute" type="compute">
+
+  <params>
+    <param index="0" displayName="Left Buffer" type="paramBuffer" />
+    <param index="1" displayName="Right Buffer" type="paramBuffer" />
+    <param index="2" displayName="Output Buffer" type="paramBuffer" />
+  </params>
+
+  <directx11 shader="BasicCompute11">
+    <!-- Is stride needed any more? -->
+    <paramMapping index="0" bufferIndex="0" stride="2" />
+    <paramMapping index="1" bufferIndex="1" stride="2" />
+    <paramMapping index="2" bufferIndex="0" stride="2" writeable="true" />
+  </directx11>
+
+  <!--<opengl4>
+  </opengl4>-->
+
+</shader>
+

@@ -35,7 +35,7 @@ public:
 	float GetWidth() { return width; }
 	float GetDepth() { return depth; }
 
-	virtual AssetType GetType() override { return RawHeightMapAsset; }
+	virtual AssetType GetAssetType() override { return RawHeightMapAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 };
 

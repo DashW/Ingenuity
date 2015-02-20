@@ -39,7 +39,7 @@ struct IDeviceListener {
 	virtual void OnResetDevice(Api * gpu) = 0;
 };
 
-struct Font
+struct Font // DEPRECATE
 {
 	glm::vec4 color;
 	bool pixelSpace;
@@ -62,7 +62,7 @@ struct Texture : public IAsset {
 
 	virtual unsigned GetWidth() = 0;
 	virtual unsigned GetHeight() = 0;
-	virtual AssetType GetType() override { return TextureAsset; }
+	virtual AssetType GetAssetType() override { return TextureAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 
 protected:
@@ -71,7 +71,7 @@ protected:
 
 struct CubeMap : public IAsset {
 	virtual ~CubeMap() {}
-	virtual AssetType GetType() override { return CubeMapAsset; }
+	virtual AssetType GetAssetType() override { return CubeMapAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 protected:
 	CubeMap(){}
@@ -79,7 +79,7 @@ protected:
 
 struct VolumeTexture : public IAsset {
 	virtual ~VolumeTexture() {}
-	virtual AssetType GetType() override { return VolumeTexAsset; }
+	virtual AssetType GetAssetType() override { return VolumeTexAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 protected:
 	VolumeTexture(){}
@@ -332,6 +332,16 @@ protected:
 	InstanceBuffer(InstanceType type) : type(type) {}
 };
 
+struct ParamBuffer
+{
+	//virtual unsigned GetLength() = 0;
+	//virtual unsigned GetCapacity() = 0;
+
+	virtual ~ParamBuffer() {}
+protected:
+	ParamBuffer() {}
+};
+
 struct TimestampData
 {
 	enum Type
@@ -346,15 +356,6 @@ struct TimestampData
 
 	std::map<Type, float> data;
 };
-
-//struct Blob
-//{
-//	void * data;
-//	unsigned dataSize;
-//
-//	Blob(void * data, unsigned dataSize) :
-//		data(data), dataSize(dataSize) {}
-//};
 
 } // namespace Gpu
 } // namespace Ingenuity

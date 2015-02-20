@@ -510,6 +510,9 @@
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTexPosRotSca.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\BasicCompute11.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">
@@ -620,6 +623,9 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="ShadowLit.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="BasicCompute.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>

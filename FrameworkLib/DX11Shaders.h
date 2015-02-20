@@ -20,6 +20,7 @@ struct Shader : public Gpu::Shader
 {
 	enum ShaderStage
 	{
+		Compute = 0,
 		Vertex,
 		Geometry,
 		Pixel
@@ -30,6 +31,8 @@ struct Shader : public Gpu::Shader
 		ShaderStage shader;
 		unsigned registerIndex;
 		unsigned bufferOffset;
+		unsigned bufferStride;
+		bool writeable;
 	};
 
 	typedef std::map<unsigned, ParamMapping> ParamMap;
@@ -37,7 +40,7 @@ struct Shader : public Gpu::Shader
 	Shader(ID3D11Device * device, bool modelShader) : Gpu::Shader(modelShader) {}
 	virtual ~Shader() {}
 
-	static void ApplyTextureParameter(ID3D11DeviceContext * context, unsigned registerIndex, Gpu::ShaderParam * param);
+	static void ApplyTextureParameter(ID3D11DeviceContext * context, ShaderStage stage, unsigned registerIndex, Gpu::ShaderParam * param);
 
 	static void UpdateConstantBuffer(ID3D11DeviceContext * context, std::vector<float> & constants, ID3D11Buffer ** buffer);
 };
@@ -52,18 +55,23 @@ struct ModelShader : public Shader
 	{
 		ID3D11InputLayout * inputLayout;
 		ID3D11VertexShader * vertexObject;
-		ID3D11PixelShader * pixelObject; // OH WOW. MAYBE VERTEX & PIXEL SHADERS NEED TO BE PUT IN THEIR OWN BANKS...
+		ID3D11GeometryShader * geometryObject;
+		ID3D11PixelShader * pixelObject; // MAYBE SHADER BINARIES NEED TO BE PUT IN THEIR OWN BANKS...
+		ID3D11Buffer * indirectArgsBuffer;
 
 		ParamMap paramMappings;
-		std::vector<float> pixelParamConstants[NUM_PARAM_BUFFERS];
-		std::vector<float> vertexParamConstants[NUM_PARAM_BUFFERS];
-		ID3D11Buffer * pixelParamBuffers[NUM_PARAM_BUFFERS];
-		ID3D11Buffer * vertexParamBuffers[NUM_PARAM_BUFFERS];
+		std::vector<float> vertexParamConstData[NUM_PARAM_BUFFERS];
+		std::vector<float> geometryParamConstData[NUM_PARAM_BUFFERS];
+		std::vector<float> pixelParamConstData[NUM_PARAM_BUFFERS];
+		ID3D11Buffer * vertexParamConstBuffers[NUM_PARAM_BUFFERS];
+		ID3D11Buffer * geometryParamConstBuffers[NUM_PARAM_BUFFERS];
+		ID3D11Buffer * pixelParamConstBuffers[NUM_PARAM_BUFFERS];
 
 		Technique();
 		~Technique();
 
 		bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
+		void CreateIndirectArgsBuffer(ID3D11Device * device);
 	};
 
 	struct VertexConstants
@@ -147,11 +155,8 @@ struct ModelShader : public Shader
 	ModelShader(ID3D11Device * device);
 	virtual ~ModelShader();
 
-	//DirectX::XMMATRIX GetWorld(Gpu::Model * model);
-	//DirectX::XMMATRIX GetView(Gpu::Camera * camera);
-	//DirectX::XMMATRIX GetProjection(Gpu::Camera * camera, float aspect);
-
 	bool SetTechnique(ID3D11DeviceContext * direct3Dcontext, VertexType vType, InstanceType iType);
+	bool SetIndirectTechnique(ID3D11DeviceContext * direct3Dcontext);
 	bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect, Gpu::Effect * effect);
 };
 
@@ -171,8 +176,8 @@ struct TextureShader : public Shader
 
 	ParamMap paramMappings;
 	static const unsigned NUM_PARAM_BUFFERS = D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT - 1;
-	std::vector<float> paramConstants[NUM_PARAM_BUFFERS];
-	ID3D11Buffer * paramBuffers[NUM_PARAM_BUFFERS];
+	std::vector<float> paramConstData[NUM_PARAM_BUFFERS];
+	ID3D11Buffer * paramConstBuffers[NUM_PARAM_BUFFERS];
 
 	static ID3D11VertexShader * vertexObject;
 	ID3D11PixelShader * pixelObject;
@@ -181,6 +186,28 @@ struct TextureShader : public Shader
 	virtual ~TextureShader();
 
 	virtual bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Texture * texture, Gpu::Effect * effect);
+
+protected:
+	bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
+};
+
+struct ComputeShader : public Shader
+{
+	ParamMap paramMappings;
+	static const unsigned NUM_PARAM_BUFFERS = D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT;
+
+	std::vector<float> paramConstData[NUM_PARAM_BUFFERS];
+	ID3D11Buffer * paramConstBuffers[NUM_PARAM_BUFFERS];
+
+	std::map<unsigned, std::vector<float>> paramStructData;
+	std::map<unsigned, ID3D11Buffer*> paramStructBuffers;
+
+	ID3D11ComputeShader * computeObject;
+
+	ComputeShader(ID3D11Device * device);
+	virtual ~ComputeShader();
+	
+	virtual bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
 
 protected:
 	bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);

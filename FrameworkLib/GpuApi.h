@@ -61,13 +61,15 @@ public:
 
 	inline void Draw(Drawable * drawable, DrawSurface * surface = 0) { drawable->BeDrawn(this, surface); }
 
-	virtual void DrawGpuText(Font * font, const wchar_t* text, float x, float y,
-		bool center, DrawSurface * surface = 0) = 0;
+	virtual void DrawGpuText(Font * font, const wchar_t* text, float x, float y, bool center, DrawSurface * surface = 0) = 0; // DEPRECATE
 	virtual void DrawGpuModel(Model * model, Camera * camera, Light ** lights,
 		unsigned numLights, DrawSurface * surface = 0, InstanceBuffer * instances = 0, Effect * overrideEffect = 0) = 0;
 	virtual void DrawGpuSurface(DrawSurface * source, Effect * effect, DrawSurface * dest) = 0;
+	virtual void DrawIndirect(ParamBuffer * buffer, Effect * effect, DrawSurface * dest) = 0;
 
-	virtual Font * CreateGpuFont(int height, const wchar_t * facename, FontStyle style = FontStyle_Regular) = 0;
+	virtual void Compute(Effect * effect, unsigned xGroups, unsigned yGroups = 1, unsigned zGroups = 1) = 0;
+
+	virtual Font * CreateGpuFont(int height, const wchar_t * facename, FontStyle style = FontStyle_Regular) = 0; // DEPRECATE
 	virtual Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) = 0;
 	virtual CubeMap * CreateGpuCubeMap(char * data, unsigned dataSize) = 0;
 	virtual VolumeTexture * CreateGpuVolumeTexture(char * data, unsigned dataSize) = 0;
@@ -97,6 +99,9 @@ public:
 	}
 
 	virtual InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) = 0;
+	virtual ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride = 0, bool readback = false) = 0;
+
+	virtual void GetParamBufferData(ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes) = 0;
 
 	virtual void UpdateDynamicMesh(Mesh * dynamicMesh, IVertexBuffer * buffer) = 0;
 	virtual void UpdateDynamicMesh(Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData) = 0;
@@ -105,6 +110,7 @@ public:
 	Effect * GetBaseEffect() { return baseEffect; }
 	DrawSurface * GetStencilSurface() { return stencilSurface; }
 	DrawSurface * GetStencilClipSurface() { return stencilClipSurface; }
+
 	virtual DrawSurface * CreateDrawSurface(unsigned width, unsigned height, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
 	virtual DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
 	virtual DrawSurface * GetWindowDrawSurface(PlatformWindow * window = 0) = 0;
@@ -117,13 +123,13 @@ public:
 	virtual TimestampData GetTimestampData(const std::wstring name) = 0;
 
 	virtual float MeasureGpuText(Font * font, const wchar_t * text) = 0; // DEPRECATE when removing Font API!
-	virtual void SetClearColor(float r, float g, float b, float a) = 0;
 
 	virtual void OnWindowCreated(PlatformWindow * window) = 0;
 	virtual void OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) = 0;
 	virtual void OnWindowDestroyed(PlatformWindow * window) = 0;
 
 	virtual void GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window = 0) = 0;
+	virtual void SetClearColor(float r, float g, float b, float a) = 0;
 	virtual void SetMultisampling(unsigned multisampleLevel) = 0;
 	virtual void SetBlendMode(BlendMode blendMode) = 0;
 	virtual void SetDrawWireframe(bool wireframe) { drawEverythingWireframe = wireframe; }
@@ -185,7 +191,7 @@ struct ComplexModel : public IAsset
 		delete[] models;
 	}
 
-	virtual AssetType GetType() override { return ModelAsset; }
+	virtual AssetType GetAssetType() override { return ModelAsset; }
 	virtual IAsset * GetAsset() override
 	{
 		ComplexModel * dst = new ComplexModel(numModels);

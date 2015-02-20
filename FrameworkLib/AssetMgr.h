@@ -36,7 +36,7 @@ enum AssetType
 
 struct IAsset
 {
-	virtual AssetType GetType() = 0;
+	virtual AssetType GetAssetType() = 0;
 	virtual IAsset * GetAsset() = 0;
 	virtual ~IAsset() {}
 };
@@ -85,8 +85,8 @@ struct SimpleLoader : public AssetLoader, Files::Response
 	{
 		files->OpenAndRead(directory, path.c_str(), this);
 	}
-	virtual float GetAssetProgress() override { return progress; }
-	virtual bool IsAssetReady() override { return complete; }
+	virtual float GetAssetProgress() override { return Files::Response::progress; }
+	virtual bool IsAssetReady() override { return Files::Response::complete; }
 	virtual IAsset * GetAsset() override { return asset; }
 };
 

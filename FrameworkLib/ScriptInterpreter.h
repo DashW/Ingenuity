@@ -111,7 +111,8 @@ public:
 	enum SpecialPtrType
 	{
 		TypeVector4,
-		TypeMatrix4
+		TypeMatrix4,
+		TypeFloatArray
 	};
 
 	virtual bool LoadScript(const char * data, unsigned dataSize, const char * filename, const char * moduleName = 0) = 0;

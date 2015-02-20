@@ -9,7 +9,7 @@ namespace Audio {
 
 struct Item : public IAsset
 {
-	virtual AssetType GetType() override { return AudioAsset; }
+	virtual AssetType GetAssetType() override { return AudioAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 };
 

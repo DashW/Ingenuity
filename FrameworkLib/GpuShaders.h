@@ -20,6 +20,7 @@ struct Texture;
 struct CubeMap;
 struct VolumeTexture;
 struct DrawSurface;
+struct ParamBuffer;
 
 struct ShaderParam
 {
@@ -33,7 +34,9 @@ struct ShaderParam
 		TypeCubeTexture,
 		TypeVolumeTexture,
 		TypeDrawSurface,
-		//TypeBlob
+		TypeParamBuffer,
+
+		TypeCount
 	} type;
 
 	union
@@ -46,7 +49,7 @@ struct ShaderParam
 		CubeMap * cvalue;
 		VolumeTexture * vvalue;
 		DrawSurface * svalue;
-		//Blob * bvalue;
+		ParamBuffer * bvalue;
 	};
 
 	ShaderParam(int value)
@@ -63,6 +66,8 @@ struct ShaderParam
 		: type(TypeDrawSurface), svalue(value) {}
 	ShaderParam(FloatArray * value)
 		: type(TypeFloatArray), avalue(value) {}
+	ShaderParam(ParamBuffer * value)
+		: type(TypeParamBuffer), bvalue(value) {}
 	ShaderParam(Type type)
 		: type(type), tvalue(0) {}
 
@@ -73,6 +78,7 @@ struct ShaderParam
 	void Set(VolumeTexture * value) { if(type == TypeVolumeTexture) vvalue = value; }
 	void Set(DrawSurface * value) { if(type == TypeDrawSurface) svalue = value; }
 	void Set(FloatArray * value) { if(type == TypeFloatArray) avalue = value; }
+	void Set(ParamBuffer * value) { if(type == TypeParamBuffer) bvalue = value; }
 };
 
 struct ShaderParamSpec
@@ -153,16 +159,21 @@ struct SamplerParam
 
 struct Shader : public IAsset
 {
-	enum BlendMode
+	struct BlendMode
 	{
-		Add,
-		Sub,
-		Rsub,
-		Mul,
-		Max,
-		Min,
-		None
-	} blendMode;
+		enum Value
+		{
+			Add,
+			Sub,
+			Rsub,
+			Mul,
+			Max,
+			Min,
+			None
+		};
+	};
+
+	BlendMode::Value blendMode;
 
 	std::vector<ShaderParamSpec> paramSpecs;
 	std::vector<SamplerParam> defaultSamplerParams;
@@ -172,13 +183,13 @@ struct Shader : public IAsset
 
 	virtual ~Shader() {}
 
-	virtual AssetType GetType() override { return ShaderAsset; }
+	virtual AssetType GetAssetType() override { return ShaderAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 
 protected:
 	const bool modelShader;
 
-	Shader(bool modelShader) : blendMode(None), modelShader(modelShader) {}
+	Shader(bool modelShader) : blendMode(BlendMode::None), modelShader(modelShader) {}
 };
 
 struct Effect

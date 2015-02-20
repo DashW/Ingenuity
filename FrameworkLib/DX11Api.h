@@ -147,14 +147,30 @@ struct InstanceBuffer : public Gpu::InstanceBuffer
 	}
 	virtual ~InstanceBuffer()
 	{
-		if(buffer)
-		{
-			buffer->Release();
-		}
+		if(buffer) buffer->Release();
 	}
 
 	virtual unsigned GetLength() override { return numInstances; }
 	virtual unsigned GetCapacity() override { return instanceCapacity; }
+};
+
+struct ParamBuffer : public Gpu::ParamBuffer
+{
+	ID3D11Buffer * buffer;
+	ID3D11ShaderResourceView * srv;
+	ID3D11UnorderedAccessView * uav;
+	//unsigned capacity;
+
+	ParamBuffer(ID3D11Buffer * buffer, ID3D11ShaderResourceView * srv, ID3D11UnorderedAccessView * uav)
+		: buffer(buffer), srv(srv), uav(uav) {}
+	virtual ~ParamBuffer()
+	{
+		if(uav) uav->Release();
+		if(srv) srv->Release();
+		if(buffer) buffer->Release();
+	}
+
+	//virtual unsigned getCapacity() { return capacity; }
 };
 
 struct BackbufferSurface;
@@ -270,6 +286,9 @@ public:
 	virtual void DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights,
 		unsigned numLights, Gpu::DrawSurface * surface = 0, Gpu::InstanceBuffer * instances = 0, Gpu::Effect * overrideEffect = 0) override;
 	virtual void DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, Gpu::DrawSurface * dest) override;
+	virtual void DrawIndirect(Gpu::ParamBuffer * buffer, Gpu::Effect * effect, Gpu::DrawSurface * dest) override;
+
+	virtual void Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY = 1, unsigned groupZ = 1) override;
 
 	virtual Gpu::Font * CreateGpuFont(int height, LPCWSTR facename, Gpu::FontStyle style = Gpu::FontStyle_Regular) override;
 	virtual Gpu::Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) override;
@@ -280,9 +299,12 @@ public:
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, unsigned numTriangles, unsigned* indexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) override;
+	virtual Gpu::ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, bool readback = false) override;
 	virtual Gpu::DrawSurface * CreateDrawSurface(unsigned width, unsigned height, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
 	virtual Gpu::DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
 	virtual Gpu::DrawSurface * GetWindowDrawSurface(PlatformWindow * window = 0);
+
+	virtual void GetParamBufferData(Gpu::ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes) override;
 
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer) override;
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, unsigned numTriangles, unsigned * indexData) override;
