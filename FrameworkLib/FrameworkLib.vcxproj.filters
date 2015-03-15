@@ -513,6 +513,27 @@
     <FxCompile Include="Shaders\DX11\BasicCompute11.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemInsertCS.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemUpdateCS.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderVtx.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderGeo.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderPix.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\IndirectTriShaderPix.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\IndirectTriShaderVtx.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">
@@ -626,6 +647,18 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="BasicCompute.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ParticleSystemInsert.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ParticleSystemUpdate.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="ParticleSystemRender.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="IndirectTriShader.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>

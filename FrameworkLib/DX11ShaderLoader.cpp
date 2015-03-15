@@ -5,6 +5,13 @@
 
 namespace Ingenuity {
 
+const char* DX11::ShaderLoader::primitiveStrings[Shader::PrimitiveCount] = {
+	"",
+	"point",
+	"line",
+	"triangle"
+};
+
 DX11::ShaderLoader::ShaderLoader(DX11::Api * gpu, Files::Api * files, Files::Directory * directory, const wchar_t * path) 
 	: Gpu::ShaderLoader(files, directory, path)
 	, gpu(gpu)
@@ -25,12 +32,12 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 	tinyxml2::XMLElement * mappingElement = element->FirstChildElement("paramMapping");
 	while(mappingElement)
 	{
-		DX11::Shader::ParamMapping mapping = { DX11::Shader::Pixel, 0 };
-		unsigned paramIndex = mappingElement->UnsignedAttribute("index");
+		DX11::Shader::ParamMapping mapping = { 0, DX11::Shader::Pixel, 0 };
 
-		if(paramIndex >= shader->paramSpecs.size())
+		if(mappingElement->QueryUnsignedAttribute("index",&mapping.paramIndex) != tinyxml2::XML_NO_ERROR ||
+			mapping.paramIndex >= shader->paramSpecs.size())
 		{
-			OutputDebugString(L"Model shader param mapping has an invalid index!\n");
+			OutputDebugString(L"Model shader param mapping has an undefined or invalid index!\n");
 			return false;
 		}
 
@@ -48,8 +55,10 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 			}
 		}
 
-		Gpu::ShaderParam::Type type = shader->paramSpecs[paramIndex].type;
-		if(type == Gpu::ShaderParam::TypeFloat)
+		Gpu::ShaderParam::Type type = shader->paramSpecs[mapping.paramIndex].type;
+		if(type == Gpu::ShaderParam::TypeInteger || 
+			type == Gpu::ShaderParam::TypeUnsigned ||
+			type == Gpu::ShaderParam::TypeFloat )
 		{
 			mapping.registerIndex = mappingElement->UnsignedAttribute("bufferIndex");
 			mapping.bufferOffset = mappingElement->UnsignedAttribute("bufferOffset");
@@ -70,6 +79,14 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 		{
 			mapping.registerIndex = mappingElement->UnsignedAttribute("bufferIndex");
 			mapping.writeable = mappingElement->BoolAttribute("writeable");
+			const char * attributeChars = mappingElement->Attribute("attribute");
+			if(attributeChars)
+			{
+				if(strcmp(attributeChars, "size") == 0)
+				{
+					mapping.attribute = Shader::BufferAttribute::Size;
+				}
+			}
 		}
 		else // Texture
 		{
@@ -80,7 +97,7 @@ bool DX11::ShaderLoader::ParseParamMappingsXML(
 			}
 		}
 
-		paramMappings[paramIndex] = mapping;
+		paramMappings.push_back(mapping);
 
 		mappingElement = mappingElement->NextSiblingElement("paramMapping");
 	}
@@ -108,7 +125,7 @@ struct DX11::ShaderLoader::VertexShaderResponse : public Files::Response
 		{
 			unsigned techniqueKey = VertApi::GetTechniqueKey(vertexType, instanceType);
 
-			if(!(*inputLayout))
+			if(inputLayout && !(*inputLayout))
 			{
 				std::vector<D3D11_INPUT_ELEMENT_DESC> elementDescs;
 				const D3D11_INPUT_ELEMENT_DESC * desc = gpu->vertexDescs[vertexType];
@@ -247,43 +264,66 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 	tinyxml2::XMLElement * techniqueElement = element->FirstChildElement("technique");
 	while(techniqueElement)
 	{
+		bool indirect = techniqueElement->BoolAttribute("indirect");
 		VertexType vertexType = VertexType_Pos;
-
-		const char * vertexTypeChars = techniqueElement->Attribute("vertexType");
-		if(!vertexTypeChars)
-		{
-			OutputDebugString(L"Model shader technique has no vertex type!\n");
-			delete shader;
-			return 0;
-		}
-
-		for(unsigned i = 0; i < VertexType_Count; ++i)
-		{
-			if(strcmp(vertexTypeChars, VertApi::GetVertexName((VertexType)i)) == 0)
-			{
-				vertexType = (VertexType)i;
-				break;
-			}
-		}
-
 		InstanceType instanceType = InstanceType_None;
-		const char * instanceTypeChars = techniqueElement->Attribute("instanceType");
-		if(instanceTypeChars)
+		DX11::ModelShader::Technique * technique;
+
+		if(indirect)
 		{
-			for(unsigned i = 0; i < InstanceType_Count; ++i)
+			shader->CreateIndirectBuffer(gpu->direct3Ddevice);
+
+			const char * primitiveChars = techniqueElement->Attribute("primitive");
+			for(unsigned i = 0; i < Shader::PrimitiveCount; ++i)
 			{
-				if(strcmp(instanceTypeChars, VertApi::GetInstanceName((InstanceType)i)) == 0)
+				if(strcmp(primitiveChars, primitiveStrings[i]) == 0)
 				{
-					instanceType = (InstanceType)i;
+					shader->indirectPrimitive = (Shader::IndirectPrimitive)i;
 					break;
 				}
 			}
-		}
 
-		unsigned key = VertApi::GetTechniqueKey(vertexType, instanceType);
-		pendingTechniques.emplace_back(key);
-		shader->techniques[key] = DX11::ModelShader::Technique();
-		DX11::ModelShader::Technique & technique = shader->techniques[key];
+			technique = &shader->indirectTechnique;
+			pendingTechniques.emplace_back(0);
+		}
+		else
+		{
+
+			const char * vertexTypeChars = techniqueElement->Attribute("vertexType");
+			if(!vertexTypeChars)
+			{
+				OutputDebugString(L"Model shader technique has no vertex type!\n");
+				delete shader;
+				return 0;
+			}
+
+			for(unsigned i = 0; i < VertexType_Count; ++i)
+			{
+				if(strcmp(vertexTypeChars, VertApi::GetVertexName((VertexType)i)) == 0)
+				{
+					vertexType = (VertexType)i;
+					break;
+				}
+			}
+
+			const char * instanceTypeChars = techniqueElement->Attribute("instanceType");
+			if(instanceTypeChars)
+			{
+				for(unsigned i = 0; i < InstanceType_Count; ++i)
+				{
+					if(strcmp(instanceTypeChars, VertApi::GetInstanceName((InstanceType)i)) == 0)
+					{
+						instanceType = (InstanceType)i;
+						break;
+					}
+				}
+			}
+
+			unsigned key = VertApi::GetTechniqueKey(vertexType, instanceType);
+			pendingTechniques.emplace_back(key);
+			shader->vertexTechniques[key] = DX11::ModelShader::Technique();
+			technique = &shader->vertexTechniques[key];
+		}
 
 		const char * vertexShaderName = techniqueElement->Attribute("vertexShader");
 		const char * geometryShaderName = techniqueElement->Attribute("geometryShader");
@@ -296,12 +336,7 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 			return 0;
 		}
 
-		//if(techniqueElement->BoolAttribute("indirect"))
-		//{
-		//	technique.CreateIndirectArgsBuffer(gpu->direct3Ddevice);
-		//}
-
-		if(!ParseParamMappingsXML(techniqueElement, shader, technique.paramMappings))
+		if(!ParseParamMappingsXML(techniqueElement, shader, technique->paramMappings))
 		{
 			delete shader;
 			return 0;
@@ -313,7 +348,7 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 		std::string vertexShaderFilename(vertexShaderName);
 		vertexShaderFilename += ".cso";
 		std::wstring vertexShaderPath(vertexShaderFilename.begin(), vertexShaderFilename.end());
-		pendingTechnique.vertexResponse = new VertexShaderResponse(gpu, &(technique.inputLayout), &(technique.vertexObject), vertexType, instanceType);
+		pendingTechnique.vertexResponse = new VertexShaderResponse(gpu, indirect ? 0 : &(technique->inputLayout), &(technique->vertexObject), vertexType, instanceType);
 		files->OpenAndRead(rootDir, vertexShaderPath.c_str(), pendingTechnique.vertexResponse);
 
 		if(geometryShaderName)
@@ -321,14 +356,14 @@ DX11::ModelShader * DX11::ShaderLoader::ParseModelShaderXML(tinyxml2::XMLElement
 			std::string geometryShaderFilename(geometryShaderName);
 			geometryShaderFilename += ".cso";
 			std::wstring geometryShaderPath(geometryShaderFilename.begin(), geometryShaderFilename.end());
-			pendingTechnique.geometryResponse = new GeometryShaderResponse(gpu, &(technique.geometryObject));
+			pendingTechnique.geometryResponse = new GeometryShaderResponse(gpu, &(technique->geometryObject));
 			files->OpenAndRead(rootDir, geometryShaderPath.c_str(), pendingTechnique.geometryResponse);
 		}
 
 		std::string pixelShaderFilename(pixelShaderName);
 		pixelShaderFilename += ".cso";
 		std::wstring pixelShaderPath(pixelShaderFilename.begin(), pixelShaderFilename.end());
-		pendingTechnique.pixelResponse = new PixelShaderResponse(gpu, &(technique.pixelObject));
+		pendingTechnique.pixelResponse = new PixelShaderResponse(gpu, &(technique->pixelObject));
 		files->OpenAndRead(rootDir, pixelShaderPath.c_str(), pendingTechnique.pixelResponse);
 
 
@@ -484,8 +519,8 @@ bool DX11::ShaderLoader::IsFinished()
 					OutputDebugString(L"Failed to load shader technique!");
 
 					DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(asset);
-					shader->techniques.erase(pendingTechniques[i].key);
-					if(shader->techniques.size() < 1)
+					shader->vertexTechniques.erase(pendingTechniques[i].key);
+					if(shader->vertexTechniques.size() < 1)
 					{
 						loaderFailed = true;
 					}

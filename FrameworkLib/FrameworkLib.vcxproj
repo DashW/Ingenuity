@@ -622,6 +622,14 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Vertex</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\IndirectTriShaderPix.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\IndirectTriShaderVtx.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="Shaders\DX11\LogLuminancePixPosTex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">Pixel</ShaderType>
@@ -707,6 +715,28 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">false</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">VERTEXSHADER</AdditionalIncludeDirectories>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemInsertCS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">CSMAIN</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderGeo.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Geometry</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderPix.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemRenderVtx.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemUpdateCS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">CSMAIN</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\PathShaderPixPosPosCol.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
@@ -1069,18 +1099,28 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <Xml Include="BaseShader.xml">
       <SubType>Designer</SubType>
     </Xml>
-    <Xml Include="BasicCompute.xml" />
+    <Xml Include="BasicCompute.xml">
+      <SubType>Designer</SubType>
+    </Xml>
     <Xml Include="BlurShader.xml" />
     <Xml Include="BrightPassFilter.xml" />
     <Xml Include="DownSample.xml" />
     <Xml Include="EyeAdaptation.xml" />
     <Xml Include="Gaussian.xml" />
     <Xml Include="HalftoneDots.xml" />
+    <Xml Include="IndirectTriShader.xml" />
     <Xml Include="LogLuminance.xml" />
     <Xml Include="MatcapShader.xml">
       <SubType>Designer</SubType>
     </Xml>
     <Xml Include="MultiTextureAnimY.xml" />
+    <Xml Include="ParticleSystemInsert.xml" />
+    <Xml Include="ParticleSystemRender.xml">
+      <SubType>Designer</SubType>
+    </Xml>
+    <Xml Include="ParticleSystemUpdate.xml">
+      <SubType>Designer</SubType>
+    </Xml>
     <Xml Include="PathShader.xml">
       <SubType>Designer</SubType>
     </Xml>

@@ -99,6 +99,7 @@ copy "$(ProjectDir)Resources\*" "$(OutDir)PropsDemo\"</Command>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>LIBCMTD</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)PropsDemo"

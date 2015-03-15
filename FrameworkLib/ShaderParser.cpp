@@ -9,6 +9,7 @@ namespace Ingenuity {
 static const char * paramTypeStrings[Gpu::ShaderParam::TypeCount] = 
 {
 	"integer",
+	"unsigned",
 	"float",
 	"floatArray",
 	"tex2D",

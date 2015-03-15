@@ -27,6 +27,7 @@ struct ShaderParam
 	enum Type
 	{
 		TypeInteger,
+		TypeUnsigned,
 		TypeFloat,
 		//TypeMatrix,
 		TypeFloatArray,
@@ -42,6 +43,7 @@ struct ShaderParam
 	union
 	{
 		int ivalue;
+		unsigned uvalue;
 		float fvalue;
 		//glm::mat4x4 * mvalue;
 		FloatArray * avalue;
@@ -54,6 +56,8 @@ struct ShaderParam
 
 	ShaderParam(int value)
 		: type(TypeInteger), ivalue(value) {}
+	ShaderParam(unsigned value)
+		: type(TypeUnsigned), uvalue(value) {}
 	ShaderParam(float value)
 		: type(TypeFloat), fvalue(value) {}
 	ShaderParam(Texture * value)
@@ -72,6 +76,7 @@ struct ShaderParam
 		: type(type), tvalue(0) {}
 
 	void Set(int value) { if(type == TypeInteger) ivalue = value; }
+	void Set(unsigned value) { if(type == TypeUnsigned) uvalue = value; }
 	void Set(float value) { if(type == TypeFloat) fvalue = value; }
 	void Set(Texture * value) { if(type == TypeTexture) tvalue = value; }
 	void Set(CubeMap * value) { if(type == TypeCubeTexture) cvalue = value; }
@@ -159,7 +164,19 @@ struct SamplerParam
 
 struct Shader : public IAsset
 {
-	struct BlendMode
+	struct Type
+	{
+		enum Value
+		{
+			Model,
+			Texture,
+			Compute
+		};
+	};
+
+	const Type::Value shaderType;
+
+	struct BlendFunc
 	{
 		enum Value
 		{
@@ -173,13 +190,10 @@ struct Shader : public IAsset
 		};
 	};
 
-	BlendMode::Value blendMode;
+	BlendFunc::Value blendFunc;
 
 	std::vector<ShaderParamSpec> paramSpecs;
 	std::vector<SamplerParam> defaultSamplerParams;
-
-	bool IsModelShader() const { return modelShader; }
-	bool IsTextureShader() const { return !modelShader; }
 
 	virtual ~Shader() {}
 
@@ -187,9 +201,10 @@ struct Shader : public IAsset
 	virtual IAsset * GetAsset() override { return this; }
 
 protected:
-	const bool modelShader;
-
-	Shader(bool modelShader) : blendMode(BlendMode::None), modelShader(modelShader) {}
+	Shader(Type::Value shaderType)
+		: shaderType(shaderType)
+		, blendFunc(BlendFunc::None) 
+	{}
 };
 
 struct Effect

@@ -5,6 +5,8 @@
 #include "DX11Surfaces.h"
 #include "tinyxml2.h"
 
+#include <sstream>
+
 using namespace DirectX;
 
 namespace Ingenuity {
@@ -84,7 +86,6 @@ DX11::ModelShader::Technique::Technique()
 	, vertexObject(0)
 	, geometryObject(0)
 	, pixelObject(0)
-	, indirectArgsBuffer(0)
 {
 	ZeroMemory(vertexParamConstBuffers, NUM_PARAM_BUFFERS * sizeof(void*));
 	ZeroMemory(geometryParamConstBuffers, NUM_PARAM_BUFFERS * sizeof(void*));
@@ -113,75 +114,77 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 		return false;
 	}
 
-	ID3D11ShaderResourceView * nullResource = 0;
-
-	for(unsigned i = 0; i < effect->shader->paramSpecs.size(); ++i)
+	for(unsigned i = 0; i < paramMappings.size(); ++i)
 	{
 		ParamMapping & mapping = paramMappings[i];
-		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[i];
-		Gpu::ShaderParam * param = effect->params[i];
+
+		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+		Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
 
 		if(!param) return false;
 		if(param->type != spec.type) return false;
 
+		std::vector<float> * stageParamConstData = 0;
+		switch(mapping.shader)
+		{
+		case ShaderStage::Vertex: stageParamConstData = vertexParamConstData; break;
+		case ShaderStage::Geometry: stageParamConstData = geometryParamConstData; break;
+		case ShaderStage::Pixel: stageParamConstData = pixelParamConstData; break;
+		default:
+			OutputDebugString(L"Non vertex/geometry/pixel shader states not yet implemented!\n");
+			return false;
+		}
+
 		switch(spec.type)
 		{
 		case Gpu::ShaderParam::TypeFloat:
-			switch(mapping.shader)
+		{
+			if(mapping.registerIndex < NUM_STANDARD_BUFFERS
+				|| mapping.registerIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
 			{
-			case ShaderStage::Vertex:
-			{
-				std::vector<float> & constants = vertexParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				while(constants.size() <= mapping.bufferOffset) constants.push_back(0.0f);
-				constants[mapping.bufferOffset] = param->fvalue;
-				break;
-			}
-			case ShaderStage::Geometry:
-			{
-				std::vector<float> & constants = geometryParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				while(constants.size() <= mapping.bufferOffset) constants.push_back(0.0f);
-				constants[mapping.bufferOffset] = param->fvalue;
-			}
-			case ShaderStage::Pixel:
-			{
-				std::vector<float> & constants = pixelParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				while(constants.size() <= mapping.bufferOffset) constants.push_back(0.0f);
-				constants[mapping.bufferOffset] = param->fvalue;
-				break;
-			}
-			default:
-				OutputDebugString(L"Non vertex/geometry/pixel shader states not yet implemented!\n");
+				OutputDebugString(L"Invalid parameter mapping register index!\n");
 				return false;
 			}
+			std::vector<float> & constants = stageParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
+			while(constants.size() <= mapping.bufferOffset) constants.push_back(0.0f);
+			constants[mapping.bufferOffset] = param->fvalue;
 			break;
+		}
 		case Gpu::ShaderParam::TypeFloatArray:
+		{
+			if(mapping.registerIndex < NUM_STANDARD_BUFFERS
+				|| mapping.registerIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
+			{
+				OutputDebugString(L"Invalid parameter mapping register index!\n");
+				return false;
+			}
+			std::vector<float> & constants = stageParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
+			constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
+			memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
+			break;
+		}
+		case Gpu::ShaderParam::TypeParamBuffer:
+		{
+			DX11::ParamBuffer * paramBuffer = static_cast<DX11::ParamBuffer*>(param->bvalue);
+			if(mapping.writeable)
+			{
+				OutputDebugString(L"Cannot assign a writeable param buffer to a non-compute shader!\n");
+				return false;
+			}
 			switch(mapping.shader)
 			{
 			case ShaderStage::Vertex:
-			{
-				std::vector<float> & constants = vertexParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
-				memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
+				direct3Dcontext->VSSetShaderResources(mapping.registerIndex, 1, &paramBuffer->srv);
 				break;
-			}
 			case ShaderStage::Geometry:
-			{
-				std::vector<float> & constants = geometryParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
-				memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
-			}
-			case ShaderStage::Pixel:
-			{
-				std::vector<float> & constants = pixelParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
-				constants.resize(mapping.bufferOffset + param->avalue->numFloats + 1);
-				memcpy(&(constants[mapping.bufferOffset]), param->avalue->floats, param->avalue->numFloats * sizeof(float));
+				direct3Dcontext->GSSetShaderResources(mapping.registerIndex, 1, &paramBuffer->srv);
 				break;
-			}
-			default:
-				OutputDebugString(L"Non vertex/geometry/pixel shader states not yet implemented!\n");
-				return false;
+			case ShaderStage::Pixel:
+				direct3Dcontext->PSSetShaderResources(mapping.registerIndex, 1, &paramBuffer->srv);
+				break;
 			}
 			break;
+		}
 		default:
 			ApplyTextureParameter(direct3Dcontext, mapping.shader, mapping.registerIndex, param);
 			break;
@@ -190,6 +193,8 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 
 	for(unsigned i = 0; i < NUM_PARAM_BUFFERS; ++i)
 	{
+		// Not sure if faster to SetConstantBuffers specifically for those that have data, or all in one go regardless of data
+
 		if(vertexParamConstData[i].size() > 0)
 		{
 			UpdateConstantBuffer(direct3Dcontext, vertexParamConstData[i], &vertexParamConstBuffers[i]);
@@ -212,30 +217,13 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 	return true;
 }
 
-void DX11::ModelShader::Technique::CreateIndirectArgsBuffer(ID3D11Device * device)
-{
-	struct DrawInstancedIndirectArgs {
-		UINT VertexCountPerInstance;
-		UINT InstanceCount;
-		UINT StartVertexLocation;
-		UINT StartInstanceLocation;
-	};
-
-	DrawInstancedIndirectArgs args = { 0 };
-
-	D3D11_BUFFER_DESC desc = { 0 };
-	desc.ByteWidth = sizeof(DrawInstancedIndirectArgs);
-	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.MiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
-
-	D3D11_SUBRESOURCE_DATA argsData = { 0 };
-	argsData.pSysMem = &args;
-
-	HRESULT hr = device->CreateBuffer(&desc, &argsData, &indirectArgsBuffer);
-}
-
-DX11::ModelShader::ModelShader(ID3D11Device * device) :
-	DX11::Shader(device, true), vertexConstBuffer(0), pixelConstBuffer(0), currentTechnique(0)
+DX11::ModelShader::ModelShader(ID3D11Device * device) 
+	: DX11::Shader(device, Type::Model)
+	, vertexConstBuffer(0)
+	, pixelConstBuffer(0)
+	, indirectArgsBuffer(0)
+	, currentTechnique(0)
+	, indirectPrimitive(PrimitiveUnknown)
 {
 	device->CreateBuffer(
 		&CD3D11_BUFFER_DESC(sizeof(VertexConstants), D3D11_BIND_CONSTANT_BUFFER),
@@ -255,14 +243,15 @@ DX11::ModelShader::~ModelShader()
 	if(vertexConstBuffer) vertexConstBuffer->Release();
 	if(pixelConstBuffer) pixelConstBuffer->Release();
 	if(lightParamsBuffer) lightParamsBuffer->Release();
+	if(indirectArgsBuffer) indirectArgsBuffer->Release();
 }
 
 bool DX11::ModelShader::SetTechnique(ID3D11DeviceContext * direct3Dcontext, VertexType vType, InstanceType iType)
 {
 	unsigned key = VertApi::GetTechniqueKey(vType, iType);
 
-	std::map<unsigned, Technique>::iterator it = techniques.find(key);
-	if(it == techniques.end())
+	std::map<unsigned, Technique>::iterator it = vertexTechniques.find(key);
+	if(it == vertexTechniques.end())
 	{
 		OutputDebugString(L"Shader does not have technique for vertex/instance type!\n");
 		return false;
@@ -271,6 +260,32 @@ bool DX11::ModelShader::SetTechnique(ID3D11DeviceContext * direct3Dcontext, Vert
 	currentTechnique = &(it->second);
 
 	direct3Dcontext->IASetInputLayout(currentTechnique->inputLayout);
+	direct3Dcontext->VSSetShader(currentTechnique->vertexObject, 0, 0);
+	direct3Dcontext->GSSetShader(currentTechnique->geometryObject, 0, 0);
+	direct3Dcontext->PSSetShader(currentTechnique->pixelObject, 0, 0);
+
+	return true;
+}
+
+bool DX11::ModelShader::SetIndirectTechnique(ID3D11DeviceContext * direct3Dcontext)
+{
+	if(!indirectTechnique.vertexObject) return false;
+
+	currentTechnique = &indirectTechnique;
+
+	switch(indirectPrimitive)
+	{
+	case IndirectPrimitive::PrimitivePoint:
+		direct3Dcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		break;
+	case IndirectPrimitive::PrimitiveLine:
+		direct3Dcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+		break;
+	case IndirectPrimitive::PrimitiveTriangle:
+		direct3Dcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		break;
+	}
+
 	direct3Dcontext->VSSetShader(currentTechnique->vertexObject, 0, 0);
 	direct3Dcontext->GSSetShader(currentTechnique->geometryObject, 0, 0);
 	direct3Dcontext->PSSetShader(currentTechnique->pixelObject, 0, 0);
@@ -441,10 +456,78 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 	}
 }
 
+void DX11::ModelShader::UnsetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect)
+{
+	if(!currentTechnique) return;
+
+	for(unsigned i = 0; i < currentTechnique->paramMappings.size(); ++i)
+	{
+		ParamMapping & mapping = currentTechnique->paramMappings[i];
+
+		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+		Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
+
+		switch(spec.type)
+		{
+		case Gpu::ShaderParam::TypeParamBuffer:
+		{
+			ID3D11ShaderResourceView * nullSrv = 0;
+			switch(mapping.shader)
+			{
+			case ShaderStage::Vertex:
+				direct3Dcontext->VSSetShaderResources(mapping.registerIndex, 1, &nullSrv);
+				break;
+			case ShaderStage::Geometry:
+				direct3Dcontext->GSSetShaderResources(mapping.registerIndex, 1, &nullSrv);
+				break;
+			case ShaderStage::Pixel:
+				direct3Dcontext->PSSetShaderResources(mapping.registerIndex, 1, &nullSrv);
+				break;
+			}
+			break;
+		}
+		}
+	}
+}
+
+void DX11::ModelShader::CreateIndirectBuffer(ID3D11Device * device)
+{
+	struct DrawInstancedIndirectArgs {
+		UINT VertexCountPerInstance;
+		UINT InstanceCount;
+		UINT StartVertexLocation;
+		UINT StartInstanceLocation;
+
+		DrawInstancedIndirectArgs()
+			: VertexCountPerInstance(1)
+			, InstanceCount(1)
+			, StartVertexLocation(0)
+			, StartInstanceLocation(0)
+		{}
+	};
+
+	DrawInstancedIndirectArgs args;
+
+	D3D11_BUFFER_DESC desc = { 0 };
+	desc.ByteWidth = sizeof(DrawInstancedIndirectArgs);
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+
+	D3D11_SUBRESOURCE_DATA argsData = { 0 };
+	argsData.pSysMem = &args;
+
+	HRESULT hr = device->CreateBuffer(&desc, &argsData, &indirectArgsBuffer);
+}
+
+ID3D11Buffer * DX11::ModelShader::GetIndirectBuffer()
+{
+	return indirectArgsBuffer;
+}
+
 ID3D11VertexShader * DX11::TextureShader::vertexObject = 0;
 
 DX11::TextureShader::TextureShader(ID3D11Device * device) :
-	DX11::Shader(device, false), standardConstBuffer(0), pixelObject(0)
+	DX11::Shader(device, Type::Texture), standardConstBuffer(0), pixelObject(0)
 {
 	device->CreateBuffer(
 		&CD3D11_BUFFER_DESC(sizeof(StandardConstants), D3D11_BIND_CONSTANT_BUFFER),
@@ -498,11 +581,12 @@ bool DX11::TextureShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 		return false;
 	}
 
-	for(unsigned i = 0; i < effect->shader->paramSpecs.size(); ++i)
+	for(unsigned i = 0; i < paramMappings.size(); ++i)
 	{
 		ParamMapping & mapping = paramMappings[i];
-		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[i];
-		Gpu::ShaderParam * param = effect->params[i];
+
+		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+		Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
 
 		if(!param) return false;
 		if(param->type != spec.type)
@@ -554,7 +638,7 @@ bool DX11::TextureShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 }
 
 DX11::ComputeShader::ComputeShader(ID3D11Device * device) 
-	: DX11::Shader(device, false)
+	: DX11::Shader(device, Type::Compute)
 	, computeObject(0)
 {
 	ZeroMemory(paramConstBuffers, NUM_PARAM_BUFFERS * sizeof(void*));
@@ -589,6 +673,38 @@ bool DX11::ComputeShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, G
 	}
 }
 
+void DX11::ComputeShader::UnsetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect)
+{
+	unsigned numParams = effect->shader->paramSpecs.size();
+	
+	for(unsigned i = 0; i < paramMappings.size(); ++i)
+	{
+		ParamMapping & mapping = paramMappings[i];
+
+		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+		Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
+
+		switch(spec.type)
+		{
+		case Gpu::ShaderParam::TypeParamBuffer:
+		{
+			if(mapping.writeable)
+			{
+				UINT nullCount = -1;
+				ID3D11UnorderedAccessView * nullUav = 0;
+				direct3Dcontext->CSSetUnorderedAccessViews(mapping.registerIndex, 1, &nullUav, &nullCount);
+			}
+			else
+			{
+				ID3D11ShaderResourceView * nullSrv = 0;
+				direct3Dcontext->CSSetShaderResources(mapping.registerIndex, 1, &nullSrv);
+			}
+			break;
+		}
+		}
+	}
+}
+
 bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect)
 {
 	unsigned numParams = effect->shader->paramSpecs.size();
@@ -598,11 +714,16 @@ bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 		return false;
 	}
 
-	for(unsigned i = 0; i < numParams; ++i)
+#if INTEL_HACK_COPYSTRUCTURECOUNT
+	ZeroMemory(cpuImmutableConstBuffers, NUM_PARAM_BUFFERS * sizeof(bool));
+#endif
+
+	for(unsigned i = 0; i < paramMappings.size(); ++i)
 	{
 		ParamMapping & mapping = paramMappings[i];
-		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[i];
-		Gpu::ShaderParam * param = effect->params[i];
+
+		Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+		Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
 
 		if(!param) return false;
 		if(param->type != spec.type)
@@ -610,6 +731,15 @@ bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 			OutputDebugString(L"Parameter type does not match specified parameter type!\n");
 			return false;
 		}
+
+#if INTEL_HACK_COPYSTRUCTURECOUNT
+		if(cpuImmutableConstBuffers[mapping.registerIndex] &&
+			(spec.type != Gpu::ShaderParam::TypeParamBuffer || mapping.attribute != BufferAttribute::Size))
+		{
+			OutputDebugString(L"Can only upload ParamBuffer sizes to this buffer!\n");
+			return false;
+		}
+#endif
 
 		switch(spec.type)
 		{
@@ -635,13 +765,31 @@ bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 		{
 			DX11::ParamBuffer * paramBuffer = static_cast<DX11::ParamBuffer*>(param->bvalue);
 
-			if(mapping.writeable)
+			if(mapping.attribute == BufferAttribute::Size)
 			{
-				direct3Dcontext->CSSetUnorderedAccessViews(mapping.registerIndex, 1, &paramBuffer->uav, 0);
+				// Prepare the constant buffer, set nothing, wait until buffer has been created on GPU
+				std::vector<float> & constants = paramConstData[mapping.registerIndex];
+				while(constants.size() <= mapping.bufferOffset)
+				{
+					constants.push_back(0.0f);
+				}
+
+#if INTEL_HACK_COPYSTRUCTURECOUNT
+				cpuImmutableConstBuffers[mapping.registerIndex] = true;
+#endif
 			}
 			else
 			{
-				direct3Dcontext->CSSetShaderResources(mapping.registerIndex, 1, &paramBuffer->srv);
+				if(mapping.writeable)
+				{
+					// Set the structure count of the UAV
+					direct3Dcontext->CSSetUnorderedAccessViews(mapping.registerIndex, 1, &paramBuffer->uav, &paramBuffer->uavCountToUpload);
+					paramBuffer->uavCountToUpload = -1;
+				}
+				else
+				{
+					direct3Dcontext->CSSetShaderResources(mapping.registerIndex, 1, &paramBuffer->srv);
+				}
 			}
 			break;
 		}
@@ -653,14 +801,99 @@ bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 
 	if(numParams > 0)
 	{
+		// Upload CPU constants to GPU, creating buffers if necessary
 		for(unsigned i = 0; i < NUM_PARAM_BUFFERS; ++i)
 		{
+#if INTEL_HACK_COPYSTRUCTURECOUNT
+			if(paramConstData[i].size() > 0 && (!cpuImmutableConstBuffers[i] || !paramConstBuffers[i]))
+#else
 			if(paramConstData[i].size() > 0)
+#endif
 			{
 				UpdateConstantBuffer(direct3Dcontext, paramConstData[i], &paramConstBuffers[i]);
 			}
 		}
 
+		// Overwrite GPU constants with GPU ParamBuffer sizes
+		for(unsigned i = 0; i < paramMappings.size(); ++i)
+		{
+			ParamMapping & mapping = paramMappings[i];
+
+			Gpu::ShaderParamSpec & spec = effect->shader->paramSpecs[mapping.paramIndex];
+			Gpu::ShaderParam * param = effect->params[mapping.paramIndex];
+
+			if(spec.type == Gpu::ShaderParam::TypeParamBuffer && mapping.attribute == BufferAttribute::Size)
+			{
+				DX11::ParamBuffer * paramBuffer = static_cast<DX11::ParamBuffer*>(param->bvalue);
+				
+				{
+					static ID3D11Buffer * debugBuf = 0;
+					static unsigned debugData[2] = { 0 };
+
+					if(!debugBuf)
+					{
+						ID3D11Device * device = 0;
+						direct3Dcontext->GetDevice(&device);
+
+						D3D11_SUBRESOURCE_DATA vbInitData;
+						vbInitData.pSysMem = debugData;
+
+						device->CreateBuffer(
+							&CD3D11_BUFFER_DESC(2 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
+							&vbInitData,
+							&debugBuf);
+					}
+
+					direct3Dcontext->CopyStructureCount(debugBuf, 0 * sizeof(unsigned), paramBuffer->uav);
+
+					D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
+					direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
+					memcpy(((char*)debugData), mappedData.pData, 2 * sizeof(unsigned));
+					direct3Dcontext->Unmap(debugBuf, 0);
+
+					std::wstringstream debugOutput;
+					for(unsigned i = 0; i < 2; ++i) debugOutput << debugData[i] << ", ";
+					debugOutput << std::endl;
+					OutputDebugString(debugOutput.str().c_str());
+				}
+
+				direct3Dcontext->CopyStructureCount(paramConstBuffers[mapping.registerIndex], 
+					mapping.bufferOffset * sizeof(unsigned), paramBuffer->uav);
+
+				{
+					static ID3D11Buffer * debugBuf = 0;
+					static unsigned debugData[4] = { 0 };
+
+					if(!debugBuf)
+					{
+						ID3D11Device * device = 0;
+						direct3Dcontext->GetDevice(&device);
+
+						D3D11_SUBRESOURCE_DATA vbInitData;
+						vbInitData.pSysMem = debugData;
+
+						device->CreateBuffer(
+							&CD3D11_BUFFER_DESC(4 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
+							&vbInitData,
+							&debugBuf);
+					}
+
+					direct3Dcontext->CopyResource(debugBuf, paramConstBuffers[mapping.registerIndex]);
+
+					D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
+					direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
+					memcpy(((char*)debugData), mappedData.pData, 4 * sizeof(unsigned));
+					direct3Dcontext->Unmap(debugBuf, 0);
+
+					std::wstringstream debugOutput;
+					for(unsigned i = 0; i < 4; ++i) debugOutput << debugData[i] << ", ";
+					debugOutput << std::endl;
+					OutputDebugString(debugOutput.str().c_str());
+				}
+			}
+		}
+
+		// Set the buffers into the pipeline
 		direct3Dcontext->CSSetConstantBuffers(0, NUM_PARAM_BUFFERS, paramConstBuffers);
 	}
 
