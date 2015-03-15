@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="IndirectTriangleShader" type="model">
+
+  <params>
+  </params>
+
+  <directx11>
+    <technique vertexShader="IndirectTriShaderVtx" pixelShader="IndirectTriShaderPix" indirect="true" primitive="triangle"/>
+  </directx11>
+
+</shader>

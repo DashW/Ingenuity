@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="ParticleSystemInsert" type="compute">
+
+  <params>
+    <param index="0" displayName="Insert Buffer" type="paramBuffer" />
+    <param index="1" displayName="Emission X" type="float" default="0.0" />
+    <param index="2" displayName="Emission Y" type="float" default="0.0" />
+    <param index="3" displayName="Emission Z" type="float" default="0.0" />
+    <param index="4" displayName="Random X" type="float" default="0.0" />
+    <param index="5" displayName="Random Y" type="float" default="0.0" />
+    <param index="6" displayName="Random Z" type="float" default="0.0" />
+  </params>
+
+  <directx11 shader="ParticleSystemInsertCS">
+    <!-- Is stride needed any more? -->
+    <paramMapping index="0" bufferIndex="0" stride="2" writeable="true" />
+    <paramMapping index="1" bufferIndex="0" bufferOffset="0" />
+    <paramMapping index="2" bufferIndex="0" bufferOffset="1" />
+    <paramMapping index="3" bufferIndex="0" bufferOffset="2" />
+    <paramMapping index="4" bufferIndex="0" bufferOffset="4" />
+    <paramMapping index="5" bufferIndex="0" bufferOffset="5" />
+    <paramMapping index="6" bufferIndex="0" bufferOffset="6" />
+  </directx11>
+
+  <!--<opengl4>
+  </opengl4>-->
+
+</shader>
+
