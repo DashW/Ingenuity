@@ -87,6 +87,7 @@ copy "$(ProjectDir)stone.dds" "$(OutDir)"</Command>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>LIBCMTD</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)hmblend.dds" "$(OutDir)"

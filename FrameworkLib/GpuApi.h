@@ -33,6 +33,17 @@ enum BlendMode
 	BlendMode_Count
 };
 
+// These modes assume that the caller always wants to draw color
+enum DepthMode
+{
+	DepthMode_ReadWrite,
+	DepthMode_Read,
+	DepthMode_Write,
+	DepthMode_None,
+
+	DepthMode_Count
+};
+
 /* Abstract class to interact with a graphics API like DirectX or OpenGL */
 class Api
 {
@@ -40,16 +51,17 @@ protected:
 	bool drawEverythingWireframe;
 
 	Effect * baseEffect;
-	DrawSurface * stencilSurface;
-	DrawSurface * stencilClipSurface;
+	//DrawSurface * stencilSurface;
+	//DrawSurface * stencilClipSurface;
 
 public:
 
-	Api() :
-		drawEverythingWireframe(false),
-		baseEffect(0),
-		stencilSurface(0),
-		stencilClipSurface(0) {}
+	Api() 
+		: drawEverythingWireframe(false)
+		, baseEffect(0)
+		//, stencilSurface(0)
+		//, stencilClipSurface(0) 
+	{}
 	virtual ~Api() {};
 
 	virtual void Initialize(AssetMgr * assets) = 0;
@@ -65,7 +77,7 @@ public:
 	virtual void DrawGpuModel(Model * model, Camera * camera, Light ** lights,
 		unsigned numLights, DrawSurface * surface = 0, InstanceBuffer * instances = 0, Effect * overrideEffect = 0) = 0;
 	virtual void DrawGpuSurface(DrawSurface * source, Effect * effect, DrawSurface * dest) = 0;
-	virtual void DrawIndirect(ParamBuffer * buffer, Effect * effect, DrawSurface * dest) = 0;
+	virtual void DrawIndirect(Effect * effect, ParamBuffer * vertices = 0, ParamBuffer * instances = 0, DrawSurface * surface = 0) = 0;
 
 	virtual void Compute(Effect * effect, unsigned xGroups, unsigned yGroups = 1, unsigned zGroups = 1) = 0;
 
@@ -99,8 +111,9 @@ public:
 	}
 
 	virtual InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) = 0;
-	virtual ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride = 0, bool readback = false) = 0;
-
+	virtual ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride = 0, unsigned initialCount = -1) = 0;
+	
+	virtual void CopyParamBufferSize(ParamBuffer * src, ParamBuffer * dst, unsigned byteOffset) = 0;
 	virtual void GetParamBufferData(ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes) = 0;
 
 	virtual void UpdateDynamicMesh(Mesh * dynamicMesh, IVertexBuffer * buffer) = 0;
@@ -108,8 +121,8 @@ public:
 	virtual void UpdateInstanceBuffer(InstanceBuffer * instanceBuffer, unsigned numInstances, void * instanceData) = 0;
 
 	Effect * GetBaseEffect() { return baseEffect; }
-	DrawSurface * GetStencilSurface() { return stencilSurface; }
-	DrawSurface * GetStencilClipSurface() { return stencilClipSurface; }
+	//DrawSurface * GetStencilSurface() { return stencilSurface; }
+	//DrawSurface * GetStencilClipSurface() { return stencilClipSurface; }
 
 	virtual DrawSurface * CreateDrawSurface(unsigned width, unsigned height, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
 	virtual DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, DrawSurface::Format format = DrawSurface::Format_4x8int) = 0;
@@ -132,6 +145,7 @@ public:
 	virtual void SetClearColor(float r, float g, float b, float a) = 0;
 	virtual void SetMultisampling(unsigned multisampleLevel) = 0;
 	virtual void SetBlendMode(BlendMode blendMode) = 0;
+	virtual void SetDepthMode(DepthMode depthMode) = 0;
 	virtual void SetDrawWireframe(bool wireframe) { drawEverythingWireframe = wireframe; }
 	virtual void SetAnisotropy(unsigned anisotropy) = 0;
 

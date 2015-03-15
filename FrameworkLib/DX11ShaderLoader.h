@@ -40,6 +40,8 @@ class ShaderLoader : public Gpu::ShaderLoader
 		{}
 	};
 
+	static const char* primitiveStrings[Shader::PrimitiveCount];
+
 	std::vector<PendingTechnique> pendingTechniques;
 	ComputeShaderResponse * pendingComputeResponse;
 

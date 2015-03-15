@@ -13,6 +13,16 @@
 #include <map>
 #include <vector>
 
+// HACK: Workaround for CopyStructureCount failing under Intel drivers (13/03/2015)
+// ----------------------------------------------------------------------------------
+// Due to a bug in Intel graphics drivers, CopyStructureCount will fail if it happens 
+// immediately after the target buffer is modified by UpdateSubresource OR Map.
+// Therefore, ParamBuffer structure counts may only be copied to buffers that are not 
+// used for any other type of shader param! These buffers are marked CPU IMMUTABLE.
+// Try disabling this hack with future versions of Intel graphics drivers.
+// ----------------------------------------------------------------------------------
+#define INTEL_HACK_COPYSTRUCTURECOUNT 1
+
 namespace Ingenuity {
 namespace DX11 {
 
@@ -26,18 +36,49 @@ struct Shader : public Gpu::Shader
 		Pixel
 	};
 
+	enum IndirectPrimitive
+	{
+		PrimitiveUnknown,
+		PrimitivePoint,
+		PrimitiveLine,
+		PrimitiveTriangle,
+
+		PrimitiveCount
+	};
+
+	struct BufferAttribute
+	{
+		enum Value
+		{
+			Self,
+			Size
+		};
+	};
+
+	struct TextureAttribute
+	{
+		enum Value
+		{
+			Self,
+			Width,
+			Height
+		};
+	};
+
 	struct ParamMapping
 	{
+		unsigned paramIndex;
 		ShaderStage shader;
 		unsigned registerIndex;
 		unsigned bufferOffset;
 		unsigned bufferStride;
+		unsigned attribute;
 		bool writeable;
 	};
 
-	typedef std::map<unsigned, ParamMapping> ParamMap;
+	typedef std::vector<ParamMapping> ParamMap;
 
-	Shader(ID3D11Device * device, bool modelShader) : Gpu::Shader(modelShader) {}
+	Shader(ID3D11Device * device, Type::Value shaderType) : Gpu::Shader(shaderType) {}
 	virtual ~Shader() {}
 
 	static void ApplyTextureParameter(ID3D11DeviceContext * context, ShaderStage stage, unsigned registerIndex, Gpu::ShaderParam * param);
@@ -57,7 +98,6 @@ struct ModelShader : public Shader
 		ID3D11VertexShader * vertexObject;
 		ID3D11GeometryShader * geometryObject;
 		ID3D11PixelShader * pixelObject; // MAYBE SHADER BINARIES NEED TO BE PUT IN THEIR OWN BANKS...
-		ID3D11Buffer * indirectArgsBuffer;
 
 		ParamMap paramMappings;
 		std::vector<float> vertexParamConstData[NUM_PARAM_BUFFERS];
@@ -71,7 +111,6 @@ struct ModelShader : public Shader
 		~Technique();
 
 		bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
-		void CreateIndirectArgsBuffer(ID3D11Device * device);
 	};
 
 	struct VertexConstants
@@ -148,9 +187,13 @@ struct ModelShader : public Shader
 	ID3D11Buffer * vertexConstBuffer;
 	ID3D11Buffer * pixelConstBuffer;
 	ID3D11Buffer * lightParamsBuffer;
+	ID3D11Buffer * indirectArgsBuffer;
 
-	std::map<unsigned, Technique> techniques;
+	std::map<unsigned, Technique> vertexTechniques;
+	Technique indirectTechnique;
 	Technique * currentTechnique;
+
+	IndirectPrimitive indirectPrimitive;
 
 	ModelShader(ID3D11Device * device);
 	virtual ~ModelShader();
@@ -158,6 +201,9 @@ struct ModelShader : public Shader
 	bool SetTechnique(ID3D11DeviceContext * direct3Dcontext, VertexType vType, InstanceType iType);
 	bool SetIndirectTechnique(ID3D11DeviceContext * direct3Dcontext);
 	bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights, unsigned numLights, float aspect, Gpu::Effect * effect);
+	void UnsetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
+	void CreateIndirectBuffer(ID3D11Device * device);
+	ID3D11Buffer * GetIndirectBuffer();
 };
 
 struct TextureShader : public Shader
@@ -197,6 +243,9 @@ struct ComputeShader : public Shader
 	static const unsigned NUM_PARAM_BUFFERS = D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT;
 
 	std::vector<float> paramConstData[NUM_PARAM_BUFFERS];
+#if INTEL_HACK_COPYSTRUCTURECOUNT
+	bool cpuImmutableConstBuffers[NUM_PARAM_BUFFERS];
+#endif
 	ID3D11Buffer * paramConstBuffers[NUM_PARAM_BUFFERS];
 
 	std::map<unsigned, std::vector<float>> paramStructData;
@@ -208,6 +257,7 @@ struct ComputeShader : public Shader
 	virtual ~ComputeShader();
 	
 	virtual bool SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);
+	void UnsetParameters(ID3D11DeviceContext * direct3Dcontent, Gpu::Effect * effect);
 
 protected:
 	bool SetExtraParameters(ID3D11DeviceContext * direct3Dcontext, Gpu::Effect * effect);

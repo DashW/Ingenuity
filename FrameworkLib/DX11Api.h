@@ -159,20 +159,19 @@ struct ParamBuffer : public Gpu::ParamBuffer
 	ID3D11Buffer * buffer;
 	ID3D11ShaderResourceView * srv;
 	ID3D11UnorderedAccessView * uav;
-	//unsigned capacity;
+	unsigned uavCountToUpload;
 
 	ParamBuffer(ID3D11Buffer * buffer, ID3D11ShaderResourceView * srv, ID3D11UnorderedAccessView * uav)
-		: buffer(buffer), srv(srv), uav(uav) {}
+		: buffer(buffer), srv(srv), uav(uav), uavCountToUpload(-1) {}
 	virtual ~ParamBuffer()
 	{
 		if(uav) uav->Release();
 		if(srv) srv->Release();
 		if(buffer) buffer->Release();
 	}
-
-	//virtual unsigned getCapacity() { return capacity; }
 };
 
+struct DrawSurface;
 struct BackbufferSurface;
 
 class ShaderParser;
@@ -199,12 +198,14 @@ class Api : public Gpu::Api
 	IDXGISwapChain * mainSwapChain;
 	DX11::BackbufferSurface * mainDrawSurface;
 
-	ID3D11DepthStencilState * depthStencilState;
+	typedef std::map<unsigned, ID3D11DepthStencilState*> DepthStencilBank;
+
 	ID3D11RasterizerState * wireframeState;
 	ID3D11RasterizerState * defaultRasterState;
 
-	ID3D11DepthStencilState * stencilState;
-	ID3D11DepthStencilState * stencilClipState;
+	//ID3D11DepthStencilState * depthStencilState;
+	//ID3D11DepthStencilState * stencilState;
+	//ID3D11DepthStencilState * stencilClipState;
 
 	DirectX::XMFLOAT4X4 view;
 	DirectX::XMFLOAT4X4 projection;
@@ -212,6 +213,10 @@ class Api : public Gpu::Api
 	DirectX::SpriteBatch * spriteBatch;
 	DirectX::CommonStates * commonStates;
 	ID3D11BlendState * blendStates[Gpu::BlendMode_Count];
+
+	Gpu::DepthMode currentDepthMode;
+	DepthStencilBank depthStencilStates;
+	unsigned currentDepthStencilKey;
 
 	//ModelShader * baseShader;
 	TextureShader * texCopyShader;
@@ -271,6 +276,8 @@ class Api : public Gpu::Api
 
 	float clearColor[4];
 
+	bool SetDepthStencilState(DX11::DrawSurface * surface);
+
 public:
 	Api(PlatformWindow * window);
 	~Api();
@@ -286,7 +293,7 @@ public:
 	virtual void DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Light ** lights,
 		unsigned numLights, Gpu::DrawSurface * surface = 0, Gpu::InstanceBuffer * instances = 0, Gpu::Effect * overrideEffect = 0) override;
 	virtual void DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, Gpu::DrawSurface * dest) override;
-	virtual void DrawIndirect(Gpu::ParamBuffer * buffer, Gpu::Effect * effect, Gpu::DrawSurface * dest) override;
+	virtual void DrawIndirect(Gpu::Effect * effect, Gpu::ParamBuffer * vertices = 0, Gpu::ParamBuffer * instances = 0, Gpu::DrawSurface * surface = 0) override;
 
 	virtual void Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY = 1, unsigned groupZ = 1) override;
 
@@ -299,11 +306,12 @@ public:
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::Mesh * CreateGpuMesh(unsigned numVertices, void* vertexData, unsigned numTriangles, unsigned* indexData, VertexType type, bool dynamic = false) override;
 	virtual Gpu::InstanceBuffer * CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type) override;
-	virtual Gpu::ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, bool readback = false) override;
+	virtual Gpu::ParamBuffer * CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, unsigned initialCount = -1) override;
 	virtual Gpu::DrawSurface * CreateDrawSurface(unsigned width, unsigned height, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
 	virtual Gpu::DrawSurface * CreateRelativeDrawSurface(PlatformWindow * window, float widthFactor = 1.0f, float heightFactor = 1.0f, Gpu::DrawSurface::Format format = Gpu::DrawSurface::Format_4x8int) override;
 	virtual Gpu::DrawSurface * GetWindowDrawSurface(PlatformWindow * window = 0);
 
+	virtual void CopyParamBufferSize(Gpu::ParamBuffer * src, Gpu::ParamBuffer * dst, unsigned byteOffset) override;
 	virtual void GetParamBufferData(Gpu::ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes) override;
 
 	virtual void UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer) override;
@@ -327,6 +335,7 @@ public:
 	virtual void SetMultisampling(unsigned multisampleLevel) override;
 	virtual void SetAnisotropy(unsigned anisotropy) override { samplerMgr->SetAnisotropy(direct3Dcontext, anisotropy); }
 	virtual void SetBlendMode(Gpu::BlendMode blendMode) override;
+	virtual void SetDepthMode(Gpu::DepthMode depthMode) override;
 	virtual bool isDeviceLost() override;
 
 	void ResetRenderTargets();

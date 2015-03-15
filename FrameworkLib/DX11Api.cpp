@@ -37,10 +37,11 @@ DX11::Api::Api(PlatformWindow * window) :
 	mainSwapChain(0),
 	mainDrawSurface(0),
 	wireframeState(0),
-	stencilState(0),
-	stencilClipState(0),
+	samplerMgr(0),
 	spriteBatch(0),
 	commonStates(0),
+	currentDepthMode(Gpu::DepthMode_ReadWrite),
+	currentDepthStencilKey(-1),
 	texCopyShader(0),
 	texShaderQuad(0),
 	texShaderLayout(0),
@@ -110,10 +111,6 @@ DX11::Api::Api(PlatformWindow * window) :
 
 	OnWindowResized(window, 0, 0);
 
-	CD3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-	direct3Ddevice->CreateDepthStencilState(&depthStencilDesc,&depthStencilState);
-
 	CD3D11_RASTERIZER_DESC rasterDesc(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.0f, 0.0f, true, false, false, false);
 	direct3Ddevice->CreateRasterizerState(&rasterDesc, &defaultRasterState);
 
@@ -159,6 +156,12 @@ DX11::Api::~Api()
 		delete windowDrawSurfaces[swapIt->first];
 	}
 
+	DepthStencilBank::iterator dsIt = depthStencilStates.begin();
+	for(; dsIt != depthStencilStates.end(); ++dsIt)
+	{
+		dsIt->second->Release();
+	}
+
 	for(unsigned i = 0; i < Gpu::BlendMode_Count; ++i)
 	{
 		if(blendStates[i]) blendStates[i]->Release();
@@ -171,11 +174,8 @@ DX11::Api::~Api()
 	if(texShaderQuad) delete texShaderQuad;
 	if(wireframeState) wireframeState->Release();
 	if(defaultRasterState) defaultRasterState->Release();
-	if(stencilState) stencilState->Release();
-	if(stencilSurface) delete stencilSurface;
-	if(stencilClipState) stencilClipState->Release();
-	if(stencilClipSurface) delete stencilClipSurface;
-	if(depthStencilState) depthStencilState->Release();
+	//if(stencilSurface) delete stencilSurface;
+	//if(stencilClipSurface) delete stencilClipSurface;
 	if(commonStates) delete commonStates;
 	if(spriteBatch) delete spriteBatch;
 	if(samplerMgr) delete samplerMgr;
@@ -275,6 +275,37 @@ const unsigned DX11::Api::instanceDescSizes[InstanceType_Count] =
 	3
 };
 
+bool DX11::Api::SetDepthStencilState(DX11::DrawSurface * surface)
+{
+	unsigned depthStencilKey = 0;
+
+	depthStencilKey |= currentDepthMode;
+
+	// TODO: Add stencil state here (should be stored in the Surface)
+
+	if(depthStencilStates.count(depthStencilKey) == 0)
+	{
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+		depthStencilDesc.DepthEnable = currentDepthMode != Gpu::DepthMode_None;
+		depthStencilDesc.DepthFunc = currentDepthMode == Gpu::DepthMode_Write ? D3D11_COMPARISON_ALWAYS : D3D11_COMPARISON_LESS_EQUAL;
+		depthStencilDesc.DepthWriteMask = (currentDepthMode == Gpu::DepthMode_ReadWrite || currentDepthMode == Gpu::DepthMode_Write ?
+			D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO);
+
+		ID3D11DepthStencilState * depthStencilState = 0;
+		direct3Ddevice->CreateDepthStencilState(&depthStencilDesc, &depthStencilState);
+
+		depthStencilStates[depthStencilKey] = depthStencilState;
+	}
+
+	if(currentDepthStencilKey != depthStencilKey)
+	{
+		direct3Dcontext->OMSetDepthStencilState(depthStencilStates[depthStencilKey], 0);
+		currentDepthStencilKey = depthStencilKey;
+	}
+
+	return true;
+}
+
 void DX11::Api::Initialize(AssetMgr * assets)
 {
 	// Load the default shaders
@@ -311,13 +342,16 @@ void DX11::Api::BeginScene()
 
 	SetBlendMode(Gpu::BlendMode_Alpha);
 
-	direct3Dcontext->OMSetDepthStencilState(depthStencilState, 0);
+	currentDepthStencilKey = -1;
+	SetDepthStencilState(mainDrawSurface);
 
 	spriteBatch->Begin(SpriteSortMode_BackToFront,commonStates->NonPremultiplied());
 }
 
 void DX11::Api::EndScene()
 {
+	direct3Dcontext->GSSetShader(0, 0, 0);
+
 	spriteBatch->End();
 
 #ifdef USE_DIRECT2D
@@ -554,57 +588,47 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 
 	Gpu::Effect * effect = baseEffect;
 
-	if(overrideEffect && overrideEffect->shader && overrideEffect->shader->IsModelShader())
+	if(overrideEffect && overrideEffect->shader && overrideEffect->shader->shaderType == Gpu::Shader::Type::Model)
 	{
 		effect = overrideEffect;
 	}
-	else if(model->effect && model->effect->shader && model->effect->shader->IsModelShader()) 
+	else if(model->effect && model->effect->shader && model->effect->shader->shaderType == Gpu::Shader::Type::Model) 
 	{
 		effect = model->effect;
 	}
 
-	DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(effect->shader);
+	DX11::ModelShader * dx11shader = static_cast<DX11::ModelShader*>(effect->shader);
 
-	// GETTING TARGET AND CALCULATING ASPECT - MINOR COST - ~4us //
+	// GETTING TARGET AND CALCULATING ASPECT - UNKNOWN (FREE?) //
 
-	float aspect = float(mainDrawSurface->width)/float(mainDrawSurface->height);
-	DX11::DrawSurface * dx11surface = 0;
-	if(surface)
-	{
-		dx11surface = static_cast<DX11::DrawSurface*>(surface);
-		if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeTexture 
-			|| dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeRelativeTexture)
-		{
-			Gpu::Texture * surfaceTex = dx11surface->GetTexture();
-			aspect = float(surfaceTex->GetWidth()) / float(surfaceTex->GetHeight());
-		}
-		else if(dx11surface->GetSurfaceType() == Gpu::DrawSurface::TypeBackbuffer)
-		{
-			DX11::BackbufferSurface * backbufferSurface = static_cast<DX11::BackbufferSurface*>(dx11surface);
-			aspect = backbufferSurface->GetAspect();
-		}
-	}
+	DX11::DrawSurface * dx11surface = surface ? static_cast<DX11::DrawSurface*>(surface) : mainDrawSurface;
+	
+	float aspect = float(dx11surface->GetWidth()) / float(dx11surface->GetHeight());
+
+	// SETTING DEPTH STENCIL STATE - UNKNOWN //
+
+	SetDepthStencilState(dx11surface);
 
 	// SWITCHING SHADER TECHNIQUE - MINOR COST - ~5us //
 
-	if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
+	if(!dx11shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
 
 	// APPLYING SHADER PARAMS - SIGNIFICANT COST - ~32us //
 
-	if(!shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect, effect)) return;
+	if(!dx11shader->SetParameters(direct3Dcontext, model, camera, lights, numLights, aspect, effect)) return;
 
 	// APPLYING SAMPLER PARAMS - AMORTISED! //
 
 	samplerMgr->ApplySamplerParams(
 		direct3Dcontext, 
-		shader->currentTechnique->paramMappings, 
+		dx11shader->currentTechnique->paramMappings,
 		effect ? &effect->samplerParams : 0,
 		true);
 
 	// DRAWING - SIGNIFICANT COST - ~18us //
 
 	if(dx11surface) dx11surface->Begin();
-	if(dx11mesh->IsIndexed())
+	if(dx11mesh->IsIndexed()) 
 	{
 		if(instances)
 		{
@@ -632,6 +656,8 @@ void DX11::Api::DrawGpuModel(Gpu::Model * model, Gpu::Camera * camera, Gpu::Ligh
 		mainDrawSurface->Begin();
 	}
 
+	dx11shader->UnsetParameters(direct3Dcontext, effect);
+
 	if(instances)
 	{
 		direct3Dcontext->IASetVertexBuffers(1, 0, 0, 0, 0);
@@ -650,7 +676,6 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 {
 	if(!source) return;
 	if(!texCopyShader) return;
-	if(dest && dest->GetSurfaceType() == Gpu::DrawSurface::TypeStencil) return;
 	
 	UINT stride = texShaderQuad->vertexSize;
 	UINT offset = 0;
@@ -660,12 +685,13 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 	direct3Dcontext->IASetInputLayout(texShaderLayout);
 	direct3Dcontext->VSSetShader(texVertexShader,0,0);
 
-	//direct3Dcontext->OMSetDepthStencilState(commonStates->DepthNone(), 0);
+	// TODO: Check this works with stencils
+	SetDepthStencilState(dest ? static_cast<DX11::DrawSurface*>(dest) : mainDrawSurface);
 
 	DX11::TextureShader * texShader = texCopyShader;
 	if(effect && effect->shader)
 	{
-		if(!effect->shader->IsTextureShader()) return;
+		if(!effect->shader->shaderType == Gpu::Shader::Type::Texture) return;
 		texShader = static_cast<DX11::TextureShader*>(effect->shader);
 	}
 	texShader->SetParameters(direct3Dcontext, source->GetTexture(), effect);
@@ -696,22 +722,56 @@ void DX11::Api::DrawGpuSurface(Gpu::DrawSurface * source, Gpu::Effect * effect, 
 	}
 }
 
-void DX11::Api::DrawIndirect(Gpu::ParamBuffer * buffer, Gpu::Effect * effect, Gpu::DrawSurface * surface)
+void DX11::Api::DrawIndirect(Gpu::Effect * effect, Gpu::ParamBuffer * vertices, Gpu::ParamBuffer * instances, Gpu::DrawSurface * surface)
 {
-	//DX11::ModelShader * shader = static_cast<DX11::ModelShader*>(effect->shader);
+	if(!effect) return;
 
-	//if(!shader->SetTechnique(direct3Dcontext, vertexType, instanceType)) return;
+	DX11::ModelShader * dx11shader = static_cast<DX11::ModelShader*>(effect->shader);
+	DX11::DrawSurface * dx11surface = surface ? static_cast<DX11::DrawSurface*>(surface) : mainDrawSurface;
+	float aspect = float(dx11surface->GetWidth()) / float(dx11surface->GetHeight());
 
-	OutputDebugString(L"Not yet implemented...");
-	__debugbreak();
+	direct3Dcontext->IASetVertexBuffers(0, 0, 0, 0, 0);
+	direct3Dcontext->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
 
-	if(!buffer) return;
+	SetDepthStencilState(dx11surface);
 
-	DX11::ParamBuffer * dx11Buffer = static_cast<DX11::ParamBuffer*>(buffer);
+	if(!dx11shader->SetIndirectTechnique(direct3Dcontext)) return;
+	if(!dx11shader->indirectTechnique.SetExtraParameters(direct3Dcontext, effect)) return;
 
-	direct3Dcontext->DrawInstancedIndirect(dx11Buffer->buffer, 0);
+	samplerMgr->ApplySamplerParams(
+		direct3Dcontext,
+		dx11shader->indirectTechnique.paramMappings,
+		effect ? &effect->samplerParams : 0,
+		true);
 
-	// HERE we should consider the possibility of using StreamOut and DrawAuto if the effect requires it!
+	if(vertices || instances)
+	{
+		ID3D11Buffer * indirectBuffer = dx11shader->GetIndirectBuffer();
+
+		if(vertices)
+		{
+			DX11::ParamBuffer * dx11vertices = static_cast<DX11::ParamBuffer*>(vertices);
+
+			direct3Dcontext->CopyStructureCount(indirectBuffer, 0, dx11vertices->uav);
+		}
+		if(instances)
+		{
+			DX11::ParamBuffer * dx11instances = static_cast<DX11::ParamBuffer*>(instances);
+
+			direct3Dcontext->CopyStructureCount(indirectBuffer, sizeof(UINT), dx11instances->uav);
+		}
+
+		direct3Dcontext->DrawInstancedIndirect(indirectBuffer, 0);
+	}
+	else
+	{
+		OutputDebugString(L"DrawAuto: Not tested yet!");
+		if(IsDebuggerPresent()) __debugbreak();
+
+		direct3Dcontext->DrawAuto();
+	}
+
+	dx11shader->UnsetParameters(direct3Dcontext, effect);
 }
 
 void DX11::Api::Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY, unsigned groupZ)
@@ -723,6 +783,8 @@ void DX11::Api::Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY, 
 	computeShader->SetParameters(direct3Dcontext, effect);
 
 	direct3Dcontext->Dispatch(groupX, groupY, groupZ);
+
+	computeShader->UnsetParameters(direct3Dcontext, effect);
 
 	// Bear in mind, OpenCL clEnqueueNDRangeKernel works slightly differently.
 
@@ -930,6 +992,41 @@ Gpu::Mesh * DX11::Api::CreateGpuMesh(unsigned numVertices, void * vertexData,
 	return createdMesh;
 }
 
+//Gpu::Mesh * DX11::Api::CreateGpuMesh(GenericVertexBuffer * vertexBuffer)
+//{
+//	// Need to pass in a collection of buffers to merge into an input description
+//
+//	static const char * componentSemanticToGpuSemantic[GenericVertexBuffer::SemanticCount] =
+//	{
+//		"POSITION",
+//		"COLOR",
+//		"TEXTURE",
+//		"NORMAL",
+//		"TEXTURE",
+//		"TEXTURE"
+//	};
+//
+//	static const DXGI_FORMAT floatCountToDxgiFormat[5] =
+//	{
+//		DXGI_FORMAT_UNKNOWN,
+//		DXGI_FORMAT_R32_FLOAT,
+//		DXGI_FORMAT_R32G32_FLOAT,
+//		DXGI_FORMAT_R32G32B32_FLOAT,
+//		DXGI_FORMAT_R32G32B32A32_FLOAT
+//	};
+//
+//	const std::vector<GenericVertexBuffer::ComponentMeta> & componentMeta = vertexBuffer->GetComponentMeta();
+//	D3D11_INPUT_ELEMENT_DESC * inputElementDesc = new D3D11_INPUT_ELEMENT_DESC[componentMeta.size()];
+//
+//	for(unsigned i = 0; i < componentMeta.size(); ++i)
+//	{
+//		// We need to be able to build this on the fly!
+//
+//		inputElementDesc[i] = { componentSemanticToGpuSemantic[componentMeta[i].semantic], 
+//			0, floatCountToDxgiFormat[componentMeta[i].size], 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 };
+//	}
+//}
+
 Gpu::InstanceBuffer * DX11::Api::CreateInstanceBuffer(unsigned numInstances, void * instanceData, InstanceType type)
 {
 	DX11::InstanceBuffer * instanceBuffer = new DX11::InstanceBuffer(direct3Ddevice, type, numInstances, instanceData);
@@ -943,7 +1040,8 @@ Gpu::InstanceBuffer * DX11::Api::CreateInstanceBuffer(unsigned numInstances, voi
 	return 0;
 }
 
-Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, bool readback)
+// To identify the buffer as an append/consume buffer, initialCount must be > -1
+Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * data, unsigned structureStride, unsigned initialCount)
 {
 	ID3D11Buffer * buffer = 0;
 	ID3D11ShaderResourceView * srv = 0;
@@ -955,7 +1053,6 @@ Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * dat
 	bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	bufferDesc.MiscFlags = structureStride > 0 ? D3D11_RESOURCE_MISC_BUFFER_STRUCTURED : D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
 	bufferDesc.StructureByteStride = structureStride;
-	bufferDesc.CPUAccessFlags = readback ? D3D11_CPU_ACCESS_READ : 0;
 
 	D3D11_SUBRESOURCE_DATA bufferData = { 0 };
 	bufferData.pSysMem = data;
@@ -975,6 +1072,14 @@ Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * dat
 		{
 			uavDesc.Format = DXGI_FORMAT_UNKNOWN;
 			uavDesc.Buffer.NumElements = numElements;
+			if(initialCount < UINT_MAX)
+			{
+				uavDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_APPEND;
+			}
+			else
+			{
+				uavDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
+			}
 		}
 		else
 		{
@@ -1003,20 +1108,44 @@ Gpu::ParamBuffer * DX11::Api::CreateParamBuffer(unsigned numElements, void * dat
 
 		direct3Ddevice->CreateShaderResourceView(buffer, &srvDesc, &srv);
 
-		return new ParamBuffer(buffer, srv, uav);
+		ParamBuffer * result = new ParamBuffer(buffer, srv, uav);
+
+		direct3Dcontext->CSSetUnorderedAccessViews(0, 1, &uav, &(initialCount < UINT_MAX ? initialCount : numElements));
+
+		ID3D11UnorderedAccessView * nulluav = 0;
+		unsigned zero = 0;
+		direct3Dcontext->CSSetUnorderedAccessViews(0, 1, &nulluav, &zero);
+
+		return result;
 	}
 
 	return 0;
+}
+
+void DX11::Api::CopyParamBufferSize(Gpu::ParamBuffer * src, Gpu::ParamBuffer * dst, unsigned byteOffset)
+{
+	DX11::ParamBuffer * dx11srcBuf = static_cast<DX11::ParamBuffer*>(src);
+	DX11::ParamBuffer * dx11dstBuf = static_cast<DX11::ParamBuffer*>(dst);
+
+	direct3Dcontext->CopyStructureCount(dx11dstBuf->buffer, byteOffset, dx11srcBuf->uav);
 }
 
 void DX11::Api::GetParamBufferData(Gpu::ParamBuffer * src, void * dst, unsigned offset, unsigned numBytes)
 {
 	DX11::ParamBuffer * dx11buf = static_cast<DX11::ParamBuffer*>(src);
 
+	ID3D11Buffer * stagingBuf = 0;
+
+	direct3Ddevice->CreateBuffer(&CD3D11_BUFFER_DESC(numBytes, 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ), 0, &stagingBuf);
+
+	direct3Dcontext->CopySubresourceRegion(stagingBuf, 0, 0, 0, 0, dx11buf->buffer, 0, &CD3D11_BOX(offset, 0, 0, offset + numBytes, 1, 1));
+
 	D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
-	direct3Dcontext->Map(dx11buf->buffer, 0, D3D11_MAP_READ, 0, &mappedData);
-	memcpy(((char*)dst) + offset, mappedData.pData, numBytes);
-	direct3Dcontext->Unmap(dx11buf->buffer, 0);
+	direct3Dcontext->Map(stagingBuf, 0, D3D11_MAP_READ, 0, &mappedData);
+	memcpy(dst, mappedData.pData, numBytes);
+	direct3Dcontext->Unmap(stagingBuf, 0);
+
+	stagingBuf->Release();
 }
 
 void DX11::Api::UpdateDynamicMesh(Gpu::Mesh * dynamicMesh, IVertexBuffer * buffer)
@@ -1357,8 +1486,7 @@ void DX11::Api::SetBlendMode(Gpu::BlendMode blendMode)
 
 	if(blendStates[blendMode] == 0)
 	{
-		D3D11_BLEND_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
+		D3D11_BLEND_DESC desc = { 0 };
 
 		D3D11_BLEND srcBlend;
 		D3D11_BLEND dstBlend;
@@ -1402,6 +1530,11 @@ void DX11::Api::SetBlendMode(Gpu::BlendMode blendMode)
 	}
 
 	direct3Dcontext->OMSetBlendState(blendState, 0, 0xFFFFFFFF);
+}
+
+void DX11::Api::SetDepthMode(Gpu::DepthMode depthMode)
+{
+	currentDepthMode = depthMode;
 }
 
 bool DX11::Api::isDeviceLost() 
