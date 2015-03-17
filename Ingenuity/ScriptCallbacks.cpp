@@ -913,7 +913,7 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 
 	if(asset)
 	{
-		switch(asset->GetType())
+		switch(asset->GetAssetType())
 		{
 			case TextureAsset:
 			{
@@ -1075,7 +1075,6 @@ void ScriptCallbacks::GetSVGModel(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, svg, TypeSVGParser);
 	POP_NUMPARAM(2, stroke);
-	POP_NUMPARAM(3, anim);
 	
 	SvgParser * svgParser = svg.GetPointer<SvgParser>();
 	Gpu::Api * gpu = interpreter->GetApp()->gpu;
@@ -1083,6 +1082,7 @@ void ScriptCallbacks::GetSVGModel(ScriptInterpreter * interpreter)
 	
 	if(stroke.nvalue > 0.0)
 	{
+		POP_NUMPARAM(3, anim);
 		model = svgParser->GetAnimatedStroke(gpu, float(anim.nvalue));
 	}
 	else

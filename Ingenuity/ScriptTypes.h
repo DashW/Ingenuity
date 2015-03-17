@@ -22,6 +22,7 @@ enum ScriptPtrType
 	TypeGpuScene,
 	TypeGpuShader,
 	TypeGpuInstanceBuffer,
+	TypeGpuParamBuffer,
 
 	TypePlatformWindow,
 	TypeFloatArray,

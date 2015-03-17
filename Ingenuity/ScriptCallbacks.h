@@ -277,7 +277,6 @@ public:
 	static void GetSoundProgress(ScriptInterpreter*);
 
 	static void CreatePhysicsWorld(ScriptInterpreter*);
-	static void UpdatePhysicsWorld(ScriptInterpreter*);
 	static void CreatePhysicsMaterial(ScriptInterpreter*);
 	static void CreatePhysicsAnchor(ScriptInterpreter*);
 	static void CreatePhysicsCuboid(ScriptInterpreter*);
@@ -286,6 +285,8 @@ public:
 	static void CreatePhysicsMesh(ScriptInterpreter*);
 	static void CreatePhysicsHeightmap(ScriptInterpreter*);
 	static void CreatePhysicsSpring(ScriptInterpreter*);
+
+	static void UpdatePhysicsWorld(ScriptInterpreter*);
 	static void AddToPhysicsWorld(ScriptInterpreter*);
 	static void RemoveFromPhysicsWorld(ScriptInterpreter*);
 	static void SetPhysicsPosition(ScriptInterpreter*);

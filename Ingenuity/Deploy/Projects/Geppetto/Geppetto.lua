@@ -250,7 +250,8 @@ function Draw()
 		ClearSurface(performanceSurface);
 		
 		if shadowEffect then
-			cameraMatrixFloats = CreateFloatArray(GetCameraMatrix(shadowCamera,shadowSurface,true));
+			local cameraMatrix = GetCameraProjMatrix(shadowCamera,shadowSurface,true) * GetCameraViewMatrix(shadowCamera);
+			cameraMatrixFloats = CreateFloatArray(cameraMatrix);
 			SetEffectParam(shadowEffect,0,cameraMatrixFloats);
 			SetEffectParam(shadowEffect,1,GetSurfaceTexture(shadowSurface));
 			SetEffectParam(shadowEffect,2,0.00005);

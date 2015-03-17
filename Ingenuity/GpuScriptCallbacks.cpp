@@ -406,7 +406,20 @@ void GpuScriptCallbacks::GetCameraRay(ScriptInterpreter * interpreter)
 		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
 }
 
-void GpuScriptCallbacks::GetCameraMatrix(ScriptInterpreter * interpreter)
+void GpuScriptCallbacks::GetCameraViewMatrix(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, camera, TypeGpuCamera);
+	interpreter->ClearParams();
+
+	Gpu::Camera * gpuCamera = camera.GetPointer<Gpu::Camera>();
+
+	glm::mat4 viewMatrix = gpuCamera->GetViewMatrix();
+
+	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&viewMatrix, sizeof(glm::mat4),
+		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4))));
+}
+
+void GpuScriptCallbacks::GetCameraProjMatrix(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, camera, TypeGpuCamera);
 	ScriptParam surface = interpreter->PopParam();
@@ -419,11 +432,11 @@ void GpuScriptCallbacks::GetCameraMatrix(ScriptInterpreter * interpreter)
 	
 	if(ScriptTypes::CheckPtrType(surface, TypeGpuDrawSurface))
 	{
-		Gpu::Texture * surfaceTex = surface.GetPointer<Gpu::DrawSurface>()->GetTexture();
-		aspect = float(surfaceTex->GetWidth()) / float(surfaceTex->GetHeight());
+		Gpu::DrawSurface * gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
+		aspect = float(gpuSurface->GetWidth()) / float(gpuSurface->GetHeight());
 	}
 
-	glm::mat4 cameraMatrix = gpuCamera->GetProjMatrix(aspect) * gpuCamera->GetViewMatrix();
+	glm::mat4 projectionMatrix = gpuCamera->GetProjMatrix(aspect);
 
 	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
 	static const glm::mat4 texCoordTransform(
@@ -434,10 +447,10 @@ void GpuScriptCallbacks::GetCameraMatrix(ScriptInterpreter * interpreter)
 
 	if(isTex.type == ScriptParam::BOOL && isTex.nvalue > 0.0)
 	{
-		cameraMatrix = texCoordTransform * cameraMatrix;
+		projectionMatrix = texCoordTransform * projectionMatrix;
 	}
 
-	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&cameraMatrix, sizeof(glm::mat4),
+	interpreter->PushParam(ScriptParam(new BufferCopyPtr(&projectionMatrix, sizeof(glm::mat4),
 		interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4))));
 }
 
@@ -494,6 +507,46 @@ void GpuScriptCallbacks::DrawModel(ScriptInterpreter * interpreter)
 		gpuModel->instances = gpuInstances;
 		gpuModel->BeDrawn(gpu, gpuCamera, gpuLights, numGpuLights, gpuSurface, gpuOverrideEffect);
 	}
+}
+
+void GpuScriptCallbacks::Compute(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, effect, TypeGpuEffect);
+	POP_NUMPARAM(2, xGroups);
+	ScriptParam yGroups = interpreter->PopParam();
+	ScriptParam zGroups = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	interpreter->GetApp()->gpu->Compute(effect.GetPointer<Gpu::Effect>(), unsigned(xGroups.nvalue),
+		yGroups.IsNumber() ? unsigned(yGroups.nvalue) : 1, zGroups.IsNumber() ? unsigned(zGroups.nvalue) : 1);
+}
+
+void GpuScriptCallbacks::DrawIndirect(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, effect, TypeGpuEffect);
+	ScriptParam vertices = interpreter->PopParam();
+	ScriptParam instances = interpreter->PopParam();
+	ScriptParam surface = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::ParamBuffer * gpuVertices = 0;
+	Gpu::ParamBuffer * gpuInstances = 0;
+	Gpu::DrawSurface * gpuSurface = 0;
+
+	if(ScriptTypes::CheckPtrType(vertices, TypeGpuParamBuffer))
+	{
+		gpuVertices = vertices.GetPointer<Gpu::ParamBuffer>();
+	}
+	if(ScriptTypes::CheckPtrType(instances, TypeGpuParamBuffer))
+	{
+		gpuInstances = instances.GetPointer<Gpu::ParamBuffer>();
+	}
+	if(ScriptTypes::CheckPtrType(surface, TypeGpuDrawSurface))
+	{
+		gpuSurface = surface.GetPointer<Gpu::DrawSurface>();
+	}
+
+	interpreter->GetApp()->gpu->DrawIndirect(effect.GetPointer<Gpu::Effect>(), gpuVertices, gpuInstances, gpuSurface);
 }
 
 void GpuScriptCallbacks::SetModelPosition(ScriptInterpreter * interpreter)
@@ -1059,6 +1112,10 @@ void GpuScriptCallbacks::SetEffectParam(ScriptInterpreter * interpreter)
 		{
 			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::DrawSurface>());
 		}
+		else if(value.pvalue->type == ScriptTypes::GetHandle(TypeGpuParamBuffer))
+		{
+			gpuEffect->SetParam(paramIndex, value.GetPointer<Gpu::ParamBuffer>());
+		}
 		else if(value.pvalue->type == ScriptTypes::GetHandle(TypeFloatArray))
 		{
 			gpuEffect->SetParam(paramIndex, &(value.GetPointer<ScriptFloatArray>()->gpuFloatArray));
@@ -1116,6 +1173,21 @@ void GpuScriptCallbacks::SetSamplerParam(ScriptInterpreter * interpreter)
 	{
 		gpuEffect->SetSamplerParam(paramKey, unsigned(value.nvalue), paramIndex);
 	}
+}
+
+void GpuScriptCallbacks::CreateParamBuffer(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, numElements);
+	ScriptParam stride = interpreter->PopParam();
+	ScriptParam append = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	Gpu::ParamBuffer * paramBuffer = interpreter->GetApp()->gpu->CreateParamBuffer(
+		unsigned(numElements.nvalue), 0, 
+		stride.IsNumber() ? unsigned(stride.nvalue) : 0,
+		append.type == ScriptParam::BOOL && append.nvalue > 0.0 ? 0 : -1);
+
+	interpreter->PushParam(ScriptParam(paramBuffer, ScriptTypes::GetHandle(TypeGpuParamBuffer)));
 }
 
 void GpuScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
@@ -1358,6 +1430,30 @@ void GpuScriptCallbacks::SetBlendMode(ScriptInterpreter * interpreter)
 	{
 		interpreter->ThrowError("Unrecognized blend mode!");
 	}
+}
+
+void GpuScriptCallbacks::SetDepthMode(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, mode, STRING);
+	const char * modeChars = mode.svalue;
+
+	static const char * depthModes[Gpu::DepthMode_Count] =
+	{
+		"readwrite",
+		"read",
+		"write",
+		"none"
+	};
+
+	for(unsigned i = 0; i < Gpu::DepthMode_Count; ++i)
+	{
+		if(_stricmp(modeChars, depthModes[i]) == 0)
+		{
+			interpreter->GetApp()->gpu->SetDepthMode((Gpu::DepthMode)i);
+			return;
+		}
+	}
+	interpreter->ThrowError("Unrecognized depth mode!");
 }
 
 void GpuScriptCallbacks::SetWireframe(ScriptInterpreter * interpreter)

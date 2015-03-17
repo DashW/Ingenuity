@@ -31,6 +31,11 @@ public:
 
 		interpreter->RegisterCallback("DrawComplexModel", &GpuScriptCallbacks::DrawModel,
 			"(model,camera[,lights,surface,instances,effect]) Draws a model");
+		interpreter->RegisterCallback("Compute", &GpuScriptCallbacks::Compute,
+			"(effect,xGroups[,yGroups,zGroups]) Executes a compute shader with the given thread groups");
+		interpreter->RegisterCallback("DrawIndirect", &GpuScriptCallbacks::DrawIndirect,
+			"(effect[,vertices,instances,surface]) Draws a geometry effect [with vertex/instance ParamBuffers]");
+
 		interpreter->RegisterCallback("GetFont", &GpuScriptCallbacks::GetFont,
 			"(size,family[,style,isPixelSpace]) Loads a font [with style \"regular\", \"bold\" or \"italic\"]");
 		interpreter->RegisterCallback("DrawText", &GpuScriptCallbacks::DrawText,
@@ -43,6 +48,8 @@ public:
 			"(r,g,b[,a]) Sets the background color to which the screen should be cleared");
 		interpreter->RegisterCallback("SetBlendMode", &GpuScriptCallbacks::SetBlendMode,
 			"(mode) Sets the given blend mode to the GPU ('alpha','additive','none')");
+		interpreter->RegisterCallback("SetDepthMode", &GpuScriptCallbacks::SetDepthMode,
+			"(mode) Sets the given depth mode to the GPU ('readwrite','read','write','none')");
 		interpreter->RegisterCallback("SetWireframe", &GpuScriptCallbacks::SetWireframe,
 			"(wireframe) Sets whether the GPU should draw all 3D models in wireframe mode");
 		interpreter->RegisterCallback("SetMultisampling", &GpuScriptCallbacks::SetMultisampling,
@@ -73,7 +80,9 @@ public:
 			"(camera,nearclip,farclip,height) Sets the near and far clip panes and height of an orthographic camera");
 		interpreter->RegisterCallback("GetCameraRay", &GpuScriptCallbacks::GetCameraRay,
 			"(camera,x,y[,surface]) Returns the vector4 ray from the camera for the given point [on the surface]");
-		interpreter->RegisterCallback("GetCameraMatrix", &GpuScriptCallbacks::GetCameraMatrix,
+		interpreter->RegisterCallback("GetCameraViewMatrix", &GpuScriptCallbacks::GetCameraViewMatrix,
+			"(camera) Returns view matrix for the camera");
+		interpreter->RegisterCallback("GetCameraProjMatrix", &GpuScriptCallbacks::GetCameraProjMatrix,
 			"(camera[,surface,isTex]) Returns [texture] projection matrix for the camera [with surface's aspect ratio]");
 
 		interpreter->RegisterCallback("CreateLight", &GpuScriptCallbacks::CreateLight,
@@ -157,6 +166,9 @@ public:
 		interpreter->RegisterCallback("UpdateInstanceBuffer", &GpuScriptCallbacks::UpdateInstanceBuffer,
 			"(ibuf,floats,size) Updates an instance buffer with the given FloatArray");
 
+		interpreter->RegisterCallback("CreateParamBuffer", &GpuScriptCallbacks::CreateParamBuffer,
+			"(numElements[,stride,append]) Creates a new ParamBuffer with the given properties");
+
 		// 2D DRAWING
 		interpreter->RegisterCallback("CreateRect", &GpuScriptCallbacks::CreateRect,
 			"(x,y,w,h) Creates a rectangle model of the specified dimensions");
@@ -194,7 +206,8 @@ public:
 	static void SetCameraUp(ScriptInterpreter*);
 	static void SetCameraClipFovOrHeight(ScriptInterpreter*);
 	static void GetCameraRay(ScriptInterpreter*);
-	static void GetCameraMatrix(ScriptInterpreter*);
+	static void GetCameraViewMatrix(ScriptInterpreter*);
+	static void GetCameraProjMatrix(ScriptInterpreter*);
 
 	static void SetModelPosition(ScriptInterpreter*);
 	static void SetModelRotation(ScriptInterpreter*);
@@ -202,9 +215,12 @@ public:
 	static void SetModelMatrix(ScriptInterpreter*);
 	static void DrawModel(ScriptInterpreter*);
 
-	static void GetFont(ScriptInterpreter*);
-	static void DrawText(ScriptInterpreter*);
-	static void SetFontColor(ScriptInterpreter*);
+	static void Compute(ScriptInterpreter*);
+	static void DrawIndirect(ScriptInterpreter*);
+
+	static void GetFont(ScriptInterpreter*);             // TEXT
+	static void DrawText(ScriptInterpreter*);            // TEXT
+	static void SetFontColor(ScriptInterpreter*);        // TEXT
 
 	static void CreateLight(ScriptInterpreter*);         // LIGHTING
 	static void SetLightColor(ScriptInterpreter*);       // LIGHTING
@@ -230,9 +246,8 @@ public:
 	static void SetMeshEffect(ScriptInterpreter*);
 	static void SetEffectParam(ScriptInterpreter*);
 	static void SetSamplerParam(ScriptInterpreter*);
-	static void CreateFloatArray(ScriptInterpreter*);
-	static void SetFloatArray(ScriptInterpreter*);
-	static void GetFloatArray(ScriptInterpreter*);
+
+	static void CreateParamBuffer(ScriptInterpreter*);
 
 	static void CreateSurface(ScriptInterpreter*);
 	static void DrawSurface(ScriptInterpreter*);
@@ -245,6 +260,7 @@ public:
 
 	static void SetClearColor(ScriptInterpreter*);
 	static void SetBlendMode(ScriptInterpreter*);
+	static void SetDepthMode(ScriptInterpreter*);
 	static void SetWireframe(ScriptInterpreter*);
 	static void SetMultisampling(ScriptInterpreter*);
 	static void SetAnisotropy(ScriptInterpreter*);

@@ -142,8 +142,8 @@ function UpdateMarionette()
 		if i == 17 then
 			arm2Anchor = boneMatrix * CreateVector(0.030, 0.0, -0.035, 1.0);
 		end
-		SetMeshMatrix(boneModels[i],0,boneMatrix);
-		SetMeshMatrix(debugModels[i],0,boneMatrix);
+		SetModelMatrix(boneModels[i],boneMatrix);
+		SetModelMatrix(debugModels[i],boneMatrix);
 	end
 	
 	down,pressed,released = GetKeyState('g');

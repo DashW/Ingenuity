@@ -777,6 +777,7 @@ void DX11::Api::DrawIndirect(Gpu::Effect * effect, Gpu::ParamBuffer * vertices, 
 void DX11::Api::Compute(Gpu::Effect * effect, unsigned groupX, unsigned groupY, unsigned groupZ)
 {
 	if(!effect || !effect->shader) return;
+	if(groupX < 1 || groupY < 1 || groupZ < 1) return;
 
 	DX11::ComputeShader * computeShader = static_cast<DX11::ComputeShader*>(effect->shader);
 
