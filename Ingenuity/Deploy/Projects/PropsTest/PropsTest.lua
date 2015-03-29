@@ -5,6 +5,8 @@
 --
 -- Richard Copperwaite 2013
 
+Require("ProjectDir","../../Common/IngenUtils.lua");
+
 function PrintGlobals()
 	for k,v in pairs(_G) do
 		print("Global key", k, "value", tostring(v))
@@ -93,10 +95,18 @@ function Begin()
 	
 	slowTicket = LoadAssets(
 		{"ProjectDir","skull3.obj","WavefrontModel","skull"},
-		{"ProjectDir","castle.obj","WavefrontModel","castle"},
-		{"ProjectDir","vase.obj","WavefrontModel","vase"},
-		{"ProjectDir","oildrum.obj","WavefrontModel","oildrum"}
+		{"ProjectDir","castle.obj","WavefrontModel","castle"}
+		--{"ProjectDir","vase.obj","WavefrontModel","vase"},
+		--{"ProjectDir","oildrum.obj","WavefrontModel","oildrum"}
 	);
+	
+	vaseModel=FutureAsset("ProjectDir","vase.obj","WavefrontModel");
+	vaseModel:WhenReady(SetModelPosition,0,0.152,0.33);
+	vaseModel:WhenReady(SetModelScale,0.0002);
+	
+	barrelModel=FutureAsset("ProjectDir","oildrum.obj","WavefrontModel");
+	barrelModel:WhenReady(SetModelPosition,0.06,0.152,0.33);
+	barrelModel:WhenReady(SetModelScale,0.015);
 	
 	fastTicket = LoadAssets(
 		{"ProjectDir","IngenuityLogo.png","Tex2D","logo"},
@@ -202,8 +212,8 @@ function Update(delta)
 	if not loadComplete and IsLoaded(slowTicket) then
 		model = GetAsset("skull");
 		castle = GetAsset("castle");
-		vase = GetAsset("vase");
-		barrel = GetAsset("oildrum");
+		--vase = GetAsset("vase");
+		--barrel = GetAsset("oildrum");
 		--SetModelPosition(model,0,-0.25,0);
 		loadComplete = true;
 	end
@@ -215,11 +225,11 @@ function Update(delta)
 		SetModelScale(castle,0.0038);
 		SetModelPosition(castle,0.03,0.15,0.33);
 		
-		SetModelPosition(vase,0,0.152,0.33);
-		SetModelScale(vase,0.0002);
+		--SetModelPosition(vase,0,0.152,0.33);
+		--SetModelScale(vase,0.0002);
 		
-		SetModelPosition(barrel,0.06,0.152,0.33);
-		SetModelScale(barrel,0.015);
+		--SetModelPosition(barrel,0.06,0.152,0.33);
+		--SetModelScale(barrel,0.015);
 	end
 	
 	positionText = string.format("%1.3f,%1.3f,%1.3f",camerax,cameraz,modelx);
@@ -257,11 +267,11 @@ function Draw()
 	if model ~= 0 then
 		DrawComplexModel(model,camera,light);--,surface);
 	end
-	if vase then
-		DrawComplexModel(vase,camera,light);
+	if vaseModel:Ready() then
+		DrawComplexModel(vaseModel(),camera,light);
 	end
-	if barrel then
-		DrawComplexModel(barrel,camera,light);
+	if barrelModel:Ready() then
+		DrawComplexModel(barrelModel(),camera,light);
 	end
 	if skyBox then
 		DrawComplexModel(skyBox,camera);

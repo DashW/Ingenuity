@@ -23,14 +23,17 @@ cbuffer ParticleRenderParameters: register(b11)
 	float4 ConsumerLocation;
 };
 
-static const float scale = 0.5f;
+cbuffer ParticleConstants: register(b12)
+{
+	float4 scale;
+};
 
 static const float4 g_positions[4] =
 {
-    float4( -scale, scale, 0, 0 ),
-    float4( scale, scale, 0, 0 ),
-    float4( -scale, -scale, 0, 0 ),
-    float4( scale, -scale, 0, 0 ),
+    float4( -scale.x, scale.y, 0, 0 ),
+    float4( scale.x, scale.y, 0, 0 ),
+    float4( -scale.x, -scale.y, 0, 0 ),
+    float4( scale.x, -scale.y, 0, 0 ),
 };
 
 static const float2 g_texcoords[4] = 

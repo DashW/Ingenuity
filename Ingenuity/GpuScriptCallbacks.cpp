@@ -1307,7 +1307,7 @@ void GpuScriptCallbacks::GetSurfaceTexture(ScriptInterpreter * interpreter)
 	Gpu::Texture * texture = gpuSurface->GetTexture();
 
 	interpreter->ClearParams();
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(texture, ScriptTypes::GetHandle(TypeGpuTexture))));
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr(texture, ScriptTypes::GetHandle(TypeGpuTexture))));
 }
 
 void GpuScriptCallbacks::CreateModel(ScriptInterpreter * interpreter)
@@ -1481,7 +1481,7 @@ void GpuScriptCallbacks::GetBaseEffect(ScriptInterpreter * interpreter)
 {
 	Gpu::Effect * effect = interpreter->GetApp()->gpu->GetBaseEffect();
 
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(effect, ScriptTypes::GetHandle(TypeGpuEffect))));
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr(effect, ScriptTypes::GetHandle(TypeGpuEffect))));
 }
 
 void GpuScriptCallbacks::GetScreenSize(ScriptInterpreter * interpreter)

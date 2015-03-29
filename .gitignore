@@ -39,6 +39,7 @@ Ingenuity Win8/Debug/
 Ingenuity Win8/Release/
 
 Third Party/assimp-cmake/**/Debug/
+Third Party/assimp-cmake/**/Release/
 Third Party/assimp-cmake/**/*.log
 Third Party/DirectXTK 2014-04/Bin/
 Third Party/DirectXTK 2014-04/Audio/Bin/

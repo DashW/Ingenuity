@@ -440,7 +440,7 @@ int LuaInterpreter::GetMatrix(lua_State * state)
 		case '1': *result = (*matrix4)[1]; break;
 		case '2': *result = (*matrix4)[2]; break;
 		case '3': *result = (*matrix4)[3]; break;
-		default: luaL_error(state, "matrix index out of range"); return 0;
+		default: luaL_error(state, "matrix index '%c' out of range", *i); return 0;
 		}
 		lua_rawgeti(state, LUA_REGISTRYINDEX, interpreter->metatableRefs[interpreter->vector4type]);
 		lua_setmetatable(state, -2);

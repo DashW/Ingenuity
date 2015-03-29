@@ -15,7 +15,7 @@ struct IDeletingPtr
 
 	IDeletingPtr(void * ptr) : ptr(ptr), refs(0), type(0) {}
 	virtual ~IDeletingPtr() {}
-	void IncRef() { refs++; };
+	void IncRef() { ++refs; };
 	void DecRef() { if(--refs < 1){ Delete(); delete this; } }
 	virtual void Delete() = 0;
 };

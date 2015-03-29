@@ -70,7 +70,8 @@ struct PhysicsSpring
 		TorqueDamping,
 		Length,
 		Extends,
-		Compresses
+		Compresses,
+		Broken
 	};
 
 	virtual ~PhysicsSpring() {}

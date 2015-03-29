@@ -13,13 +13,13 @@ function UpdateLeapHand()
 				
 				local vtx, idx = CreateCapsule(length / (radius * 2.0));
 				local boneModel = CreateModel("PosNor",vtx,idx);
-				SetModelScale(boneModel, radius * 2.0);
+				SetMeshScale(boneModel, 0, radius * 2.0);
 				leapModels[i] = boneModel;
 				print("Created Leap Model " .. i-1);
 			end
 			local leapBoneMatrix = GetLeapBoneMatrix(leapHelper, i-1);
 			--SetPhysicsMatrix(leapPhysicals[i], leapBoneMatrix);
-			SetMeshMatrix(leapModels[i], 0, leapBoneMatrix);
+			SetModelMatrix(leapModels[i], leapBoneMatrix);
 		end
 	end
 end

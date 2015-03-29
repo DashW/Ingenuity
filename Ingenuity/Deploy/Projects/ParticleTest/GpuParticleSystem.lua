@@ -13,7 +13,10 @@ function GPUPS.Create(numParticles)
 		
 		consumerX = 50.0,
 		consumerY = 0.0,
-		consumerZ = 0.0
+		consumerZ = 0.0,
+		
+		scaleX = 0.5,
+		scaleY = 0.5
 	};
 	
 	instance.ticket = LoadAssets(
@@ -50,13 +53,13 @@ function GPUPS.Update(instance,delta)
 		SetEffectParam(instance.particleInsertEffect, 0, instance.particleBuf0);
 
 		local scale = 2.0;
-		--local randomX = (math.random() * scale) - (scale / 2.0);
-		--local randomY = (math.random() * scale) - (scale / 2.0);
-		--local randomZ = (math.random() * scale) - (scale / 2.0);
+		local randomX = (math.random() * scale) - (scale / 2.0);
+		local randomY = (math.random() * scale) - (scale / 2.0);
+		local randomZ = (math.random() * scale) - (scale / 2.0);
 		
-		local randomX = instance.consumerX - instance.emitterX;
-		local randomY = instance.consumerY - instance.emitterY;
-		local randomZ = instance.consumerZ - instance.emitterZ;
+		--local randomX = instance.consumerX - instance.emitterX;
+		--local randomY = instance.consumerY - instance.emitterY;
+		--local randomZ = instance.consumerZ - instance.emitterZ;
 
 		-- normalize vector
 		local length = math.sqrt(math.pow(randomX,2) + math.pow(randomY,2) + math.pow(randomZ,2));
@@ -88,6 +91,10 @@ function GPUPS.Update(instance,delta)
 		SetEffectParam(instance.particleUpdateEffect, 5, instance.consumerZ);
 		
 		Compute(instance.particleUpdateEffect, instance.numParticles / 512);
+		
+		local temp = instance.particleBuf0;
+		instance.particleBuf0 = instance.particleBuf1;
+		instance.particleBuf1 = temp;
 	end
 end
 
@@ -98,23 +105,21 @@ function GPUPS.Draw(instance,camera,surface)
 		local projMatrixFloats = CreateFloatArray(GetCameraProjMatrix(camera, surface));
 		local consumerFloats = CreateFloatArray(CreateVector(instance.consumerX, instance.consumerX, instance.consumerX, 1.0));
 
-		SetEffectParam(instance.particleRenderEffect, 0, instance.particleBuf1);
+		SetEffectParam(instance.particleRenderEffect, 0, instance.particleBuf0);
 		SetEffectParam(instance.particleRenderEffect, 1, viewMatrixFloats);
 		SetEffectParam(instance.particleRenderEffect, 2, projMatrixFloats);
 		SetEffectParam(instance.particleRenderEffect, 3, consumerFloats);
 		SetEffectParam(instance.particleRenderEffect, 4, instance.particleTex);
+		SetEffectParam(instance.particleRenderEffect, 5, instance.scaleX);
+		SetEffectParam(instance.particleRenderEffect, 6, instance.scaleY);
 
 		SetDepthMode("Read");
 		SetBlendMode("Additive");
 
-		DrawIndirect(instance.particleRenderEffect, instance.particleBuf1, 0, surface);
+		DrawIndirect(instance.particleRenderEffect, instance.particleBuf0, 0, surface);
 
 		SetDepthMode("ReadWrite");
 		SetBlendMode("Alpha");
-
-		local temp = instance.particleBuf0;
-		instance.particleBuf0 = instance.particleBuf1;
-		instance.particleBuf1 = temp;
 	end
 end
 

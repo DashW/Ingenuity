@@ -82,6 +82,21 @@ Audio::Item * XAudio2::Api::CreateAudioItemFromWaveFormat(tWAVEFORMATEX * wfx, c
 		newItem->sampleRate = wfx->nSamplesPerSec;
 		newItem->duration = float(bufferLength) / (float(bytesPerSample) * float(newItem->sampleRate));
 
+		// Create volume meter effect
+		IUnknown * volumeMeter;
+		XAudio2CreateVolumeMeter(&volumeMeter);
+
+		XAUDIO2_EFFECT_DESCRIPTOR effectDescriptor;
+		effectDescriptor.pEffect = volumeMeter;
+		effectDescriptor.InitialState = true;
+		effectDescriptor.OutputChannels = 2;
+
+		XAUDIO2_EFFECT_CHAIN effectChain;
+		effectChain.EffectCount = 1;
+		effectChain.pEffectDescriptors = &effectDescriptor;
+
+		newItem->sourceVoice->SetEffectChain(&effectChain);
+
 		return newItem;
 	}
 	else

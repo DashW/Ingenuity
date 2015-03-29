@@ -161,8 +161,8 @@ NewtonPhysicsWorld::~NewtonPhysicsWorld()
 
 NewtonPhysicsSpring::~NewtonPhysicsSpring()
 {
-	NewtonPhysicsObject * physicsObject1 = (NewtonPhysicsObject*)NewtonBodyGetUserData(body1);
-	NewtonPhysicsObject * physicsObject2 = (NewtonPhysicsObject*)NewtonBodyGetUserData(body2);
+	NewtonPhysicsObject * physicsObject1 = body1 ? (NewtonPhysicsObject*)NewtonBodyGetUserData(body1) : 0;
+	NewtonPhysicsObject * physicsObject2 = body2 ? (NewtonPhysicsObject*)NewtonBodyGetUserData(body2) : 0;
 
 	for(unsigned i = 0; physicsObject1 != 0 && i < physicsObject1->springs.size(); ++i)
 	{
@@ -207,7 +207,17 @@ void NewtonPhysicsObject::RemoveFromWorld()
 {
 	for(unsigned i = 0; i < springs.size(); ++i)
 	{
-		delete springs[i];
+		if(springs[i]->body1 == newtonBody)
+		{
+			springs[i]->body1 = 0;
+		}
+		else
+		{
+			springs[i]->body2 = 0;
+		}
+		springs[i]->broken = true;
+		springs.erase(springs.begin() + i);
+		--i;
 	}
 	if(newtonBody)
 	{
@@ -272,9 +282,32 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 	NewtonPhysicsObject * physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(body);
 	if(physicsObject)
 	{
+
+		glm::vec4 com;
+		glm::mat4 bodyMatrix;
+		glm::mat4 collisionMatrix;
+
+		dFloat mass;
+		dFloat Ixx;
+		dFloat Iyy;
+		dFloat Izz;
+
+		glm::vec4 veloc;
+		glm::vec4 omega;
+
+		NewtonBodyGetMatrix(body, &bodyMatrix[0][0]);
+		NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &collisionMatrix[0][0]);
+		NewtonBodyGetCentreOfMass(body, &com[0]);
+
+		NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
+		NewtonBodyGetVelocity(body, &veloc[0]);
+		NewtonBodyGetOmega(body, &omega[0]);
+
 		for(unsigned i = 0; i < physicsObject->springs.size(); ++i)
 		{
 			NewtonPhysicsSpring * spring = physicsObject->springs[i];
+
+			if(spring->broken) continue;
 
 			glm::vec4 position1(spring->attachPoint1, 1.0f);
 			if(spring->body1)
@@ -302,12 +335,6 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 			}
 
 			// add the mouse pick penalty force and torque
-			glm::vec4 com;
-			glm::mat4 bodyMatrix;
-			glm::mat4 collisionMatrix;
-			NewtonBodyGetMatrix(body, &bodyMatrix[0][0]);
-			NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &collisionMatrix[0][0]);
-			NewtonBodyGetCentreOfMass(body, &com[0]);
 
 			glm::mat4 matrix = glm::inverse(glm::transpose(bodyMatrix * collisionMatrix));
 
@@ -319,17 +346,6 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 			if(NewtonBodyGetType(body) != NEWTON_KINEMATIC_BODY)
 			{
 				// we pick a dynamics body, update by applying forces
-				dFloat mass;
-				dFloat Ixx;
-				dFloat Iyy;
-				dFloat Izz;
-
-				glm::vec4 veloc;
-				glm::vec4 omega;
-
-				NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
-				NewtonBodyGetVelocity(body, &veloc[0]);
-				NewtonBodyGetOmega(body, &omega[0]);
 
 				if((spring->extension && glm::length(displacement) > spring->length) ||
 					(spring->compression && glm::length(displacement) < spring->length))

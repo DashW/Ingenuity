@@ -18,6 +18,7 @@ public:
 	static const unsigned BONES_PER_FINGER = 4;
 	static const unsigned BONES_PER_HAND = (FINGERS_PER_HAND * BONES_PER_FINGER) + 2;
 	static const unsigned MAX_BONES = BONES_PER_HAND * 2;
+	static const unsigned MAX_FINGERS = FINGERS_PER_HAND * 2;
 	static const unsigned VIS_BUFFER_FRAMES = 2;
 
 	struct BoneData
@@ -26,6 +27,13 @@ public:
 		float length = 0.0f;
 		float width = 0.0f;
 		glm::mat4 matrix;
+	};
+
+	struct FingerData
+	{
+		unsigned visTimeout = 0;
+		glm::vec3 position;
+		glm::vec3 direction;
 	};
 
 	InternalListener() : frameDelta(0.0f), prevTimeStamp(0)
@@ -87,9 +95,14 @@ public:
 		const Leap::Frame frame = controller.frame();
 		Leap::HandList hands = frame.hands();
 
-		for(unsigned i = 0; i < MAX_BONES; i++)
+		for(unsigned i = 0; i < MAX_BONES; ++i)
 		{
-			bones[i].visTimeout = bones[i].visTimeout > 0 ? bones[i].visTimeout - 1 : 0;
+			bones[i].visTimeout -= bones[i].visTimeout > 0 ? 1 : 0;
+		}
+
+		for(unsigned i = 0; i < MAX_FINGERS; ++i)
+		{
+			fingers[i].visTimeout -= fingers[i].visTimeout > 0 ? 1 : 0;
 		}
 
 		for(Leap::HandList::const_iterator hl = hands.begin(); hl != hands.end(); ++hl) 
@@ -123,8 +136,8 @@ public:
 			}
 
 			// Get fingers
-			const Leap::FingerList fingers = hand.fingers();
-			for(Leap::FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); ++fl) {
+			const Leap::FingerList fingerList = hand.fingers();
+			for(Leap::FingerList::const_iterator fl = fingerList.begin(); fl != fingerList.end(); ++fl) {
 				const Leap::Finger & finger = *fl;
 
 				// Get finger bones
@@ -139,6 +152,12 @@ public:
 					bones[boneIndex].width = bone.width();
 					bones[boneIndex].matrix = boneMatrix;
 				}
+
+				unsigned fingerIndex = (hand.isLeft() ? 0 : FINGERS_PER_HAND) + finger.type();
+				fingers[fingerIndex].visTimeout = VIS_BUFFER_FRAMES;
+
+				memcpy(&fingers[fingerIndex].position, &finger.tipPosition(), sizeof(glm::vec3));
+				memcpy(&fingers[fingerIndex].direction, &finger.direction(), sizeof(glm::vec3));
 			}
 		}
 	}
@@ -150,6 +169,7 @@ public:
 	virtual void onServiceDisconnect(const Leap::Controller&) {}
 
 	BoneData bones[MAX_BONES];
+	FingerData fingers[MAX_FINGERS];
 	float frameDelta;
 
 	float secsPerCount;
@@ -186,6 +206,12 @@ bool LeapMotionHelper::IsBoneVisible(unsigned index)
 	return listener->bones[index].visTimeout > 0;
 }
 
+bool LeapMotionHelper::IsFingerVisible(unsigned index)
+{
+	if(index >= InternalListener::MAX_FINGERS) return false;
+	return listener->fingers[index].visTimeout > 0;
+}
+
 float LeapMotionHelper::GetBoneLength(unsigned index) const
 {
 	if(index >= InternalListener::MAX_BONES) return 0.0f;
@@ -209,6 +235,19 @@ glm::mat4 LeapMotionHelper::GetBoneMatrix(unsigned index)
 	boneMatrix[3].y += position.y;
 	boneMatrix[3].z += position.z;
 	return transform * boneMatrix;
+}
+
+glm::vec3 LeapMotionHelper::GetFingerPosition(unsigned index)
+{
+	if(index >= InternalListener::MAX_FINGERS) return glm::vec3();
+	glm::vec3 fingerPosition = listener->fingers[index].position;
+	return (fingerPosition * uniformScale) + position;
+}
+
+glm::vec3 LeapMotionHelper::GetFingerDirection(unsigned index)
+{
+	if(index >= InternalListener::MAX_FINGERS) return glm::vec3();
+	return listener->fingers[index].direction;
 }
 
 } // end namespace Ingenuity

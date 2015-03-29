@@ -7,7 +7,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <map>
 
-#include <dVector.h>
+//#include <dVector.h>
 
 class NewtonWorld;
 class NewtonBody;
@@ -103,11 +103,12 @@ struct NewtonPhysicsSpring : public PhysicsSpring
 	float length;
 	bool extension;
 	bool compression;
+	bool broken;
 
 	NewtonPhysicsSpring() :
 		body1(0), body2(0),
 		stiffness(300.0f), forceDamping(20.0f), torqueDamping(0.1f), length(0.0f),
-		extension(true), compression(false) {}
+		extension(true), compression(false), broken(false) {}
 	
 	// Needs to remove itself from the respective bodies!
 	// Likewise each body needs to destroy all its springs when it is destroyed.

@@ -7,6 +7,8 @@
     <param index="2" displayName="Projection" type="floatArray" size="16" />
     <param index="3" displayName="Consumer Location" type="floatArray" size="4" />
     <param index="4" displayName="Texture" type="tex2D" />
+    <param index="5" displayName="Scale X" type="float" default="0.5" />
+    <param index="6" displayName="Scale Y" type="float" default="0.5" />
   </params>
 
   <directx11>
@@ -20,6 +22,8 @@
       <paramMapping index="2" shader="geometry" bufferIndex="10" bufferOffset="16" />
       <paramMapping index="3" shader="geometry" bufferIndex="11" bufferOffset="0" />
       <paramMapping index="4" shader="pixel" textureIndex="0" />
+      <paramMapping index="5" shader="geometry" bufferIndex="12" bufferOffset="0" />
+      <paramMapping index="6" shader="geometry" bufferIndex="12" bufferOffset="1" />
       
       <!-- Okay, this is interesting, because I've forgotten about the StandardParams -->
       <!-- This technique doesn't fit the paradigm, because they're used in the geo shader -->

@@ -164,7 +164,6 @@ function StretchModelBetween(model,scale,startX,startY,startZ,endX,endY,endZ)
 	SetModelRotation(model,xRot,yRot,0);
 	
 	-- finally, the easy part, the length
-	-- TODO: Make the overall scale an additional parameter
 	
 	SetModelScale(model,scale,scale,length);
 end
@@ -203,4 +202,47 @@ function UpdatePixelCamera(camera,window,centerOrigin,yUpwards,near,far)
 	end
 	
 	SetCameraClipHeight(camera,near,far,cameraHeight);
+end
+
+function FutureAsset(folder,file,type)
+	future = {
+		name = folder .. ":" .. file,
+		ticket = LoadAssets(folder,file,type,folder .. ":" .. file),
+		value = nil,
+		pendingFuncs = {},
+		Update = function(self)
+			if self.ticket and IsLoaded(self.ticket) then
+				self.value = GetAsset(self.name);
+				for i,tuple in pairs(self.pendingFuncs) do
+					tuple.func(self.value,unpack(tuple.arg));
+				end
+				self.pendingFuncs = {};
+				self.ticket = nil;
+			end
+		end,
+		Finished = function(self)
+			return self.ticket == nil;
+		end,
+		Ready = function(self)
+			self:Update();
+			return self.value ~= nil;
+		end,
+		WhenReady = function(self,func,...)
+			if self.value then
+				func(self.value,...);
+			else
+				table.insert(self.pendingFuncs,{func=func,arg={...}});
+			end
+		end,
+		Progress = function(self)
+			return GetLoadProgress(self.ticket);
+		end
+	};
+	setmetatable( future, {
+		__call = function(self)
+			self:Update();
+			return self.value;
+		end
+	});
+	return future;
 end

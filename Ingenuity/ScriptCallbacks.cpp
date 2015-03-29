@@ -573,7 +573,7 @@ void ScriptCallbacks::CreateWindow(ScriptInterpreter * interpreter)
 void ScriptCallbacks::GetMainWindow(ScriptInterpreter * interpreter)
 {
 	PlatformWindow * window = interpreter->GetApp()->platform->GetMainPlatformWindow();
-	interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(window, ScriptTypes::GetHandle(TypePlatformWindow))));;
+	interpreter->PushParam(ScriptParam(new NonDeletingPtr(window, ScriptTypes::GetHandle(TypePlatformWindow))));;
 }
 
 void ScriptCallbacks::GetWindowStatus(ScriptInterpreter * interpreter)
@@ -589,7 +589,7 @@ void ScriptCallbacks::GetWindowSurface(ScriptInterpreter * interpreter)
 	Gpu::DrawSurface * surface = interpreter->GetApp()->gpu->GetWindowDrawSurface(window.GetPointer<PlatformWindow>());
 	if(surface)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(surface, ScriptTypes::GetHandle(TypeGpuDrawSurface))));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr(surface, ScriptTypes::GetHandle(TypeGpuDrawSurface))));
 	}
 }
 
@@ -747,6 +747,7 @@ void ScriptCallbacks::CreateCube(ScriptInterpreter * interpreter)
 {
 	ScriptParam texCoords = interpreter->PopParam();
 
+	// Shouldn't this default to false??
 	bool generateTexCoords = true;
 	if(texCoords.type == ScriptParam::BOOL || texCoords.IsNumber())
 	{
@@ -918,25 +919,25 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case TextureAsset:
 			{
 				Gpu::Texture * texAsset = dynamic_cast<Gpu::Texture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(texAsset, ScriptTypes::GetHandle(TypeGpuTexture))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(texAsset, ScriptTypes::GetHandle(TypeGpuTexture))));
 				break;
 			}
 			case CubeMapAsset:
 			{
 				Gpu::CubeMap * cubeAsset = dynamic_cast<Gpu::CubeMap*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(cubeAsset, ScriptTypes::GetHandle(TypeGpuCubeMap))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(cubeAsset, ScriptTypes::GetHandle(TypeGpuCubeMap))));
 				break;
 			}
 			case VolumeTexAsset:
 			{
 				Gpu::VolumeTexture * vTexAsset = dynamic_cast<Gpu::VolumeTexture*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(vTexAsset, ScriptTypes::GetHandle(TypeGpuVolumeTexture))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(vTexAsset, ScriptTypes::GetHandle(TypeGpuVolumeTexture))));
 				break;
 			}
 			case ShaderAsset:
 			{
 				Gpu::Shader * shdrAsset = dynamic_cast<Gpu::Shader*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(shdrAsset, ScriptTypes::GetHandle(TypeGpuShader))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(shdrAsset, ScriptTypes::GetHandle(TypeGpuShader))));
 				break;
 			}
 			case ModelAsset:
@@ -948,25 +949,25 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case RawHeightMapAsset:
 			{
 				HeightParser * heightParser = dynamic_cast<HeightParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(heightParser, ScriptTypes::GetHandle(TypeHeightParser))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(heightParser, ScriptTypes::GetHandle(TypeHeightParser))));
 				break;
 			}
 			case ImageAsset:
 			{
 				Image::Buffer * imgAsset = dynamic_cast<Image::Buffer*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(imgAsset, ScriptTypes::GetHandle(TypeImageBuffer))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(imgAsset, ScriptTypes::GetHandle(TypeImageBuffer))));
 				break;
 			}
 			case AudioAsset:
 			{
 				Audio::Item * audioItem = dynamic_cast<Audio::Item*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(audioItem, ScriptTypes::GetHandle(TypeAudioItem))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(audioItem, ScriptTypes::GetHandle(TypeAudioItem))));
 				break;
 			}
 			case SvgAsset:
 			{
 				SvgParser * svgParser = dynamic_cast<SvgParser*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr<false>(svgParser, ScriptTypes::GetHandle(TypeSVGParser))));
+				interpreter->PushParam(ScriptParam(new NonDeletingPtr(svgParser, ScriptTypes::GetHandle(TypeSVGParser))));
 				break;
 			}
 		}
@@ -1690,6 +1691,10 @@ void ScriptCallbacks::SetPhysicsSpringProperty(ScriptInterpreter * interpreter)
 	{
 		prop = PhysicsSpring::ForceDamping;
 	}
+	if(strcmp(name.svalue, "torqueDamping") == 0)
+	{
+		prop = PhysicsSpring::TorqueDamping;
+	}
 	if(strcmp(name.svalue, "length") == 0)
 	{
 		prop = PhysicsSpring::Length;
@@ -1702,6 +1707,10 @@ void ScriptCallbacks::SetPhysicsSpringProperty(ScriptInterpreter * interpreter)
 	{
 		prop = PhysicsSpring::Compresses;
 	}
+	if(strcmp(name.svalue, "broken") == 0)
+	{
+		prop = PhysicsSpring::Broken;
+	}
 
 	if(prop > -1)
 	{
@@ -1709,6 +1718,10 @@ void ScriptCallbacks::SetPhysicsSpringProperty(ScriptInterpreter * interpreter)
 			spring.GetPointer<PhysicsSpring>(),
 			(PhysicsSpring::Property) prop,
 			float(value.nvalue));
+	}
+	else
+	{
+		interpreter->ThrowError("Unrecognized physics spring property!");
 	}
 }
 
@@ -1759,7 +1772,7 @@ void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
 	}
 }
 
@@ -1796,7 +1809,7 @@ void ScriptCallbacks::PickPhysicsObject(ScriptInterpreter * interpreter)
 
 	if(physicsObject)
 	{
-		interpreter->PushParam(ScriptParam(new NonDeletingPtr<true>(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
+		interpreter->PushParam(ScriptParam(new NonDeletingPtr(physicsObject, ScriptTypes::GetHandle(TypePhysicsObject))));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&posVec4, sizeof(glm::vec4), 
 			interpreter->GetSpecialPtrType(ScriptInterpreter::TypeVector4))));
 		interpreter->PushParam(ScriptParam(new BufferCopyPtr(&norVec4, sizeof(glm::vec4), 
@@ -1918,6 +1931,20 @@ void ScriptCallbacks::GetLeapBoneMatrix(ScriptInterpreter * interpreter)
 	glm::mat4 matrix = leapHelper->GetBoneMatrix(unsigned(index.nvalue));
 	unsigned matrixTypeHandle = interpreter->GetSpecialPtrType(ScriptInterpreter::TypeMatrix4);
 	interpreter->PushParam(new BufferCopyPtr(&matrix, sizeof(glm::mat4), matrixTypeHandle));
+}
+
+void ScriptCallbacks::GetLeapFinger(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, TypeLeapHelper);
+	POP_NUMPARAM(2, index);
+
+	LeapMotionHelper * leapHelper = helper.GetPointer<LeapMotionHelper>();
+	glm::vec3 position = leapHelper->GetFingerPosition(unsigned(index.nvalue));
+	
+	interpreter->PushParam(ScriptParam(ScriptParam::BOOL, leapHelper->IsFingerVisible(unsigned(index.nvalue))));
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.x)));
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.y)));
+	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.z)));
 }
 
 #endif

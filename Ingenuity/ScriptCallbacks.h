@@ -201,13 +201,15 @@ public:
 		interpreter->RegisterCallback("GetLeapBoneDetails", &ScriptCallbacks::GetLeapBoneDetails,
 			"(helper,index) Returns the visibility, length and radius of the given Leap Motion bone");
 		interpreter->RegisterCallback("GetLeapBonePosition", &ScriptCallbacks::GetLeapBonePosition,
-			"(helper,index) Returns the position of the given Leap Motion bone");
+			"(helper,index) Returns the x,y,z position of the given Leap Motion bone");
 		interpreter->RegisterCallback("SetLeapPosition", &ScriptCallbacks::SetLeapPosition,
 			"(helper,x,y,z) Offsets the positions of all bones in the Leap world");
 		interpreter->RegisterCallback("SetLeapScale", &ScriptCallbacks::SetLeapScale,
 			"(helper,scale) Sets the scale of the Leap world, including bone details and matrices");
 		interpreter->RegisterCallback("GetLeapBoneMatrix", &ScriptCallbacks::GetLeapBoneMatrix,
 			"(helper,index) Returns the transformation matrix of the indexed Leap Motion bone");
+		interpreter->RegisterCallback("GetLeapFinger", &ScriptCallbacks::GetLeapFinger,
+			"(helper,index) Returns the visibility and position of the given Leap Motion finger tip");
 
 #endif
 
@@ -317,6 +319,7 @@ public:
 	static void SetLeapPosition(ScriptInterpreter*);
 	static void SetLeapScale(ScriptInterpreter*);
 	static void GetLeapBoneMatrix(ScriptInterpreter*);
+	static void GetLeapFinger(ScriptInterpreter*);
 
 #endif
 };
