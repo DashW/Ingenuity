@@ -1,3 +1,5 @@
+#ifdef USE_LEAPMOTION_HELPER
+
 #include "LeapMotionHelper.h"
 
 #include <Leap.h>
@@ -251,3 +253,5 @@ glm::vec3 LeapMotionHelper::GetFingerDirection(unsigned index)
 }
 
 } // end namespace Ingenuity
+
+#endif // USE_LEAPMOTION_HELPER

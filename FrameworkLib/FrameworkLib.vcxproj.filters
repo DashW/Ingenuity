@@ -534,6 +534,7 @@
     <FxCompile Include="Shaders\DX11\IndirectTriShaderVtx.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\DX11\ParticleSystemUpdateCurlCS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">

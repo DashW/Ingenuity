@@ -15,6 +15,8 @@ cbuffer SimulationParameters : register( b0 )
 {
 	float4 TimeFactors;
 	float4 ConsumerLocation;
+	float  Lifetime;
+	float3 Filler;
 };
 
 cbuffer ParticleCount : register( b1 )
@@ -60,7 +62,7 @@ void CSMAIN( uint3 DispatchThreadID : SV_DispatchThreadID )
 		// don't pass it to the output list if it is too close.
 		if ( r > eventHorizon )
 		{
-			if ( p.time < 30.0f )
+			if( p.time < Lifetime )
 			{
 				NewSimulationState.Append( p );
 			}

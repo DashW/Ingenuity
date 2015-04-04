@@ -40,9 +40,9 @@ function Begin()
 	NUM_PARTICLES = 512 * 512;
 	NUM_POINTS = 100;
 	
-	particles = GPUPS.Create(NUM_PARTICLES);
-	particles.scaleX = 0.05;
-	particles.scaleY = 0.05;
+	particles = GPUPS.Create(NUM_PARTICLES, 30);
+	particles.scaleX = 0.25;
+	particles.scaleY = 0.25;
 	
 	leapHelper = CreateLeapHelper();
 	SetLeapPosition(leapHelper,0,-0.5,0);
@@ -72,8 +72,8 @@ function Begin()
 	lineFloats = CreateFloatArray(NUM_POINTS * 9);
 	lineInstBuf = CreateInstanceBuffer("PosRotSca", NUM_POINTS);
 	
-	fingerInterval = 1 / 30;
-	timeSinceFinger = 0;
+	fingerInterval = 0.05;
+	timeSinceFinger = 0.0;
 	
 	appTime = 0.0;
 	
@@ -82,24 +82,43 @@ end
 function Update(secs)
 	
 	timeSinceFinger = timeSinceFinger + secs;
-	
-	if timeSinceFinger > fingerInterval then
-		local fvis, fx, fy, fz = GetLeapFinger(leapHelper,6); -- Right index finger
-		if fvis then
+    
+    if timeSinceFinger > fingerInterval then
+        local fvis, fx, fy, fz = GetLeapFinger(leapHelper,6); -- Right index finger
+        if fvis then
 			fingerPoints[fingerIndex] = { -fx, fy, fz };
-			SetFloatArray(pointFloats,(fingerIndex-1)*3,-fx,fy,fz);
+			SetFloatArray(pointFloats, (fingerIndex-1)*3, -fx, fy, fz);
 			fingerIndex = (fingerIndex % NUM_POINTS) + 1;
 			if fingerCount < NUM_POINTS then
 				fingerCount = fingerCount + 1;
 			end
-			
-			
-		end
-		UpdateInstanceBuffer(pointInstBuf,pointFloats,fingerCount);
-		timeSinceFinger = timeSinceFinger - fingerInterval;
+            UpdateInstanceBuffer(pointInstBuf,pointFloats,fingerCount);
+            timeSinceFinger = timeSinceFinger - fingerInterval;
+        end
 	end
+    
+    particles.timeSinceParticleInsert = particles.timeSinceParticleInsert + secs;
+    while fingerCount > 2 and particles.particleInsertEffect and particles.timeSinceParticleInsert > particles.particleInsertInterval do
+        
+        -- 1,  2,  3,  4,  5,  6,  7,  8
+        --                    fc  fi
+        
+        local randOffset = math.random();
+        local segmentNumber = math.floor(randOffset * (fingerCount-1));
+        local segmentIndex = ((fingerIndex + segmentNumber - fingerCount) % NUM_POINTS);
+        local segmentOffset = math.random();
+        local startPoint = fingerPoints[segmentIndex];
+        local endPoint = fingerPoints[segmentIndex+1];
+        local insertX = startPoint[1] + ((endPoint[1] - startPoint[1]) * segmentOffset);
+        local insertY = startPoint[2] + ((endPoint[2] - startPoint[2]) * segmentOffset);
+        local insertZ = startPoint[3] + ((endPoint[3] - startPoint[3]) * segmentOffset);
+        
+        GPUPS.Insert(particles, insertX, insertY, insertZ);
+        particles.timeSinceParticleInsert = particles.timeSinceParticleInsert - particles.particleInsertInterval;
+        
+    end
 	
-	GPUPS.Update(particles,secs);
+	GPUPS.Update(particles,secs,false);
 	
 	appTime = appTime + secs;
 	--particles.consumerX = (math.sin(appTime * 3.0) * 50.0) + math.random();
@@ -115,10 +134,7 @@ function Draw()
 	
 	DrawLeapHand();
 
-	--for i,point in pairs(fingerPoints) do
-		--SetModelPosition(fingerSphere, point[1], point[2], point[3]);
-		--DrawComplexModel(fingerSphere, camera, 0, 0, pointInstBuf);
-	--end
+	DrawComplexModel(fingerSphere, camera, 0, 0, pointInstBuf);
 	
 	DrawComplexModel(fingerCylinder, camera, 0, 0, lineInstBuf);
 	

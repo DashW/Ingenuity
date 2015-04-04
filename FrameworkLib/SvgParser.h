@@ -220,7 +220,7 @@ public:
 
 	bool IsFinished() { return assetTicket == -1 || assets->IsLoaded(assetTicket); }
 
-	virtual AssetType GetType() override { return SvgAsset; }
+	virtual AssetType GetAssetType() override { return SvgAsset; }
 	virtual IAsset * GetAsset() override { return this; }
 };
 

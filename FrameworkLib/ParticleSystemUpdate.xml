@@ -4,10 +4,11 @@
   <params>
     <param index="0" displayName="After State" type="paramBuffer" />
     <param index="1" displayName="Before State" type="paramBuffer" />
-    <param index="2" displayName="Time Factor" type="float" default="1.0" />
+    <param index="2" displayName="Timestep" type="float" default="1.0" />
     <param index="3" displayName="Consumer X" type="float" default="0.0" />
     <param index="4" displayName="Consumer Y" type="float" default="0.0" />
     <param index="5" displayName="Consumer Z" type="float" default="0.0" />
+    <param index="6" displayName="Lifetime" type="float" default="30.0" />
   </params>
 
   <directx11 shader="ParticleSystemUpdateCS">
@@ -21,6 +22,7 @@
     <paramMapping index="3" bufferIndex="0" bufferOffset="4" />
     <paramMapping index="4" bufferIndex="0" bufferOffset="5" />
     <paramMapping index="5" bufferIndex="0" bufferOffset="6" />
+    <paramMapping index="6" bufferIndex="0" bufferOffset="8" />
   </directx11>
 
   <!--<opengl4>

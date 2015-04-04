@@ -1,18 +1,15 @@
 
 local GPUPS = {}
 
-function GPUPS.Create(numParticles, lifetime)
-	
+function GPUPS.Create(numParticles)
 	local instance = {
 		numParticles = numParticles,
-		lifetime = lifetime,
+		particleInsertInterval = (8.0 * 30.0) / numParticles,
+		timeSinceParticleInsert = 0.0,
 		
-		particleInsertInterval = (8.0 * lifetime) / numParticles, 
-		timeSinceParticleInsert = 0.0, 
-		
-		emitterX = 0.0, 
-		emitterY = 0.0, 
-		emitterZ = 0.0, 
+		emitterX = 0.0,
+		emitterY = 0.0,
+		emitterZ = 0.0,
 		
 		consumerX = 50.0,
 		consumerY = 0.0,
@@ -24,7 +21,7 @@ function GPUPS.Create(numParticles, lifetime)
 	
 	instance.ticket = LoadAssets(
 		{"FrameworkDir", "ParticleSystemInsert.xml", "Shader", "particleInsert"},
-		{"FrameworkDir", "ParticleSystemUpdate.xml", "Shader", "particleUpdate"},
+		{"FrameworkDir", "ParticleSystemCurlUpdate.xml", "Shader", "particleUpdate"},
 		{"FrameworkDir", "ParticleSystemRender.xml", "Shader", "particleRender"},
 		{"ProjectDir", "Particle.png", "Texture", "particleTex"}
 	);
@@ -37,43 +34,9 @@ function GPUPS.Create(numParticles, lifetime)
 	instance.particleBuf1 = CreateParamBuffer(NUM_PARTICLES, 28, true);
 	
 	return instance;
-
 end
 
-function GPUPS.Insert(instance, x, y, z)
-	
-	SetEffectParam(instance.particleInsertEffect, 0, instance.particleBuf0);
-
-	local scale = 2.0;
-	local randomX = (math.random() * scale) - (scale / 2.0);
-	local randomY = (math.random() * scale) - (scale / 2.0);
-	local randomZ = (math.random() * scale) - (scale / 2.0);
-	
-	--local randomX = instance.consumerX - instance.emitterX;
-	--local randomY = instance.consumerY - instance.emitterY;
-	--local randomZ = instance.consumerZ - instance.emitterZ;
-
-	-- normalize vector
-	local length = math.sqrt(math.pow(randomX,2) + math.pow(randomY,2) + math.pow(randomZ,2));
-	randomX = randomX / length;
-	randomY = randomY / length;
-	randomZ = randomZ / length;
-
-	SetEffectParam(instance.particleInsertEffect, 1, x);
-	SetEffectParam(instance.particleInsertEffect, 2, y);
-	SetEffectParam(instance.particleInsertEffect, 3, z);
-	
-	SetEffectParam(instance.particleInsertEffect, 4, randomX);
-	SetEffectParam(instance.particleInsertEffect, 5, randomY);
-	SetEffectParam(instance.particleInsertEffect, 6, randomZ);
-	
-	Compute(instance.particleInsertEffect, 1);
-	
-end
-
-function GPUPS.Update(instance,delta,doInsert)
-	if doInsert == nil then doInsert = true end;
-	
+function GPUPS.Update(instance,delta)
 	if instance.ticket and IsLoaded(instance.ticket) then
 		instance.particleInsertEffect = CreateEffect("particleInsert");
 		instance.particleUpdateEffect = CreateEffect("particleUpdate");
@@ -84,15 +47,37 @@ function GPUPS.Update(instance,delta,doInsert)
 		instance.ticket = nil;
 	end
 	
-	if doInsert then
-		instance.timeSinceParticleInsert = instance.timeSinceParticleInsert + delta;
-	
-		if instance.particleInsertEffect and instance.timeSinceParticleInsert > instance.particleInsertInterval then
-	
-			GPUPS.Insert(instance, instance.emitterX, instance.emitterY, instance.emitterZ);
-			instance.timeSinceParticleInsert = 0.0;
-			
-		end
+	instance.timeSinceParticleInsert = instance.timeSinceParticleInsert + delta;
+
+	if instance.particleInsertEffect and instance.timeSinceParticleInsert > instance.particleInsertInterval then
+		SetEffectParam(instance.particleInsertEffect, 0, instance.particleBuf0);
+
+		local scale = 2.0;
+		local randomX = (math.random() * scale) - (scale / 2.0);
+		local randomY = (math.random() * scale) - (scale / 2.0);
+		local randomZ = (math.random() * scale) - (scale / 2.0);
+		
+		--local randomX = instance.consumerX - instance.emitterX;
+		--local randomY = instance.consumerY - instance.emitterY;
+		--local randomZ = instance.consumerZ - instance.emitterZ;
+
+		-- normalize vector
+		local length = math.sqrt(math.pow(randomX,2) + math.pow(randomY,2) + math.pow(randomZ,2));
+		randomX = randomX / length;
+		randomY = randomY / length;
+		randomZ = randomZ / length;
+
+		SetEffectParam(instance.particleInsertEffect, 1, instance.emitterX);
+		SetEffectParam(instance.particleInsertEffect, 2, instance.emitterY);
+		SetEffectParam(instance.particleInsertEffect, 3, instance.emitterZ);
+		
+		SetEffectParam(instance.particleInsertEffect, 4, randomX);
+		SetEffectParam(instance.particleInsertEffect, 5, randomY);
+		SetEffectParam(instance.particleInsertEffect, 6, randomZ);
+		
+		Compute(instance.particleInsertEffect, 1);
+		
+		instance.timeSinceParticleInsert = 0.0;
 	end
 	
 	if instance.particleUpdateEffect then
@@ -111,13 +96,10 @@ function GPUPS.Update(instance,delta,doInsert)
 		instance.particleBuf0 = instance.particleBuf1;
 		instance.particleBuf1 = temp;
 	end
-	
 end
 
 function GPUPS.Draw(instance,camera,surface)
-	
 	assert(camera and surface, "GPUPS.Draw needs both camera and surface!");
-	
 	if instance.particleRenderEffect then
 		local viewMatrixFloats = CreateFloatArray(GetCameraViewMatrix(camera));
 		local projMatrixFloats = CreateFloatArray(GetCameraProjMatrix(camera, surface));
@@ -139,7 +121,6 @@ function GPUPS.Draw(instance,camera,surface)
 		SetDepthMode("ReadWrite");
 		SetBlendMode("Alpha");
 	end
-	
 end
 
 return GPUPS;
