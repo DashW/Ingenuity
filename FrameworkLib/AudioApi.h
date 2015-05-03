@@ -25,6 +25,7 @@ public:
 	virtual void Pause(Item * item = 0) = 0;
 	virtual void Stop(Item * item = 0) = 0;
 	virtual void SetVolume(Item * item, float volume) = 0;
+	virtual void SetSpeed(Item * item, float speed) {}
 
 	virtual float GetAmplitude(Item * item = 0) = 0;
 	virtual float GetDuration(Item * item) = 0;

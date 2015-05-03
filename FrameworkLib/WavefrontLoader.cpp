@@ -190,6 +190,7 @@ void WavefrontLoader::Step()
 						if(genDebugMesh && i == 0) GenerateDebugMesh(lmesh);
 					}
 
+					model->models[1].color = mtl->color;
 					model->models[i].texture = mtl->tex;
 				}
 			}

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="ParticleSystemUpdate" type="compute">
+
+  <params>
+    <param index="0" displayName="After State" type="paramBuffer" />
+    <param index="1" displayName="Before State" type="paramBuffer" />
+    <param index="2" displayName="Timestep" type="float" default="1.0" />
+    <param index="3" displayName="Lifetime" type="float" default="30.0" />
+    <param index="4" displayName="Running Time" type="float" default="0.0" />
+    <param index="5" displayName="Turbulence" type="float" default="0.2" />
+    <param index="6" displayName="Noise Scale" type="float" default="0.075" />
+    <param index="7" displayName="Noise Position Scale" type="float" default="1.5" />
+    <param index="8" displayName="Noise Time Scale" type="float" default="0.00025" />
+    <param index="9" displayName="Speed X" type="float" default="2.0" />
+    <param index="10" displayName="Speed Y" type="float" default="0.0" />
+    <param index="11" displayName="Speed Z" type="float" default="0.0" />
+  </params>
+
+  <directx11 shader="ParticleSystemUpdateCurlCS">
+    <!-- Is stride needed any more? Could be used for validation? -->
+    <paramMapping index="0" attribute="self" bufferIndex="0" stride="7" writeable="true" />
+    
+    <paramMapping index="1" attribute="self" bufferIndex="1" stride="7" writeable="true" />
+    <paramMapping index="1" attribute="size" bufferIndex="1" bufferOffset="0" />
+
+    <paramMapping index="2" bufferIndex="0" bufferOffset="1" />
+    <paramMapping index="3" bufferIndex="0" bufferOffset="0" />
+    <paramMapping index="4" bufferIndex="0" bufferOffset="2" />
+    <paramMapping index="5" bufferIndex="0" bufferOffset="3" />
+    <paramMapping index="6" bufferIndex="0" bufferOffset="4" />
+    <paramMapping index="7" bufferIndex="0" bufferOffset="5" />
+    <paramMapping index="8" bufferIndex="0" bufferOffset="6" />
+    <paramMapping index="9" bufferIndex="0" bufferOffset="8" />
+    <paramMapping index="10" bufferIndex="0" bufferOffset="9" />
+    <paramMapping index="11" bufferIndex="0" bufferOffset="10" />
+  </directx11>
+
+  <!--<opengl4>
+  </opengl4>-->
+
+</shader>
+

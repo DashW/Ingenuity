@@ -110,6 +110,7 @@ public:
 	virtual void         OpenAndRead(Directory * directory, const wchar_t * file, Response * response) = 0;
 	virtual void         Read(File * file, Response * response) = 0;
 	virtual const char * ReadChars(File * file, unsigned & length, int offset = -1) = 0;
+	virtual void         Write(Directory * directory, const wchar_t * file, char * data, unsigned dataLength) = 0;
 	virtual void         Close(File ** file) = 0;
 
 	virtual std::string  ReadLine(File * file, int offset = -1)

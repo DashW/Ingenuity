@@ -13,6 +13,7 @@ namespace Ingenuity {
 
 ScriptConsole::ScriptConsole(ScriptInterpreter * interpreter, Gpu::Api * gpu)
 	: interpreter(interpreter)
+	, prevInputIndex(0)
 {
 	// Source Code Pro?	BPmono?
 	displayFont = gpu->CreateGpuFont(20, L"Courier New", Gpu::FontStyle_Bold);
@@ -33,6 +34,22 @@ ScriptConsole::~ScriptConsole()
 
 void ScriptConsole::ProcessInput(KeyState &keystate)
 {
+	if(keystate.downKeys[0x48]) // up
+	{
+		if(prevInputIndex < previousInputs.size())
+		{
+			prevInputIndex++;
+		}
+		inputString = previousInputs[previousInputs.size() - prevInputIndex];
+	}
+	if(keystate.downKeys[0x50]) // down
+	{
+		if(prevInputIndex > 0)
+		{
+			prevInputIndex--;
+		}
+		inputString = (prevInputIndex > 0 ? previousInputs[previousInputs.size() - prevInputIndex] : "");
+	}
 	for(size_t i = 0; i < keystate.text.length(); i++)
 	{
 		if(keystate.text[i] == '\b') // backspace
@@ -44,6 +61,12 @@ void ScriptConsole::ProcessInput(KeyState &keystate)
 		}
 		else if(keystate.text[i] == '\r') // enter
 		{
+			if(previousInputs.size() >= 20) 
+			{
+				previousInputs.erase(previousInputs.begin());
+			}
+			previousInputs.push_back(inputString);
+			prevInputIndex = 0;
 			interpreter->GetLogger().Log("%s\n", inputString.c_str());
 			interpreter->RunCommand(inputString.c_str());
 			inputString.erase();

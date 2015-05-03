@@ -4,9 +4,15 @@
 #include "FilesApi.h"
 #include "GpuApi.h"
 
-#include "assimp/Importer.hpp"
+#include "ModelEncoder.h"
 
 struct aiNode;
+struct aiScene;
+
+namespace Assimp
+{
+	class Importer;
+}
 
 namespace Ingenuity
 {
@@ -36,7 +42,7 @@ private:
 
 private:
 	AssimpIOSystem * assimpIoSystem;
-	Assimp::Importer assimpImporter;
+	Assimp::Importer * assimpImporter;
 	const aiScene * assimpScene;
 
 	AssetMgr * assets;
@@ -69,6 +75,8 @@ public:
 	virtual float GetProgress() override;
 	virtual bool IsFinished() override;
 	virtual IAsset * GetAsset() override;
+
+	std::vector<ModelEncoder::ModelMeta> ToEncoderModels();
 };
 
 } // namespace Ingenuity

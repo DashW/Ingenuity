@@ -34,6 +34,7 @@ Ingenuity/Deploy/*
 !Ingenuity/Deploy/Projects
 !Ingenuity/Deploy/config.xml
 Ingenuity/Deploy/Projects/**/Workshop Room
+Ingenuity/Deploy/Projects/**/Modified Room
 
 Ingenuity Win8/Debug/
 Ingenuity Win8/Release/

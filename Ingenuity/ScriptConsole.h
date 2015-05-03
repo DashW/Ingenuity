@@ -22,6 +22,8 @@ private:
 	Gpu::Font * displayFont;
 	Gpu::Font * shadowFont;
 	std::string inputString;
+	std::vector<std::string> previousInputs;
+	unsigned prevInputIndex;
 };
 
 } // namespace Ingenuity

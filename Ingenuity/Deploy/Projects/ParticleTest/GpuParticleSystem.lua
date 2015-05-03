@@ -1,13 +1,13 @@
 
 local GPUPS = {}
 
-function GPUPS.Create(numParticles, lifetime)
+function GPUPS.Create(numParticles, lifetime, period)
 	
 	local instance = {
 		numParticles = numParticles,
 		lifetime = lifetime,
 		
-		particleInsertInterval = (8.0 * lifetime) / numParticles, 
+		particleInsertInterval = period, 
 		timeSinceParticleInsert = 0.0, 
 		
 		emitterX = 0.0, 
@@ -105,6 +105,8 @@ function GPUPS.Update(instance,delta,doInsert)
 		SetEffectParam(instance.particleUpdateEffect, 4, instance.consumerY);
 		SetEffectParam(instance.particleUpdateEffect, 5, instance.consumerZ);
 		
+		SetEffectParam(instance.particleUpdateEffect, 6, instance.lifetime);
+		
 		Compute(instance.particleUpdateEffect, instance.numParticles / 512);
 		
 		local temp = instance.particleBuf0;
@@ -130,6 +132,7 @@ function GPUPS.Draw(instance,camera,surface)
 		SetEffectParam(instance.particleRenderEffect, 4, instance.particleTex);
 		SetEffectParam(instance.particleRenderEffect, 5, instance.scaleX);
 		SetEffectParam(instance.particleRenderEffect, 6, instance.scaleY);
+		SetEffectParam(instance.particleRenderEffect, 7, instance.lifetime);
 
 		SetDepthMode("Read");
 		SetBlendMode("Additive");

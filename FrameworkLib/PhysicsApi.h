@@ -106,7 +106,7 @@ public:
 	virtual void UpdateWorld(PhysicsWorld * world, float deltaTime) = 0;
 
 	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, 
-		glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot) = 0;
+		glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot, float friction = 0.0f) = 0;
 	virtual void FinalizeRagdoll(PhysicsRagdoll * ragdoll) = 0;
 
 	virtual glm::vec3 GetPosition(PhysicsObject * object) = 0;
@@ -116,6 +116,7 @@ public:
 	virtual glm::mat4 GetLocalMatrix(PhysicsObject * object) = 0;
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) = 0;
 
+	virtual void SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float linearDrag) = 0;
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) = 0;
 	virtual void SetLocalRotation(PhysicsObject * object, glm::vec3 rotation) = 0;
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) = 0;
@@ -126,7 +127,8 @@ public:
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) = 0;
 	virtual void SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value) = 0;
 
-	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) = 0;
+	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, 
+		glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) = 0;
 
 	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) = 0;
 };

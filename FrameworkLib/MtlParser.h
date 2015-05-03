@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#define GLM_FORCE_RADIANS
+#include "../Third Party/glm-0.9.5.4/glm/glm.hpp"
+
 namespace Ingenuity {
 
 class AssetMgr;
@@ -33,7 +36,9 @@ struct WavefrontMtl
 	Gpu::Texture * tex;
 	Gpu::Texture * normal;
 
-	WavefrontMtl() : tex(0), normal(0) {}
+	glm::vec4 color;
+
+	WavefrontMtl() : tex(0), normal(0), color(1.0f) {}
 };
 
 class MtlParser
@@ -60,6 +65,7 @@ public:
 	void ParseLine(std::string line);
 
 	std::string GetArguments(std::string line, const char * command, int pos);
+	std::vector<std::string> Tokenize(const std::string& str, const std::string& delimiters = " ");
 
 	bool IsReady() { return ready; }
 

@@ -15,19 +15,24 @@ ConsumeStructuredBuffer<Particle>   CurrentSimulationState  : register( u1 );
 
 cbuffer cbuf : register(b0)
 {
-	uint u_numParticles;
-	int u_octaves;
-	float2 u_resolution;
-
+	float u_lifetime;
 	float u_deltaTime;
 	float u_time;
 	float u_persistence;
-	float u_noisePositionScale;
 
-	float u_noiseTimeScale;
 	float u_noiseScale;
-	float u_baseSpeed;
-	float u_filler;
+	float u_noisePositionScale;
+	float u_noiseTimeScale;
+	float u_filler1;
+
+	float3 u_baseSpeed;
+	float u_filler2;
+}
+
+cbuffer gpuBuf : register(b1)
+{
+	uint u_numParticles;
+	float3 u_filler;
 }
 
 float4 mod289(float4 x) { return x - floor(x * (1.0f / 289.0f)) * 289.0f; }
@@ -131,7 +136,6 @@ float4 simplexNoiseDerivatives(float4 v) {
 }
 
 [numthreads(512, 1, 1)]
-
 void CSMAIN(uint3 DispatchThreadID : SV_DispatchThreadID)
 {
 	// Check for if this thread should run or not.
@@ -152,7 +156,8 @@ void CSMAIN(uint3 DispatchThreadID : SV_DispatchThreadID)
 
 		float persistence = u_persistence;
 
-		for(int i = 0; i < u_octaves; ++i) {
+		[unroll]
+		for(int i = 0; i < 3; ++i) { // 3 octaves
 			float scale = (1.0 / 2.0) * pow(2.0, float(i));
 
 			float noiseScale = pow(persistence, float(i));
@@ -172,12 +177,12 @@ void CSMAIN(uint3 DispatchThreadID : SV_DispatchThreadID)
 			yNoisePotentialDerivatives[0] - xNoisePotentialDerivatives[1]
 			) * u_noiseScale;
 
-		float3 velocity = float3(u_baseSpeed, 0.0, 0.0);
+		float3 velocity = u_baseSpeed;
 		float3 totalVelocity = velocity + noiseVelocity;
 
 		p.position = oldPosition + totalVelocity * u_deltaTime;
 		p.time += u_deltaTime;
-		if(p.time < 30.0f)
+		if(p.time < u_lifetime)
 		{
 			NewSimulationState.Append(p);
 		}

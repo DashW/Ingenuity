@@ -1,6 +1,6 @@
 
 Require("ProjectDir","../../Common/IngenUtils.lua");
-Require("ProjectDir","Marionette2.lua");
+Require("ProjectDir","Marionette3.lua");
 
 function UpdateLeapHand()
 	for i = 1,GetLeapNumBones(leapHelper) do
@@ -15,7 +15,7 @@ function UpdateLeapHand()
 				local boneModel = CreateModel("PosNor",vtx,idx);
 				SetMeshScale(boneModel, 0, radius * 2.0);
 				leapModels[i] = boneModel;
-				print("Created Leap Model " .. i-1);
+				--print("Created Leap Model " .. i-1);
 			end
 			local leapBoneMatrix = GetLeapBoneMatrix(leapHelper, i-1);
 			--SetPhysicsMatrix(leapPhysicals[i], leapBoneMatrix);
@@ -59,6 +59,7 @@ function Begin()
 	skyModel = CreateSkyCube();
 
 	physicsWorld = CreatePhysicsWorld();
+	SetPhysicsConstants(physicsWorld,0,-10,0,0.8);
 
 	--physicsCube = CreatePhysicsCuboid(2,2,2,false);
 	physicsFloor = CreatePhysicsCuboid(10,1,10,false);
@@ -154,7 +155,7 @@ function Update(delta)
 	
 	UpdatePhysicsWorld(physicsWorld,delta);
 
-	UpdateMarionette();
+	UpdateMarionette(delta);
 	
 	--down,pressed,released = GetMouseLeft();
 	--if pickedObject and down then

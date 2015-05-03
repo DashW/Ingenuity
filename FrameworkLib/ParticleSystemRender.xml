@@ -9,6 +9,7 @@
     <param index="4" displayName="Texture" type="tex2D" />
     <param index="5" displayName="Scale X" type="float" default="0.5" />
     <param index="6" displayName="Scale Y" type="float" default="0.5" />
+    <param index="7" displayName="Lifetime" type="float" default="30.0" />
   </params>
 
   <directx11>
@@ -24,6 +25,7 @@
       <paramMapping index="4" shader="pixel" textureIndex="0" />
       <paramMapping index="5" shader="geometry" bufferIndex="12" bufferOffset="0" />
       <paramMapping index="6" shader="geometry" bufferIndex="12" bufferOffset="1" />
+      <paramMapping index="7" shader="vertex" bufferIndex="10" bufferOffset="0" />
       
       <!-- Okay, this is interesting, because I've forgotten about the StandardParams -->
       <!-- This technique doesn't fit the paradigm, because they're used in the geo shader -->

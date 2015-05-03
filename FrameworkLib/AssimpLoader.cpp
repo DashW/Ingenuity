@@ -2,6 +2,7 @@
 
 #include "assimp/vector3.h"
 #include "assimp/cimport.h"
+#include "assimp/Importer.hpp"
 #include "assimp/IOStream.hpp"
 #include "assimp/IOSystem.hpp"
 #include "assimp/matrix4x4.h"
@@ -156,6 +157,7 @@ AssimpLoader::AssimpLoader(
 		const wchar_t * path, 
 		AssetType type)
 	: SteppableLoader(steppables, dir, path, type)
+	, assimpImporter(0)
 	, assimpScene(0)
 	, assets(assets)
 	, gpu(gpu)
@@ -173,13 +175,19 @@ AssimpLoader::AssimpLoader(
 
 	assimpIoSystem->SetDirectory(directory);
 
-	assimpImporter.SetIOHandler(assimpIoSystem);
-	assimpImporter.SetProgressHandler(new AssimpProgressHandler(this));
+	assimpImporter = new Assimp::Importer();
+	assimpImporter->SetIOHandler(assimpIoSystem);
+	assimpImporter->SetProgressHandler(new AssimpProgressHandler(this));
 }
 
 AssimpLoader::~AssimpLoader()
 {
+	for(unsigned i = 0; i < localMeshes.size(); ++i)
+	{
+		delete localMeshes[i];
+	}
 
+	delete assimpImporter;
 }
 
 void AssimpLoader::ProcessMaterials(const aiScene * sc)
@@ -235,6 +243,8 @@ void AssimpLoader::ProcessLoadedTextures()
 
 void AssimpLoader::TraverseScene(const aiScene * sc)
 {
+	glm::mat4 rootTransform = glm::scale(glm::vec3(1.0f, 1.0f, -1.0f));
+
 	TraverseNode(assimpScene, assimpScene->mRootNode, glm::mat4());
 
 	resultModel = new Gpu::ComplexModel(localMeshes.size());
@@ -242,7 +252,7 @@ void AssimpLoader::TraverseScene(const aiScene * sc)
 	for(unsigned i = 0; i < localMeshes.size(); ++i)
 	{
 		resultModel->models[i].boundingSphere = GeoBuilder().GenerateBoundingSphere(localMeshes[i]->vertexBuffer);
-		resultModel->models[i].mesh = localMeshes[i]->GpuOnly(gpu);
+		resultModel->models[i].mesh = localMeshes[i]->ToGpuMesh(gpu);
 		resultModel->models[i].destructMesh = true;
 
 		if(meshMaterials[i] < materials.size())
@@ -378,7 +388,7 @@ void AssimpLoader::Load()
 {
 	std::string sPath(path.begin(), path.end());
 
-	assimpScene = assimpImporter.ReadFile(sPath, aiProcess_Triangulate | aiProcess_FlipUVs);
+	assimpScene = assimpImporter->ReadFile(sPath, aiProcess_Triangulate | aiProcess_FlipUVs);
 }
 
 void AssimpLoader::Step()
@@ -418,6 +428,47 @@ bool AssimpLoader::IsFinished()
 IAsset * AssimpLoader::GetAsset()
 {
 	return resultModel;
+}
+
+std::vector<ModelEncoder::ModelMeta> AssimpLoader::ToEncoderModels()
+{
+	std::vector<ModelEncoder::ModelMeta> modelMetas;
+
+	if(resultModel != 0)
+	{
+		for(unsigned i = 0; i < localMeshes.size(); ++i)
+		{
+			ModelEncoder::ModelMeta modelMeta;
+			modelMeta.mesh = localMeshes[i];
+
+			if(meshMaterials[i] < materials.size())
+			{
+				AssimpMaterial & mat = materials[meshMaterials[i]];
+
+				if(mat.diffuseTexturePath.length() < 256)
+				{
+					wcscpy_s(modelMeta.diffuseTexturePath, mat.diffuseTexturePath.c_str());
+				}
+				if(mat.normalTexturePath.length() < 256)
+				{
+					wcscpy_s(modelMeta.normalTexturePath, mat.normalTexturePath.c_str());
+				}
+				if(mat.cubeTexturePath.length() < 256)
+				{
+					wcscpy_s(modelMeta.cubeTexturePath, mat.cubeTexturePath.c_str());
+				}
+				modelMeta.diffuseColor = mat.diffuseColor;
+			}
+			else
+			{
+				modelMeta.diffuseColor = glm::vec4(1.0f);
+			}
+
+			modelMetas.push_back(modelMeta);
+		}
+	}
+
+	return modelMetas;
 }
 
 } // end namespace Ingenuity

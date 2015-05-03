@@ -1,6 +1,94 @@
 
 Require("ProjectDir","../../Common/IngenUtils.lua");
-Require("ProjectDir","Marionette2.lua");
+Require("ProjectDir","../../Common/Easing.lua","Easing");
+Require("ProjectDir","../../Common/LuaGen.lua","LG");
+Require("ProjectDir","Marionette3.lua");
+Require("ProjectDir","GpuParticleSystemCurl.lua","GPUPS");
+
+-- Okay, how to do the choreography...
+-- 1. More than one tweened camera movement should be possible per shot
+-- 2. Should be able to jump to any specific shot through the console
+-- 3. Should be able to cue actions within a shot using one or more 'magic buttons'
+-- 4. Should be able to trigger restrings, special effects, physics properties etc.
+
+-- Functions?
+
+function ResetPerformanceCamera()
+	SetCameraPosition(performanceCamera,-0.5,0.5,2);
+    SetCameraTarget(performanceCamera,0,-0.5,0);
+    SetCameraClipFov(performanceCamera,0.01,200,0.78539);
+end
+
+setupCS1 = true;
+function CS1(progress)
+	if setupCS1 then
+		PlaySound(waterLily);
+		SetLightColor(light,0,0,0);
+		setupCS1 = false;
+	end
+	
+	local cameraPos1 = CreateVector(-0.21, 0.05,-0.55, 1);
+	local cameraTgt1 = CreateVector(-0.46, 0.14,-1.48, 1);
+	local cameraPos2 = CreateVector( 0.47,-0.09, 0.95, 1);
+	local cameraTgt2 = CreateVector(-0.32,-0.32,-0.69, 1);
+	
+	if progress >= 12.5 then Cutscene(csPanAcrossTable) end
+	
+	local cameraPos = Easing.linear(progress, cameraPos1, cameraPos2 - cameraPos1, 12.2);
+	local cameraTgt = Easing.linear(progress, cameraTgt1, cameraTgt2 - cameraTgt1, 12.2);
+	
+	SetCameraPosition(performanceCamera, cameraPos.x, cameraPos.y, cameraPos.z);
+	SetCameraTarget(performanceCamera, cameraTgt.x, cameraTgt.y, cameraTgt.z);
+	
+	if progress > 4 then
+		local lightColor = Easing.linear(progress-4, 0, 1, 8.2);
+		SetLightColor(light, lightColor,lightColor,lightColor);
+	end
+end
+
+function csPanAcrossTable(progress)
+	cameraPos1 = CreateVector(0.911497669614,-0.087275455240438,0.83127248782394, 1);
+	cameraTgt1 = CreateVector(0.70341969155019,-0.364396330297,-0.12952861900218, 1);
+	cameraPos2 = CreateVector(-2.2794403279456,-0.21917106436887,0.62660954712759, 1);   
+	cameraTgt2 = CreateVector(-1.8509603484754,-0.4088118956667,-0.25681631976669, 1);   
+
+	if progress >= 10 then Cutscene(csDownFromSky) end
+	
+	local cameraPos = Easing.linear(progress, cameraPos1, cameraPos2 - cameraPos1, 10);
+	local cameraTgt = Easing.linear(progress, cameraTgt1, cameraTgt2 - cameraTgt1, 10);
+	
+	SetCameraPosition(performanceCamera, cameraPos.x, cameraPos.y, cameraPos.z);
+	SetCameraTarget(performanceCamera, cameraTgt.x, cameraTgt.y, cameraTgt.z);
+end
+
+function csDownFromSky(progress)
+	cameraPos1 = CreateVector(1.5827534542447,1.214914791749,0.84395068446955,1)   
+	cameraTgt1 = CreateVector(1.2603276908486,0.43734207299804,0.30411525199706,1)   
+	cameraPos2 = CreateVector(-1.5789526447216,-0.89242552215229,0.72446486428968,1)   
+	cameraTgt2 = CreateVector(-1.37401389805484,-1.0228492308904,-0.21987705600876,1)
+
+	if progress >= 12 then progress = 12 end
+	
+	local cameraPos = Easing.linear(progress, cameraPos1, cameraPos2 - cameraPos1, 12);
+	local cameraTgt = Easing.linear(progress, cameraTgt1, cameraTgt2 - cameraTgt1, 12);
+	
+	SetCameraPosition(performanceCamera, cameraPos.x, cameraPos.y, cameraPos.z);
+	SetCameraTarget(performanceCamera, cameraTgt.x, cameraTgt.y, cameraTgt.z);
+	SetCameraClipFov(performanceCamera, 0.01, 20, 0.985);
+end
+
+function csLookAroundRoom(progress)
+	
+end
+
+function csRevealCar(progress)
+	drawCar = true;
+end
+
+function Cutscene(cutsceneFunc)
+	cutsceneTimer = 0;
+	cutsceneFunction = cutsceneFunc;
+end
 
 function UpdateLeapHand()
 	for i = 1,GetLeapNumBones(leapHelper) do
@@ -8,9 +96,6 @@ function UpdateLeapHand()
 		leapVisibilities[i] = visible;
 		if visible then
 			if leapModels[i] == nil then
-				--leapPhysicals[i] = CreatePhysicsCapsule(radius, length, false);
-				--AddToPhysicsWorld(physicsWorld,leapPhysicals[i],true);
-				
 				local vtx, idx = CreateCapsule(length / (radius * 2.0));
 				local boneModel = CreateModel("PosNor",vtx,idx);
 				SetMeshScale(boneModel, 0, radius * 2.0);
@@ -18,7 +103,6 @@ function UpdateLeapHand()
 				print("Created Leap Model " .. i-1);
 			end
 			local leapBoneMatrix = GetLeapBoneMatrix(leapHelper, i-1);
-			--SetPhysicsMatrix(leapPhysicals[i], leapBoneMatrix);
 			SetModelMatrix(leapModels[i], leapBoneMatrix);
 		end
 	end
@@ -36,43 +120,38 @@ function Begin()
 	assetTicket = LoadAssets(
 		{"FrameworkDir","SkyShader.xml","Shader","skyshader"},
 		{"FrameworkDir","ShadowLit.xml","Shader","shadowShader"},
+		{"FrameworkDir","NoiseReveal.xml","Shader","noiseReveal"},
+		
 		{"ProjectDir","Stars2.dds","CubeMap","skymap"},
+		
 		{"ProjectDir","stonefloor.bmp","Texture","floortex"},
-		{"ProjectDir","Modified Room/ModifiedRoom.obj","ColladaModel","roomModel"},
-		{"ProjectDir","Modified Room/ModifiedTools.obj","ColladaModel","toolsModel"}
+		{"ProjectDir","Noise2D.dds","Texture","noiseTex"},
+		
+		{"ProjectDir","Models/room/roomModel.inm","IngenuityModel","roomModel"},
+		{"ProjectDir","Models/tools/toolsModel.inm","IngenuityModel","toolsModel"},
+		{"ProjectDir","Models/car/carModel2.inm","IngenuityModel","carModel"},
+		
+		{"ProjectDir","Music/Water Lily.wav","WavAudio","waterLily"}
 	);
 
 	camera = CreateCamera();
 	SetCameraClipFov(camera,0.01,200,0.78539);
 	SetupFlyCamera(camera, 0, 0,-2, 0.01, 1);
 
-	--cubeModel = CreateModel("PosNorTex",CreateCube());
-	--SetMeshColor(cubeModel,0,1.0,0.0,0.0);
-	--SetModelPosition(cubeModel,0.0,4.0,0.0);
-	--SetModelRotation(cubeModel,0.0,0.0,1.0);
-
 	floorModel = CreateModel("PosNorTex",CreateCube());
-	SetModelScale(floorModel,5,0.5,5);
-	SetModelPosition(floorModel,0,-1,0);
+	SetModelScale(floorModel,1.0,0.5,1.0);
+	SetModelPosition(floorModel,0,-1,-0.5);
 	--SetMeshColor(floorModel,0,0.0,1.0,0.0);
 
 	skyModel = CreateSkyCube();
 
 	physicsWorld = CreatePhysicsWorld();
 
-	--physicsCube = CreatePhysicsCuboid(2,2,2,false);
-	physicsFloor = CreatePhysicsCuboid(10,1,10,false);
+	physicsFloor = CreatePhysicsCuboid(2,1,2,false);
 
-	--woodMaterial = CreatePhysicsMaterial(0.63,0.95,0.7,0.32);
-	--SetPhysicsMaterial(physicsCube, woodMaterial);
-
-	--AddToPhysicsWorld(physicsWorld,physicsCube,false);
 	AddToPhysicsWorld(physicsWorld,physicsFloor,true);
 
-	--SetPhysicsPosition(physicsCube,0,0,0);
-	--SetPhysicsRotation(physicsCube,0,0,1);
-
-	SetPhysicsPosition(physicsFloor,0,-1,0);
+	SetPhysicsPosition(physicsFloor,0,-1,-0.5);
 	SetPhysicsRotation(physicsFloor,0,0,0);
 	
 	physicsRagdoll = CreateMarionette(physicsWorld);
@@ -110,29 +189,45 @@ function Begin()
 	--SetWindowProps(performanceWindow,nil,nil,true); -- Set performance window undecorated!
 	
 	performanceCamera = CreateCamera();
-	SetCameraPosition(performanceCamera,0,-2,4);
-	SetCameraTarget(performanceCamera,0,-2.5,0);
-	SetCameraClipFov(performanceCamera,0.01,200,0.78539);
+	ResetPerformanceCamera();
 	
 	spriteCamera = CreateSpriteCamera(true,false,true);
 	
 	performanceSurface = CreateSurface(1.0,1.0,performanceWindow);
 	
 	performanceQuad = CreateSpriteModel(GetSurfaceTexture(performanceSurface));
+	
+	cutsceneTimer = 0;
+	
+	drawCar = false;
 end
 
 function Update(delta)
 	if IsLoaded(assetTicket) then
 		skyEffect = CreateEffect("skyshader");
 		shadowEffect = CreateEffect("shadowShader");
+		revealEffect = CreateEffect("noiseReveal");
 		skyMap = GetAsset("skymap");
 		floorTex = GetAsset("floortex");
+		noiseTex = GetAsset("noiseTex");
 		roomModel = GetAsset("roomModel");
 		toolsModel = GetAsset("toolsModel");
+		carModel = GetAsset("carModel");
+		waterLily = GetAsset("waterLily");
 
 		if skyEffect then
 			SetMeshCubeMap(skyModel,0,skyMap);
 			SetMeshEffect(skyModel,0,skyEffect);
+		end
+		
+		if carModel then
+			SetModelScale(carModel,0.3)
+			SetModelPosition(carModel,0,-0.6,0)
+			SetModelRotation(carModel,0,-PI_2,0)
+		end
+		
+		if revealEffect then
+			SetEffectParam(revealEffect,0,noiseTex);
 		end
 
 		SetMeshTexture(floorModel,0,floorTex);
@@ -142,19 +237,9 @@ function Update(delta)
 	
 	UpdateLeapHand();
 	
-	--if not leapAccum then
-	--	leapAccum = CreateAccumulator();
-	--	leapFrameTime = 0;
-	--end
-	--leapAccum:Add(GetLeapFrameTime(leapHelper));
-	--if leapAccum:Sum() > 0.5 then
-	--	leapFrameTime = leapAccum:Average();
-	--	leapAccum:Clear(0.5);
-	--end
-	
 	UpdatePhysicsWorld(physicsWorld,delta);
 
-	UpdateMarionette();
+	UpdateMarionette(delta);
 	
 	--down,pressed,released = GetMouseLeft();
 	--if pickedObject and down then
@@ -186,7 +271,7 @@ function Update(delta)
 			currentlyFullscreen = false;
 		else
 			previousWidth, previousHeight = GetBackbufferSize();
-			newWidth, newHeight = GetDesktopSize(performanceWindow);
+			newWidth, newHeight = GetMonitorSize(performanceWindow);
 			print("Resizing window to " .. newWidth .. ", " .. newHeight);
 			SetWindowProps(performanceWindow, newWidth, newHeight, true);
 			currentlyFullscreen = true;
@@ -194,19 +279,17 @@ function Update(delta)
 	end
 	
 	if roomModel and toolsModel then
-		SetModelPosition(roomModel,0,-2.04,-1.5);
-		SetModelPosition(toolsModel,0,-2.04,-1.5);
-		SetModelScale(roomModel,0.4);
-		SetModelScale(toolsModel,0.4);
+		SetModelPosition(roomModel,0,-1.59,-0.95);
+		SetModelPosition(toolsModel,0,-1.59,-0.95);
+		SetModelScale(roomModel,0.285);
+		SetModelScale(toolsModel,0.285);
 	end
 	
-	SetCameraPosition(performanceCamera,-0.5,0.5,2);
-	SetCameraTarget(performanceCamera,0,-0.5,0);
-	SetCameraClipFov(performanceCamera,0.01,200,0.78539);
+	ResetPerformanceCamera();
 	
-	lightPosX = -math.sin(2.5) * 2.0;
-	lightPosY = 1.7;
-	lightPosZ = -math.cos(2.5) * 2.0;
+	lightPosX = -math.sin(2.5) * 1.2;
+	lightPosY = 1.0;
+	lightPosZ = -math.cos(2.5) * 1.2;
 	
 	SetLightPosition(light,lightPosX,lightPosY,lightPosZ)
 	SetLightDirection(light,-lightPosX,-lightPosY,-lightPosZ);
@@ -214,6 +297,29 @@ function Update(delta)
 	SetCameraClipFov(shadowCamera,0.01,20,1.185);
 	
 	UpdatePixelCamera(spriteCamera,nil,false,true,1,5000);
+	
+	cutsceneTimer = cutsceneTimer + delta;
+	if cutsceneFunction then
+		cutsceneFunction(cutsceneTimer);
+	end
+end
+
+function PrintCamera()
+	local dirX = (math.sin(flyCamYAngle) * math.cos(flyCamUpAngle));
+	local dirY = (math.sin(flyCamUpAngle));
+	local dirZ = (math.cos(flyCamYAngle) * math.cos(flyCamUpAngle));
+	
+	print(LG.Assign(LG.Call("CreateVector",flyCamX,flyCamY,flyCamZ,1),"cameraPos"));
+	print(LG.Assign(LG.Call("CreateVector",flyCamX+dirX,flyCamY+dirY,flyCamZ+dirZ,1),"cameraTgt"));
+end
+
+function SyncCameras()
+	local dirX = (math.sin(flyCamYAngle) * math.cos(flyCamUpAngle));
+	local dirY = (math.sin(flyCamUpAngle));
+	local dirZ = (math.cos(flyCamYAngle) * math.cos(flyCamUpAngle));
+	
+	SetCameraPosition(performanceCamera,flyCamX,flyCamY,flyCamZ);
+	SetCameraTarget(performanceCamera,flyCamX+dirX,flyCamY+dirY,flyCamZ+dirZ);
 end
 
 function Draw()
@@ -221,6 +327,11 @@ function Draw()
 	-- Draw all objects to the main window
 	
 	DrawComplexModel(floorModel,camera,light);
+	
+	if roomModel and toolsModel then
+		--DrawComplexModel(roomModel,camera,light,nil,nil,shadowEffect);
+		--DrawComplexModel(toolsModel,camera,light,nil,nil,shadowEffect);
+	end
 	
 	if pickedObject then
 		DrawComplexModel(pickModel,camera,light);
@@ -268,6 +379,10 @@ function Draw()
 	
 		if skyEffect then
 			DrawComplexModel(skyModel,performanceCamera,nil,performanceSurface);
+		end
+		
+		if drawCar then
+			DrawComplexModel(carModel,performanceCamera,light,performanceSurface,nil);
 		end
 	end
 	

@@ -38,38 +38,6 @@ struct ChunkHeader
     UINT32 size;
 };
 
-//
-// Helper function to find a riff-chunk with-in the sent bounds.
-// It is assumed the bounds begin at the start of a chunk
-//
-//UINT64 FindChunk(
-//    RandomAccessReader^ file,
-//    uint32 tag,
-//    uint64 startLoc,
-//    uint64 endLoc
-//    )
-//{
-//    // Move to start of search
-//    file->SeekAbsolute(startLoc);
-
-//    UINT64 newLoc = startLoc;
-//    while (endLoc > (newLoc + sizeof(ChunkHeader)))
-//    {
-//        Platform::Array<byte>^ headerBytes = file->Read(sizeof(ChunkHeader));
-//        ChunkHeader* header = reinterpret_cast<ChunkHeader*>(headerBytes->Data);
-//        if (header->tag == tag)
-//        {
-//            // Found the requested tag
-//            return newLoc;
-//        }
-//        file->SeekRelative(static_cast<int64>(header->size));
-//        newLoc += header->size + sizeof(*header);
-//    }
-
-//    // Chunk with sent tag was not found
-//    throw ref new Platform::FailureException();
-//}
-
 HRESULT SoundFileReader::FindChunk(char * buffer, DWORD fourcc, DWORD & dwChunkSize, DWORD & dwChunkDataPosition)
 {
 	LARGE_INTEGER li = { 0 };
@@ -87,7 +55,7 @@ HRESULT SoundFileReader::FindChunk(char * buffer, DWORD fourcc, DWORD & dwChunkS
 
 	unsigned bufferOffset = 0;
 
-	while(hr == S_OK)
+	while(hr == S_OK && bufferOffset < bufferLength)
 	{
 		//DWORD dwRead;
 		//if( 0 == ReadFile( hFile, &dwChunkType, sizeof(DWORD), &dwRead, NULL ) )
@@ -115,8 +83,8 @@ HRESULT SoundFileReader::FindChunk(char * buffer, DWORD fourcc, DWORD & dwChunkS
 			li.QuadPart = dwChunkDataSize;
 			//if( INVALID_SET_FILE_POINTER == SetFilePointerEx( hFile, li, NULL, FILE_CURRENT ) )
 			bufferOffset += dwChunkDataSize;
-			if(bufferOffset >= bufferLength)
-				return HRESULT_FROM_WIN32(GetLastError());
+			if(bufferOffset > bufferLength)
+				return S_FALSE;
 		}
 
 		dwOffset += sizeof(DWORD) * 2;
@@ -134,24 +102,9 @@ HRESULT SoundFileReader::FindChunk(char * buffer, DWORD fourcc, DWORD & dwChunkS
 
 	}
 
-	return S_OK;
+	return S_FALSE;
 
 }
-
-//
-// Read the riff chunk header at the send location
-//
-//void ReadHeader(
-//    RandomAccessReader^ file,
-//    uint64 loc,
-//    ChunkHeader& header
-//    )
-//{
-//    // Move to read location
-//    file->SeekAbsolute(loc);
-//    Platform::Array<byte>^ headerBytes = file->Read(sizeof(ChunkHeader));
-//    header = *reinterpret_cast<ChunkHeader*>(headerBytes->Data);
-//}
 
 HRESULT SoundFileReader::ReadChunkData(char * input, void * output, DWORD buffersize, DWORD bufferoffset)
 {
@@ -268,7 +221,10 @@ void SoundFileReader::Respond()
 		//    throw ref new Platform::FailureException();
 		//}
 
-		FindChunk(buffer, fourccFMT, dwChunkSize, dwChunkPosition);
+		if(!SUCCEEDED(FindChunk(buffer, fourccFMT, dwChunkSize, dwChunkPosition)))
+		{
+			return;
+		}
 		ReadChunkData(buffer, &wfx, dwChunkSize, dwChunkPosition);
 
 		//
@@ -287,7 +243,10 @@ void SoundFileReader::Respond()
 		// ACCESS TO THE FILEAPI, AND LEAVE THE FILE OPEN UNTIL
 		// THE AUDIOAPI HAS DECIDED WHAT TO DO WITH IT.
 
-		FindChunk(buffer, fourccDATA, dwChunkSize, dwChunkPosition);
+		if(!SUCCEEDED(FindChunk(buffer, fourccDATA, dwChunkSize, dwChunkPosition)))
+		{
+			return;
+		}
 		BYTE * pDataBuffer = new BYTE[dwChunkSize];
 		ReadChunkData(buffer, pDataBuffer, dwChunkSize, dwChunkPosition);
 

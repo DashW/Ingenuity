@@ -89,6 +89,7 @@ public:
 	virtual void               OpenAndRead(Files::Directory * directory, const wchar_t * file, Files::Response * response) override;
 	virtual void               Read(Files::File * file, Files::Response * response) override;
 	virtual const char *       ReadChars(Files::File * file, unsigned & length, int offset = -1) override;
+	virtual void               Write(Files::Directory * directory, const wchar_t * path, char * data, unsigned dataLength) override;
 	virtual void               Close(Files::File ** file) override;
 
 	virtual void Poll() override;

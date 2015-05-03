@@ -26,7 +26,7 @@ struct PS_INPUT
 float4 main( in PS_INPUT input ) : SV_Target
 {
 	float4 color = ParticleTexture.Sample( LinearSampler, input.texcoords );
-	//color = color * input.color;
+	color = color * input.color;
 
 	return( color );
 }

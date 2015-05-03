@@ -17,6 +17,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include "GpuVertices.h"
+#include "NewtonJoints.h"
 
 #define MIN_PHYSICS_FPS 120.0f
 #define MAX_PHYSICS_LOOPS 2
@@ -88,7 +89,7 @@ public:
 		//ent->SetMatrix(*scene, rot, localMatrix.m_posit);
 	}
 
-	void ConnectBodyParts(NewtonBody* const bone, NewtonBody* const parent, glm::vec3 jointInfo, glm::vec3 childRot, glm::vec3 parentRot) const
+	void ConnectBodyParts(NewtonBody* const bone, NewtonBody* const parent, glm::vec3 jointInfo, glm::vec3 childRot, glm::vec3 parentRot, float friction) const
 	{
 		dMatrix matrix;
 		NewtonBodyGetMatrix(bone, &matrix[0][0]);
@@ -99,10 +100,11 @@ public:
 		dMatrix childPinAndPivotInGlobalSpace(dPitchMatrix(childRot.x) * dYawMatrix(childRot.y) * dRollMatrix(childRot.z));
 		childPinAndPivotInGlobalSpace = childPinAndPivotInGlobalSpace * matrix;
 
-		CustomLimitBallAndSocket* const joint = new CustomLimitBallAndSocket(childPinAndPivotInGlobalSpace, bone, parentPinAndPivotInGlobalSpace, parent);
+		CustomLimitBallAndSocketWithFriction* const joint = new CustomLimitBallAndSocketWithFriction(childPinAndPivotInGlobalSpace, bone, parentPinAndPivotInGlobalSpace, parent);
 
 		joint->SetConeAngle(jointInfo.x);
 		joint->SetTwistAngle(jointInfo.y, jointInfo.z);
+		joint->SetFriction(friction);
 	}
 
 	void CreateRagDoll()
@@ -266,6 +268,9 @@ NewtonApi::~NewtonApi()
 
 void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timestep, int threadIndex)
 {
+	NewtonWorld * world = NewtonBodyGetWorld(body);
+	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(NewtonWorldGetUserData(world));
+
 	float Ixx;
 	float Iyy;
 	float Izz;
@@ -273,33 +278,39 @@ void NewtonApi::ApplyForceAndTorqueCallback(const NewtonBody* body, float timest
 
 	NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
 
-#define GRAVITY -10.0f
+	glm::vec4 gravityForce(physicsWorld->gravity * mass, 1.0f);
+	NewtonBodyAddForce(body, &gravityForce[0]);
 
-	glm::vec4 gravityForce(0.0f, mass * GRAVITY, 0.0f, 1.0f);
-	NewtonBodySetForce(body, &gravityForce[0]);
+	if(physicsWorld->linearDrag > 0.01f)
+	{
+		glm::vec4 velocity;
+		NewtonBodyGetVelocity(body, &velocity[0]);
+
+		glm::vec4 dragForce = velocity * physicsWorld->linearDrag * -1.0f;
+		NewtonBodyAddForce(body, &dragForce[0]);
+	}
 
 	// If we really want to do this properly, the following should be in a CustomJoint.
 	NewtonPhysicsObject * physicsObject = (NewtonPhysicsObject*)NewtonBodyGetUserData(body);
-	if(physicsObject)
+	if(physicsObject && physicsObject->springs.size() > 0)
 	{
-
 		glm::vec4 com;
 		glm::mat4 bodyMatrix;
 		glm::mat4 collisionMatrix;
 
-		dFloat mass;
-		dFloat Ixx;
-		dFloat Iyy;
-		dFloat Izz;
+		//dFloat mass;
+		//dFloat Ixx;
+		//dFloat Iyy;
+		//dFloat Izz;
 
 		glm::vec4 veloc;
 		glm::vec4 omega;
 
+		NewtonBodyGetCentreOfMass(body, &com[0]);
 		NewtonBodyGetMatrix(body, &bodyMatrix[0][0]);
 		NewtonCollisionGetMatrix(NewtonBodyGetCollision(physicsObject->newtonBody), &collisionMatrix[0][0]);
-		NewtonBodyGetCentreOfMass(body, &com[0]);
 
-		NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
+		//NewtonBodyGetMassMatrix(body, &mass, &Ixx, &Iyy, &Izz);
 		NewtonBodyGetVelocity(body, &veloc[0]);
 		NewtonBodyGetOmega(body, &omega[0]);
 
@@ -442,7 +453,32 @@ int NewtonApi::AABBOverlapCallback(const NewtonMaterial* const material, const N
 
 void NewtonApi::ContactCollisionCallback(const NewtonJoint* contactJoint, float timestep, int threadIndex)
 {
+	NewtonJointRecord jointRecord = { 0 };
+	NewtonJointGetInfo(contactJoint, &jointRecord);
 
+	//jointRecord.
+
+	//Newtoncontact
+
+	//NewtonBody* const body = NewtonJointGetBody0(contactJoint);
+	//for(void* contact = NewtonContactJointGetFirstContact(contactJoint); contact; contact = NewtonContactJointGetNextContact(contactJoint, contact)) {
+	//	dVector point;
+	//	dVector normal;
+	//	dVector dir0;
+	//	dVector dir1;
+	//	dVector force;
+
+	//	NewtonMaterial* const material = NewtonContactGetMaterial(contact);
+
+	//	NewtonMaterialGetContactForce(material, body, &force.m_x);
+	//	NewtonMaterialGetContactPositionAndNormal(material, body, &point.m_x, &normal.m_x);
+	//	NewtonMaterialGetContactTangentDirections(material, body, &dir0.m_x, &dir1.m_x);
+	//	//dFloat speed = NewtonMaterialGetContactNormalSpeed(material);
+
+	//	//speed = NewtonMaterialGetContactNormalSpeed(material);
+	//	// play sound base of the contact speed.
+	//	//
+	//}
 }
 
 void NewtonApi::DebugPolygonCallback(void* userData, int vertexCount, const float* faceVertec, int id)
@@ -593,6 +629,8 @@ PhysicsWorld * NewtonApi::CreateWorld(float scale, glm::vec3 gravity)
 	int defaultMaterialId = NewtonMaterialGetDefaultGroupID(physicsWorld->newtonWorld);
 	NewtonMaterialSetCollisionCallback(physicsWorld->newtonWorld, defaultMaterialId, defaultMaterialId, this, AABBOverlapCallback, ContactCollisionCallback);
 	//NewtonMaterialSetCompoundCollisionCallback(physicsWorld->newtonWorld, defaultMaterialId, defaultMaterialId, CompoundAABBOverlapCallback);
+
+	NewtonWorldSetUserData(physicsWorld->newtonWorld, physicsWorld);
 
 	return physicsWorld;
 }
@@ -878,7 +916,7 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 
 		physicsWorld->pendingTime += deltaTime;
 
-		while(physicsWorld->pendingTime > 0.0f && loops < MAX_PHYSICS_LOOPS) 
+		while(physicsWorld->pendingTime - timestepInSeconds > 0.0f && loops < MAX_PHYSICS_LOOPS) 
 		{
 			loops++;
 
@@ -891,7 +929,7 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 				reentrantUpdate = false;
 			}
 
-			physicsWorld->pendingTime = max(physicsWorld->pendingTime - timestepInSeconds, 0.0f);
+			physicsWorld->pendingTime -= timestepInSeconds;
 		}
 		
 		if(loops >= MAX_PHYSICS_LOOPS)
@@ -901,7 +939,8 @@ void NewtonApi::UpdateWorld(PhysicsWorld * world, float deltaTime)
 	}
 }
 
-void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot)
+void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, 
+	glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot, float friction)
 {
 	NewtonPhysicsRagdoll * physicsRagdoll = static_cast<NewtonPhysicsRagdoll*>(ragdoll);
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
@@ -927,7 +966,7 @@ void NewtonApi::AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object,
 		NewtonBodySetMatrix(body, (float*)&bodyMatrix);
 
 		// connect this body part to its parent with a ragdoll joint
-		manager->ConnectBodyParts(body, parentBody, joint, childRot, parentRot);
+		manager->ConnectBodyParts(body, parentBody, joint, childRot, parentRot, friction);
 	}
 
 	// This is used to add extra waypoint matrices for bones that might not be directly parented (e.g. clavicle)
@@ -1052,6 +1091,13 @@ PhysicsObject * NewtonApi::GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned i
 	return 0;
 }
 
+void NewtonApi::SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float linearDrag)
+{
+	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(world);
+	physicsWorld->gravity = gravity;
+	physicsWorld->linearDrag = linearDrag;
+}
+
 void NewtonApi::SetLocalPosition(PhysicsObject * object, glm::vec3 position)
 {
 	NewtonPhysicsObject * physicsObject = static_cast<NewtonPhysicsObject*>(object);
@@ -1148,7 +1194,9 @@ void NewtonApi::SetTargetMatrix(PhysicsObject * object, glm::mat4 & matrix)
 		float basisVectorLength = glm::length(matrix[i]);
 		if(fabs(basisVectorLength - 1.0f) > 1.0e-4f)
 		{
+#ifdef _DEBUG
 			__debugbreak();
+#endif
 			matrix[i] = glm::normalize(matrix[i]);
 		}
 	}

@@ -431,7 +431,7 @@ void Win32::FileApi::Read(Files::File * file, Files::Response * response)
 		activeEvents[activeEventCount].buffer = (char*)readBuffer;
 		activeEvents[activeEventCount].bufferLength = winFile->byteLength;
 		activeEvents[activeEventCount].response = response;
-		activeEvents[activeEventCount].readEvent = false;
+		activeEvents[activeEventCount].readEvent = true;
 		activeEventHandles[activeEventCount] = readOverlap->hEvent;
 
 		activeEventCount++;
@@ -448,6 +448,40 @@ void Win32::FileApi::Read(Files::File * file, Files::Response * response)
 
 		delete readOverlap;
 	}
+}
+
+void Win32::FileApi::Write(Files::Directory * directory, const wchar_t * path, char * data, unsigned dataLength)
+{
+	if(!directory) return;
+
+	Win32::Directory * win32dir = static_cast<Win32::Directory*>(directory);
+
+	wchar_t exeDir[128];
+	GetCurrentDirectory(128, exeDir);
+
+	SetCurrentDirectory(win32dir->GetPath().c_str());
+
+	HANDLE fileHandle = CreateFile(path,
+		GENERIC_WRITE | GENERIC_READ,
+		0,
+		NULL,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
+
+	SetCurrentDirectory(exeDir);
+
+	if(fileHandle == INVALID_HANDLE_VALUE)
+	{
+		std::wstringstream errStream;
+		errStream << L"Could not open file " << win32dir->GetPath() << path << L"\n";
+		OutputDebugString(errStream.str().c_str());
+		return;
+	}
+
+	BOOL writeDone = WriteFile(fileHandle, data, dataLength, 0, 0);
+
+	CloseHandle(fileHandle);
 }
 
 void Win32::FileApi::Close(Files::File ** file)
@@ -519,17 +553,25 @@ void Win32::FileApi::Poll()
 
 			if(SUCCEEDED(event->overlap->Internal))
 			{
-				unsigned bufferLength = event->overlap->InternalHigh;
-				char * buffer = new char[event->overlap->InternalHigh + 1];
-				memcpy(buffer, event->buffer, bufferLength);
-				buffer[bufferLength] = '\0';
+				if(event->response && event->buffer)
+				{
+					unsigned bufferLength = event->overlap->InternalHigh;
+					char * buffer = new char[event->overlap->InternalHigh + 1];
+					memset(buffer, 0, bufferLength);
+					memcpy(buffer, event->buffer, bufferLength);
+					buffer[bufferLength] = '\0';
 
-				event->response->buffer = buffer;
-				event->response->bufferLength = bufferLength;
+					event->response->buffer = buffer;
+					event->response->bufferLength = bufferLength;
+				}
 
 				HandleResponse(event->response);
 
-				delete[] event->buffer;
+				if(event->buffer)
+				{
+					delete[] event->buffer;
+				}
+
 				RemoveEvent(index);
 			}
 			else
@@ -560,6 +602,11 @@ void Win32::FileApi::Poll()
 
 	for(unsigned i = 0; i < pendingFiles.size(); ++i)
 	{
+		wchar_t exeDir[128];
+		GetCurrentDirectory(128, exeDir);
+
+		SetCurrentDirectory(pendingFiles[i].filePtr->directory->GetPath().c_str());
+
 		HANDLE fileHandle = CreateFile(pendingFiles[i].fullPath.c_str(),
 			GENERIC_WRITE | GENERIC_READ,
 			0,
@@ -568,12 +615,15 @@ void Win32::FileApi::Poll()
 			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
 			NULL);
 
+		SetCurrentDirectory(exeDir);
+
 		if(fileHandle == INVALID_HANDLE_VALUE)
 		{
 			if(GetLastError() != 0x20)
 			{
 				std::wstringstream errStream;
-				errStream << L"Could not open file " << pendingFiles[i].fullPath.c_str() << L"\n";
+				errStream << L"Could not open file " << pendingFiles[i].filePtr->directory->GetPath().c_str() 
+					<< pendingFiles[i].fullPath.c_str() << L"\n";
 				OutputDebugString(errStream.str().c_str());
 				pendingFiles[i].filePtr->openState = Files::Failed;
 				pendingFiles.erase(pendingFiles.begin() + i);

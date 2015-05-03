@@ -59,7 +59,7 @@ public:
 		interpreter->RegisterCallback("GetBaseEffect", &GpuScriptCallbacks::GetBaseEffect,
 			"() Gets the default (base) effect for all GPU model drawing");
 		interpreter->RegisterCallback("GetMonitorSize", &GpuScriptCallbacks::GetScreenSize,
-			"() returns the width and height of the screen, in pixels");
+			"([window]) returns the width and height of the [given window's] monitor, in pixels");
 		interpreter->RegisterCallback("GetBackbufferSize", &GpuScriptCallbacks::GetBackbufferSize,
 			"([window]) returns the width and height of the [main, otherwise given] window, in pixels");
 

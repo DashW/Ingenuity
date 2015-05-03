@@ -195,6 +195,10 @@
       <Filter>Loaders/Parsers</Filter>
     </ClInclude>
     <ClInclude Include="SpriteManager.h" />
+    <ClInclude Include="NewtonJoints.h" />
+    <ClInclude Include="ModelEncoder.h">
+      <Filter>Loaders/Parsers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -299,6 +303,10 @@
       <Filter>Loaders/Parsers</Filter>
     </ClCompile>
     <ClCompile Include="SpriteManager.cpp" />
+    <ClCompile Include="NewtonJoints.cpp" />
+    <ClCompile Include="ModelEncoder.cpp">
+      <Filter>Loaders/Parsers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt">
@@ -489,9 +497,6 @@
     <FxCompile Include="Shaders\DX11\BaseShaderVtxPosTex.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNor.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
@@ -499,9 +504,6 @@
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowMapVtxPosNor.hlsl">
-      <Filter>Shaders\DX11</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNorTex.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ShadowLitVtxPosNorTex.hlsl">
@@ -534,7 +536,24 @@
     <FxCompile Include="Shaders\DX11\IndirectTriShaderVtx.hlsl">
       <Filter>Shaders\DX11</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\DX11\ParticleSystemUpdateCurlCS.hlsl" />
+    <FxCompile Include="Shaders\DX11\ParticleSystemUpdateCurlCS.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\ShadowLitPixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\TexDecalPixPosTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\NoiseRevealPixPosNor.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DX11\NoiseRevealPixPosNorTex.hlsl">
+      <Filter>Shaders\DX11</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\DX11\TextureShader.inl">
@@ -660,6 +679,9 @@
       <Filter>Shaders</Filter>
     </Xml>
     <Xml Include="IndirectTriShader.xml">
+      <Filter>Shaders</Filter>
+    </Xml>
+    <Xml Include="NoiseReveal.xml">
       <Filter>Shaders</Filter>
     </Xml>
   </ItemGroup>

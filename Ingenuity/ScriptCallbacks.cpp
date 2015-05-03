@@ -1,6 +1,7 @@
 #include "ScriptCallbacks.h"
 #include "ScriptInterpreter.h"
 #include "AssetMgr.h"
+#include "AssimpLoader.h"
 #include "GeoBuilder.h"
 #include "GpuScene.h"
 #include "SvgParser.h"
@@ -8,6 +9,7 @@
 #include "InputState.h"
 #include "AudioApi.h"
 #include "IngenuityHelper.h"
+#include "ModelEncoder.h"
 #include "PlatformApi.h"
 #include "IsoSurface.h"
 #include "PhysicsApi.h"
@@ -57,7 +59,7 @@ Files::Directory * ScriptCallbacks::GetDirectory(Files::Api * files, const char 
 	{
 		directoryPtr = files->GetKnownDirectory(Files::FrameworkDir);
 	}
-	if(strcmp(name, "InstallDir") == 0)
+	if(strcmp(name, "AppDir") == 0)
 	{
 		directoryPtr = files->GetKnownDirectory(Files::AppDir);
 	}
@@ -105,6 +107,10 @@ void ScriptCallbacks::LoadAsset(
 		if(strcmp(type, "ColladaModel") == 0)
 		{
 			assetType = ColladaModelAsset;
+		}
+		if(strcmp(type, "IngenuityModel") == 0)
+		{
+			assetType = IngenuityModelAsset;
 		}
 		if(strcmp(type, "RawHeightMap") == 0)
 		{
@@ -961,7 +967,7 @@ void ScriptCallbacks::GetAsset(ScriptInterpreter * interpreter)
 			case AudioAsset:
 			{
 				Audio::Item * audioItem = dynamic_cast<Audio::Item*>(asset);
-				interpreter->PushParam(ScriptParam(new NonDeletingPtr(audioItem, ScriptTypes::GetHandle(TypeAudioItem))));
+				interpreter->PushParam(ScriptParam(audioItem, ScriptTypes::GetHandle(TypeAudioItem)));
 				break;
 			}
 			case SvgAsset:
@@ -1292,6 +1298,39 @@ void ScriptCallbacks::PickFile(ScriptInterpreter * interpreter)
 	interpreter->GetApp()->files->PickFile(fileDir, wideExt.c_str(), new ScriptCallbackResponse(interpreter, callback));
 }
 
+void ScriptCallbacks::EncodeModel(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, asset, STRING);
+	POP_PARAM(2, directory, STRING);
+	POP_PARAM(3, filename, STRING);
+	interpreter->ClearParams();
+
+	AssetLoader * loader = interpreter->GetApp()->assets->GetLoader(asset.svalue);
+	
+	if(loader)
+	{
+		if(loader->type == ColladaModelAsset)
+		{
+			AssimpLoader * assimpLoader = static_cast<AssimpLoader*>(loader);
+			
+			std::vector<ModelEncoder::ModelMeta> models = assimpLoader->ToEncoderModels();
+
+			unsigned modelBufferLength = 0;
+			char * modelBuffer = ModelEncoder::EncodeModels(models, modelBufferLength);
+
+			Files::Directory * filesDirectory = GetDirectory(interpreter->GetApp()->files, directory.svalue);
+
+			std::string sname(filename.svalue);
+			std::wstring wname(sname.begin(), sname.end());
+
+			interpreter->GetApp()->files->Write(filesDirectory, wname.c_str(), modelBuffer, modelBufferLength);
+
+			delete[modelBufferLength] modelBuffer;
+		}
+	}
+	
+}
+
 void ScriptCallbacks::PlaySound(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, sound, TypeAudioItem);
@@ -1322,6 +1361,24 @@ void ScriptCallbacks::PauseSound(ScriptInterpreter * interpreter)
 
 	Audio::Item * audioItem = sound.GetPointer<Audio::Item>();
 	interpreter->GetApp()->audio->Pause(audioItem);
+}
+
+void ScriptCallbacks::SetSoundSpeed(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sound, TypeAudioItem);
+	POP_NUMPARAM(2, speed);
+
+	Audio::Item * audioItem = sound.GetPointer<Audio::Item>();
+	interpreter->GetApp()->audio->SetSpeed(audioItem, float(speed.nvalue));
+}
+
+void ScriptCallbacks::SetSoundVolume(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sound, TypeAudioItem);
+	POP_NUMPARAM(2, volume);
+
+	Audio::Item * audioItem = sound.GetPointer<Audio::Item>();
+	interpreter->GetApp()->audio->SetVolume(audioItem, float(volume.nvalue));
 }
 
 void ScriptCallbacks::GetAmplitude(ScriptInterpreter * interpreter)
@@ -1519,6 +1576,21 @@ void ScriptCallbacks::RemoveFromPhysicsWorld(ScriptInterpreter * interpreter)
 	PhysicsObject * physicsObject = object.GetPointer<PhysicsObject>();
 
 	interpreter->GetApp()->physics->RemoveFromWorld(physicsWorld, physicsObject);
+}
+
+void ScriptCallbacks::SetPhysicsConstants(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, TypePhysicsWorld);
+	POP_NUMPARAM(2, gravX);
+	POP_NUMPARAM(3, gravY);
+	POP_NUMPARAM(4, gravZ);
+	POP_NUMPARAM(5, drag);
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = world.GetPointer<PhysicsWorld>();
+	
+	interpreter->GetApp()->physics->SetWorldConstants(physicsWorld,
+		glm::vec3(gravX.nvalue, gravY.nvalue, gravZ.nvalue), float(drag.nvalue));
 }
 
 void ScriptCallbacks::SetPhysicsPosition(ScriptInterpreter * interpreter)
@@ -1750,6 +1822,7 @@ void ScriptCallbacks::AddPhysicsRagdollBone(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(10, parenRotX);
 	POP_NUMPARAM(11, parenRotY);
 	POP_NUMPARAM(12, parenRotZ);
+	ScriptParam friction = interpreter->PopParam();
 	interpreter->ClearParams();
 
 	PhysicsRagdoll * physicsRagdoll = ragdoll.GetPointer<PhysicsRagdoll>();
@@ -1758,7 +1831,8 @@ void ScriptCallbacks::AddPhysicsRagdollBone(ScriptInterpreter * interpreter)
 	glm::vec3 joint(float(cone.nvalue), float(min.nvalue), float(max.nvalue));
 	glm::vec3 childRot(float(childRotX.nvalue), float(childRotY.nvalue), float(childRotZ.nvalue));
 	glm::vec3 parentRot(float(parenRotX.nvalue), float(parenRotY.nvalue), float(parenRotZ.nvalue));
-	interpreter->GetApp()->physics->AddRagdollBone(physicsRagdoll, physicsObject, int(parent.nvalue), joint, childRot, parentRot);
+	interpreter->GetApp()->physics->AddRagdollBone(physicsRagdoll, physicsObject, int(parent.nvalue), 
+		joint, childRot, parentRot, friction.IsNumber() ? float(friction.nvalue) : 0.0f);
 }
 
 void ScriptCallbacks::GetPhysicsRagdollBone(ScriptInterpreter * interpreter)

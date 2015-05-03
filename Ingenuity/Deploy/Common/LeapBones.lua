@@ -1,12 +1,12 @@
 
-leap = {}
+local leap = {}
 
 leap.left = {}
 leap.right = {}
 
 leap.bonesPerFinger = 4;
 leap.fingersPerHand = 5;
-leap.bonesPerHand = (leap.bonesPerFinger * leap.fingersPerHand) + 2;
+leap.bonesPerHand = (leap.bonesPerFinger * leap.fingersPerHand) + 3;
 
 local h = 0;
 for hindex,hand in [leap.left,leap.right] do
@@ -27,8 +27,11 @@ for hindex,hand in [leap.left,leap.right] do
 	end
 	
 	hand.palm = (h * 22) + 20;
-	hand.arm = (h * 22) + 21;
+	hand.wrist = (h * 22) * 21;
+	hand.arm = (h * 22) + 22;
 	leap[hindex] = hand;
 	
 	h = h + 1;
 end
+
+return leap;

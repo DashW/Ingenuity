@@ -2,6 +2,8 @@
 Require("ProjectDir","../../Common/ColorHelper.lua");
 Require("ProjectDir","../../Common/IngenHDR.lua");
 
+time = 0.0;
+
 function Begin()
 	camera = CreateCamera(true);
 	SetCameraClipHeight(camera,1,5000,10);
@@ -42,7 +44,7 @@ function Update(delta)
 	end
 
 	local mouseX, mouseY = GetMousePosition();
-	local screenWidth, screenHeight = GetScreenSize();
+	local screenWidth, screenHeight = GetBackbufferSize();
 	local hue = mouseY / screenHeight;
 	local size = 0;
 	if ticket == -1 then
@@ -54,10 +56,15 @@ function Update(delta)
 	SetModelScale(rect,size);
 	SetMeshColor(progressRect,0,HSLToRGB(1-hue,1,0.5))
 	
+	time = time + delta;
+	
 	if soundFile then
 		soundProgress = GetSoundProgress(soundFile);
 		SetModelPosition(progressRect,-5 * (screenWidth/screenHeight), 4, 0);
 		SetModelScale(progressRect,(screenWidth/screenHeight) * (soundProgress/soundDuration) * 10, 1, 0);
+		
+		--SetSoundSpeed(soundFile, 1.0);
+		--SetSoundSpeed(soundFile, (math.sin(time / 10.0) + 1.0) / 2);
 	end
 end
 

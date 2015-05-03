@@ -16,6 +16,11 @@ XAudio2::Item::~Item()
 	if(playBuffer) delete playBuffer;
 }
 
+IAsset * XAudio2::Item::GetAsset()
+{
+	return xAudio->CreateAudioItemFromWaveFormat(&wfx, (char*)playBuffer->pAudioData, playBuffer->AudioBytes);
+}
+
 XAudio2::Api::Api() : 
 	xAudioEngine(0),
 	xAudioMasteringVoice(0),
@@ -78,6 +83,8 @@ Audio::Item * XAudio2::Api::CreateAudioItemFromWaveFormat(tWAVEFORMATEX * wfx, c
 	if(xAudioEngine && SUCCEEDED(xAudioEngine->CreateSourceVoice(&newItem->sourceVoice,
 		wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, 0, 0, 0)))
 	{
+		newItem->wfx = *wfx;
+
 		unsigned bytesPerSample = (wfx->wBitsPerSample / 8) * wfx->nChannels;
 		newItem->sampleRate = wfx->nSamplesPerSec;
 		newItem->duration = float(bufferLength) / (float(bytesPerSample) * float(newItem->sampleRate));
@@ -234,6 +241,16 @@ void XAudio2::Api::SetVolume(Audio::Item* item, float volume)
 	XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
 
 	xItem->sourceVoice->SetVolume(volume);
+}
+
+void XAudio2::Api::SetSpeed(Audio::Item* item, float speed)
+{
+	if(!item) return;
+	XAudio2::Item * xItem = static_cast<XAudio2::Item*>(item);
+
+	xItem->sourceVoice->SetFrequencyRatio(speed);
+
+	xItem->playSpeed = speed;
 }
 
 float XAudio2::Api::GetAmplitude(Audio::Item * item)

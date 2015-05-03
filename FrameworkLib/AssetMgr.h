@@ -28,6 +28,7 @@ enum AssetType
 	ModelAsset,
 	WavefrontModelAsset,
 	ColladaModelAsset,
+	IngenuityModelAsset,
 	RawHeightMapAsset,
 	SvgAsset,
 	ImageAsset,

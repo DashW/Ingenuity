@@ -22,10 +22,16 @@ namespace Ingenuity {
 struct NewtonPhysicsWorld : public PhysicsWorld
 {
 	NewtonWorld * newtonWorld;
+	glm::vec3 gravity;
+	float linearDrag;
 	float pendingTime;
 
 	NewtonPhysicsWorld(NewtonWorld * newtonWorld) 
-		: newtonWorld(newtonWorld), pendingTime(0.0f) {}
+		: newtonWorld(newtonWorld)
+		, gravity(glm::vec3(0.0f, -10.0f, 0.0f))
+		, linearDrag(0.0f)
+		, pendingTime(0.0f){}
+
 	virtual ~NewtonPhysicsWorld();
 };
 
@@ -182,7 +188,8 @@ public:
 	virtual void RemoveFromWorld(PhysicsWorld * world, PhysicsObject * object) override;
 	virtual void UpdateWorld(PhysicsWorld * world, float deltaTime) override;
 
-	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot) override;
+	virtual void AddRagdollBone(PhysicsRagdoll * ragdoll, PhysicsObject * object, int parentIndex, 
+		glm::vec3 joint, glm::vec3 childRot, glm::vec3 parentRot, float friction = 0.0f) override;
 	virtual void FinalizeRagdoll(PhysicsRagdoll * ragdoll) override;
 
 	virtual glm::vec3 GetPosition(PhysicsObject * object) override;
@@ -192,6 +199,7 @@ public:
 	virtual glm::mat4 GetLocalMatrix(PhysicsObject * object) override;
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) override;
 	
+	virtual void SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float linearDrag) override;
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) override;
 	virtual void SetLocalRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) override;
@@ -202,7 +210,8 @@ public:
 	virtual void SetMaterial(PhysicsObject * object, PhysicsMaterial * material) override;
 	virtual void SetSpringProperty(PhysicsSpring * spring, PhysicsSpring::Property prop, float value) override;
 
-	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin, glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) override;
+	virtual PhysicsObject * PickObject(PhysicsWorld * world, glm::vec3 origin,
+		glm::vec3 dir, float & tOut, glm::vec3 & posOut, glm::vec3 & normalOut) override;
 
 	virtual LocalMesh * GetDebugMesh(PhysicsObject * object) override;
 };

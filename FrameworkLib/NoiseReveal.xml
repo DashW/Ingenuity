@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shader name="NoiseReveal" type="model">
+
+  <params>
+    <param index="0" displayName="Noise Texture" type="tex2D" />
+    <param index="1" displayName="Noise Scale" type="float" default="1.0" min="0.1" max="20.0" />
+    <param index="2" displayName="Color Grad Scale" type="float" default="6.0" min="0.1" max="20.0" />
+    <param index="3" displayName="Gradient Clear X"  type="float" default="0.0" />
+    <param index="4" displayName="Gradient Clear Y"  type="float" default="0.0" />
+    <param index="5" displayName="Gradient Clear Z"  type="float" default="0.0" />
+    <param index="6" displayName="Gradient Fill X"  type="float" default="1.0" />
+    <param index="7" displayName="Gradient Fill Y"  type="float" default="0.0" />
+    <param index="8" displayName="Gradient Fill Z"  type="float" default="0.0" />
+  </params>
+  
+  <directx9>
+  </directx9>
+  
+  <directx11 lightingModel="forwardMultiple">
+    <technique vertexShader="BaseShaderVtxPosNor" pixelShader="NoiseRevealPixPosNor" vertexType="PosNor">
+      <paramMapping index="0" shader="pixel" textureIndex="10" />
+      <paramMapping index="1" shader="pixel" bufferIndex="10" bufferOffset="7" />
+      <paramMapping index="2" shader="pixel" bufferIndex="10" bufferOffset="3" />
+      <paramMapping index="3" shader="pixel" bufferIndex="10" bufferOffset="0" />
+      <paramMapping index="4" shader="pixel" bufferIndex="10" bufferOffset="1" />
+      <paramMapping index="5" shader="pixel" bufferIndex="10" bufferOffset="2" />
+      <paramMapping index="6" shader="pixel" bufferIndex="10" bufferOffset="4" />
+      <paramMapping index="7" shader="pixel" bufferIndex="10" bufferOffset="5" />
+      <paramMapping index="8" shader="pixel" bufferIndex="10" bufferOffset="6" />
+    </technique>
+    <technique vertexShader="BaseShaderVtxPosNorTex" pixelShader="NoiseRevealPixPosNorTex" vertexType="PosNorTex">
+      <paramMapping index="0" shader="pixel" textureIndex="10" />
+      <paramMapping index="1" shader="pixel" bufferIndex="10" bufferOffset="7" />
+      <paramMapping index="2" shader="pixel" bufferIndex="10" bufferOffset="3" />
+      <paramMapping index="3" shader="pixel" bufferIndex="10" bufferOffset="0" />
+      <paramMapping index="4" shader="pixel" bufferIndex="10" bufferOffset="1" />
+      <paramMapping index="5" shader="pixel" bufferIndex="10" bufferOffset="2" />
+      <paramMapping index="6" shader="pixel" bufferIndex="10" bufferOffset="4" />
+      <paramMapping index="7" shader="pixel" bufferIndex="10" bufferOffset="5" />
+      <paramMapping index="8" shader="pixel" bufferIndex="10" bufferOffset="6" />
+    </technique>
+  </directx11>
+
+  <opengl>
+  </opengl>
+  
+</shader>

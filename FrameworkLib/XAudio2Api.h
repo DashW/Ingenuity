@@ -14,10 +14,12 @@ class Api;
 
 struct Item : public Audio::Item
 {
+	tWAVEFORMATEX			wfx;
 	Api*                    xAudio;
 	IXAudio2SourceVoice*    sourceVoice;
 	XAUDIO2_BUFFER*         playBuffer;
 	float                   duration;
+	float					playSpeed;
 	unsigned                sampleRate;
 	int						samplesPlayedBeforeReset;
 	bool                    isPlaying;
@@ -27,11 +29,14 @@ struct Item : public Audio::Item
 		xAudio(api),
 		sourceVoice(0),
 		playBuffer(0),
+		playSpeed(1.0f),
 		sampleRate(0),
 		samplesPlayedBeforeReset(0),
 		isPlaying(false),
 		isPaused(false) {}
 	virtual ~Item();
+
+	virtual IAsset * GetAsset() override;
 };
 
 class Api : public Audio::Api
@@ -59,6 +64,7 @@ public:
 	virtual void Pause(Audio::Item * item = 0) override;
 	virtual void Stop(Audio::Item * item = 0) override;
 	virtual void SetVolume(Audio::Item * item, float volume) override;
+	virtual void SetSpeed(Audio::Item * item, float speed) override;
 
 	virtual float GetAmplitude(Audio::Item * item = 0) override;
 	virtual float GetDuration(Audio::Item * item) override;

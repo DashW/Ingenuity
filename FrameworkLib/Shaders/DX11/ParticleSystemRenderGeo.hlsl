@@ -50,6 +50,7 @@ static const float2 g_texcoords[4] =
 struct GS_INPUT
 {
 	float3 position			: Position;
+	float  opacity			: Color;
 };
 //--------------------------------------------------------------------------------
 struct PS_INPUT
@@ -67,7 +68,8 @@ void main( point GS_INPUT input[1], inout TriangleStream<PS_INPUT> SpriteStream 
 	float dist = saturate( length( input[0].position - ConsumerLocation.xyz ) / 100.0f );
 	//float4 color = float4( 0.2f, 1.0f, 0.2f, 0.0f ) * dist + float4( 1.0f, 0.1f, 0.1f, 0.0f ) * ( 1.0f - dist ); 
 	//float4 color = float4( 0.2f, 1.0f, 1.0f, 0.0f ) * dist + float4( 1.0f, 0.1f, 0.1f, 0.0f ) * ( 1.0f - dist ); 
-	float4 color = float4(0.2f, 0.2f, 1.0f, 0.0f) * dist + float4(1.0f, 0.1f, 0.1f, 0.0f) * (1.0f - dist);
+	//float4 color = float4(0.2f, 0.2f, 1.0f, 0.0f) * dist + float4(1.0f, 0.1f, 0.1f, 0.0f) * (1.0f - dist);
+	float4 color = float4(1.f, 1.f, 1.f, 1.f) * input[0].opacity;
 
 	// Transform to view space
 	float4 viewposition = mul(float4(input[0].position, 1.0f), WorldViewMatrix);

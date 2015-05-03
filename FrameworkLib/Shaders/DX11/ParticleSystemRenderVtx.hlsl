@@ -21,6 +21,12 @@ struct Particle
 
 StructuredBuffer<Particle> SimulationState;
 
+cbuffer Constants: register(b10)
+{
+	float lifetime;
+	float3 filler;
+};
+
 //--------------------------------------------------------------------------------
 // Inter-stage structures
 //--------------------------------------------------------------------------------
@@ -32,6 +38,7 @@ struct VS_INPUT
 struct GS_INPUT
 {
     float3 position			: Position;
+	float  opacity			: Color;
 };
 //--------------------------------------------------------------------------------
 //struct PS_INPUT
@@ -46,6 +53,8 @@ GS_INPUT main(in VS_INPUT input)
 	GS_INPUT output;
 	
 	output.position = SimulationState[input.vertexid].position;
+	output.opacity = saturate((lifetime - SimulationState[input.vertexid].time) / lifetime);
+	output.opacity = pow(output.opacity, 10.0f);
 
 	return output;
 }

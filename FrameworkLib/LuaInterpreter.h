@@ -23,7 +23,9 @@ class LuaInterpreter : public ScriptInterpreter
 	static int SetMatrix(lua_State * state);
 	static int RotationMatrix(lua_State * state);
 	static int AddMatrix(lua_State * state);
+	static int SubMatrix(lua_State * state);
 	static int MultiplyMatrix(lua_State * state);
+	static int DivideMatrix(lua_State * state);
 	static int InverseMatrix(lua_State * state);
 	static int TransposeMatrix(lua_State * state);
 

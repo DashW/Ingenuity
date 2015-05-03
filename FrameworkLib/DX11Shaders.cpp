@@ -142,7 +142,7 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 			if(mapping.registerIndex < NUM_STANDARD_BUFFERS
 				|| mapping.registerIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
 			{
-				OutputDebugString(L"Invalid parameter mapping register index!\n");
+				OutputDebugString(L"Invalid shader parameter mapping register index!\n");
 				return false;
 			}
 			std::vector<float> & constants = stageParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
@@ -155,7 +155,12 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 			if(mapping.registerIndex < NUM_STANDARD_BUFFERS
 				|| mapping.registerIndex >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT)
 			{
-				OutputDebugString(L"Invalid parameter mapping register index!\n");
+				OutputDebugString(L"Invalid shader parameter mapping register index!\n");
+				return false;
+			}
+			if(param->avalue == 0)
+			{
+				OutputDebugString(L"Unset shader parameter!\n");
 				return false;
 			}
 			std::vector<float> & constants = stageParamConstData[mapping.registerIndex - NUM_STANDARD_BUFFERS];
@@ -169,6 +174,11 @@ bool DX11::ModelShader::Technique::SetExtraParameters(ID3D11DeviceContext * dire
 			if(mapping.writeable)
 			{
 				OutputDebugString(L"Cannot assign a writeable param buffer to a non-compute shader!\n");
+				return false;
+			}
+			if(param->bvalue == 0)
+			{
+				OutputDebugString(L"Unset shader parameter!\n");
 				return false;
 			}
 			switch(mapping.shader)
@@ -609,6 +619,11 @@ bool DX11::TextureShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 		}
 		case Gpu::ShaderParam::TypeFloatArray:
 		{
+			if(param->avalue == 0)
+			{
+				OutputDebugString(L"Unset shader parameter!\n");
+				return false;
+			}
 			std::vector<float> & constants = paramConstData[mapping.registerIndex - 1];
 			const unsigned minBufferSize = mapping.bufferOffset + param->avalue->numFloats;
 			if(constants.size() < minBufferSize) constants.resize(minBufferSize);
@@ -826,70 +841,70 @@ bool DX11::ComputeShader::SetExtraParameters(ID3D11DeviceContext * direct3Dconte
 			{
 				DX11::ParamBuffer * paramBuffer = static_cast<DX11::ParamBuffer*>(param->bvalue);
 				
-				{
-					static ID3D11Buffer * debugBuf = 0;
-					static unsigned debugData[2] = { 0 };
+				//{
+				//	static ID3D11Buffer * debugBuf = 0;
+				//	static unsigned debugData[2] = { 0 };
 
-					if(!debugBuf)
-					{
-						ID3D11Device * device = 0;
-						direct3Dcontext->GetDevice(&device);
+				//	if(!debugBuf)
+				//	{
+				//		ID3D11Device * device = 0;
+				//		direct3Dcontext->GetDevice(&device);
 
-						D3D11_SUBRESOURCE_DATA vbInitData;
-						vbInitData.pSysMem = debugData;
+				//		D3D11_SUBRESOURCE_DATA vbInitData;
+				//		vbInitData.pSysMem = debugData;
 
-						device->CreateBuffer(
-							&CD3D11_BUFFER_DESC(2 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
-							&vbInitData,
-							&debugBuf);
-					}
+				//		device->CreateBuffer(
+				//			&CD3D11_BUFFER_DESC(2 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
+				//			&vbInitData,
+				//			&debugBuf);
+				//	}
 
-					direct3Dcontext->CopyStructureCount(debugBuf, 0 * sizeof(unsigned), paramBuffer->uav);
+				//	direct3Dcontext->CopyStructureCount(debugBuf, 0 * sizeof(unsigned), paramBuffer->uav);
 
-					D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
-					direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
-					memcpy(((char*)debugData), mappedData.pData, 2 * sizeof(unsigned));
-					direct3Dcontext->Unmap(debugBuf, 0);
+				//	D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
+				//	direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
+				//	memcpy(((char*)debugData), mappedData.pData, 2 * sizeof(unsigned));
+				//	direct3Dcontext->Unmap(debugBuf, 0);
 
-					std::wstringstream debugOutput;
-					for(unsigned i = 0; i < 2; ++i) debugOutput << debugData[i] << ", ";
-					debugOutput << std::endl;
-					OutputDebugString(debugOutput.str().c_str());
-				}
+				//	std::wstringstream debugOutput;
+				//	for(unsigned i = 0; i < 2; ++i) debugOutput << debugData[i] << ", ";
+				//	debugOutput << std::endl;
+				//	OutputDebugString(debugOutput.str().c_str());
+				//}
 
 				direct3Dcontext->CopyStructureCount(paramConstBuffers[mapping.registerIndex], 
 					mapping.bufferOffset * sizeof(unsigned), paramBuffer->uav);
 
-				{
-					static ID3D11Buffer * debugBuf = 0;
-					static unsigned debugData[4] = { 0 };
+				//{
+				//	static ID3D11Buffer * debugBuf = 0;
+				//	static unsigned debugData[4] = { 0 };
 
-					if(!debugBuf)
-					{
-						ID3D11Device * device = 0;
-						direct3Dcontext->GetDevice(&device);
+				//	if(!debugBuf)
+				//	{
+				//		ID3D11Device * device = 0;
+				//		direct3Dcontext->GetDevice(&device);
 
-						D3D11_SUBRESOURCE_DATA vbInitData;
-						vbInitData.pSysMem = debugData;
+				//		D3D11_SUBRESOURCE_DATA vbInitData;
+				//		vbInitData.pSysMem = debugData;
 
-						device->CreateBuffer(
-							&CD3D11_BUFFER_DESC(4 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
-							&vbInitData,
-							&debugBuf);
-					}
+				//		device->CreateBuffer(
+				//			&CD3D11_BUFFER_DESC(4 * sizeof(unsigned), 0, D3D11_USAGE_STAGING, D3D11_CPU_ACCESS_READ),
+				//			&vbInitData,
+				//			&debugBuf);
+				//	}
 
-					direct3Dcontext->CopyResource(debugBuf, paramConstBuffers[mapping.registerIndex]);
+				//	direct3Dcontext->CopyResource(debugBuf, paramConstBuffers[mapping.registerIndex]);
 
-					D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
-					direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
-					memcpy(((char*)debugData), mappedData.pData, 4 * sizeof(unsigned));
-					direct3Dcontext->Unmap(debugBuf, 0);
+				//	D3D11_MAPPED_SUBRESOURCE mappedData = { 0 };
+				//	direct3Dcontext->Map(debugBuf, 0, D3D11_MAP_READ, 0, &mappedData);
+				//	memcpy(((char*)debugData), mappedData.pData, 4 * sizeof(unsigned));
+				//	direct3Dcontext->Unmap(debugBuf, 0);
 
-					std::wstringstream debugOutput;
-					for(unsigned i = 0; i < 4; ++i) debugOutput << debugData[i] << ", ";
-					debugOutput << std::endl;
-					OutputDebugString(debugOutput.str().c_str());
-				}
+				//	std::wstringstream debugOutput;
+				//	for(unsigned i = 0; i < 4; ++i) debugOutput << debugData[i] << ", ";
+				//	debugOutput << std::endl;
+				//	OutputDebugString(debugOutput.str().c_str());
+				//}
 			}
 		}
 

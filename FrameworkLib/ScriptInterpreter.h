@@ -120,6 +120,9 @@ public:
 	virtual void RunCommand(const char * command) = 0; // This and LoadScript now do the same thing, should be merged?
 	//virtual void ReloadScript(const wchar_t * filename) = 0;
 
+	// Suggestion: The ScriptInterpreter shouldn't care about its 'error state',
+	// and certainly shouldn't force the caller to reload the script to recover.
+	// Perhaps this could be removed from the interface and handled in Ingenuity Main?
 	bool IsInError() { return inError; }
 	bool IsInitialised() { return initialised && dependencies == 0; }
 

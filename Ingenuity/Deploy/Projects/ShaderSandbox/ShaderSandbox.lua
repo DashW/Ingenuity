@@ -16,8 +16,8 @@ pendingTexIndex = 0;
 
 initialMdlShader = "BaseShader.xml";
 initialTexShader = "TextureCopy.xml";
-initialModel = "duck.dae";
-initialModelType = "ColladaModel"
+initialModel = "duck.inm";
+initialModelType = "IngenuityModel"
 
 -- State machine states:
 STATE_LOADING_TEXTURE_SHADER = 0;
@@ -25,9 +25,12 @@ STATE_FINISHED = 1;
 
 function FixupPickedPath(path)
 	local searchString = "Projects\\ShaderSandbox\\";
+	local searchString2 = "Projects\\"
 	print(path);
 	if string.sub(path,1,string.len(searchString)) == searchString then
 		path = string.sub(path,string.len(searchString) + 1);
+	elseif string.sub(path,1,string.len(searchString2)) == searchString2 then
+		path = "..\\" .. string.sub(path,string.len(searchString2) + 1);
 	end
 	return path;
 end
@@ -200,7 +203,7 @@ function Begin()
 	mdlButton.height = 50;
 	mdlButton.text = "";
 	mdlButton.action = function(button)
-		PickFile("ProjectDir","*.obj;*.dae",function(data)
+		PickFile("ProjectDir","*.obj;*.dae;*.inm",function(data)
 			if data and string.len(data) > 0 then
 				data = FixupPickedPath(data);
 				pendingModel = data;
@@ -209,6 +212,9 @@ function Begin()
 				--if data:sub(-4) == ".obj" then
 				--	modelType = "WavefrontModel";
 				--end
+				if data:sub(-4) == ".inm" then
+					modelType = "IngenuityModel";
+				end
 				modelTicket = LoadAssets("ProjectDir",pendingModel,modelType,pendingModel);
 			end
 		end);
@@ -270,6 +276,16 @@ function Begin()
 		end
 	end
 	AddUIComponent(windowButton,leftPanel);
+	
+	exportButton = CreateUIButton();
+	exportButton.y = 400;
+	exportButton.width = 200;
+	exportButton.height = 50;
+	exportButton.text = "Export Model";
+	exportButton.action = function(button)
+		EncodeModel(pendingModel,"ProjectDir","exportedModel.inm");
+	end
+	AddUIComponent(exportButton,leftPanel);
 	
 	CreateStandardParams();
 	
@@ -466,8 +482,28 @@ function CreateParamButtons(xmlStruct)
 					slider.paramIndex = paramIndex;
 					
 					AddUIComponent(slider,paramPanel);
-					paramButtonOffset = paramButtonOffset + 50;
+				else
+					local textBox = CreateUITextBox();
+					textBox.y = paramButtonOffset;
+					textBox.width = 200;
+					textBox.height = 50;
+					--textBox.anchor = INGENUI_ANCHOR_TOP + INGENUI_ANCHOR_RIGHT;
+					textBox.text = paramDefault;
+					textBox.submit = function(textbox)
+						local textNumber = tonumber(textBox.text);
+						if textNumber then
+							if texShaderSelected then
+								SetEffectParam(screenEffect, textBox.paramIndex, textNumber);
+							else
+								SetEffectParam(modelEffect, textBox.paramIndex, textNumber);
+							end
+						end
+					end
+					textBox.paramIndex = paramIndex;
+					AddUIComponent(textBox,paramPanel);
 				end
+				
+				paramButtonOffset = paramButtonOffset + 50;
 			end
 		end
 	end
@@ -585,6 +621,7 @@ function Update(delta)
 	SetLightPosition(light,-math.sin(modelx-0.5) * lightRadius,0.5 * lightRadius,-math.cos(modelx-0.5) * lightRadius);
 	
 	SetCameraPosition(camera,math.sin(camRot) * camRadius, camRadius, -math.cos(camRot) * camRadius);
+	--SetCameraClipFov(camera,1,5000,0.78539);
 	
 	screenWidth, screenHeight = GetBackbufferSize();
 	SetCameraClipHeight(orthoCam,1,5000,screenHeight);

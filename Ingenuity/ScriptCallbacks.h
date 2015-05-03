@@ -118,12 +118,16 @@ public:
 			"(directory,path,callback) Invokes the callback with the raw contents of the given file");
 		interpreter->RegisterCallback("PickFile", &ScriptCallbacks::PickFile,
 			"(directory,extension,callback) Creates a file picker, then invokes the callback with the file path");
+		interpreter->RegisterCallback("EncodeModel", &ScriptCallbacks::EncodeModel,
+			"(asset,directory,filename) If the named asset is a model, encodes and saves it in INM format.");
 
 		// AUDIO
 		interpreter->RegisterCallback("PlaySound", &ScriptCallbacks::PlaySound,
 			"(sound[,seek,loop]) Plays the given sound file [from the seek time, on repeat if 'loop' is true]");
 		interpreter->RegisterCallback("PauseSound", &ScriptCallbacks::PauseSound,
 			"(sound) Pauses the given sound file");
+		interpreter->RegisterCallback("SetSoundSpeed", &ScriptCallbacks::SetSoundSpeed,
+			"(sound,speed) Sets the playback speed of the given sound");
 		interpreter->RegisterCallback("GetAmplitude", &ScriptCallbacks::GetAmplitude,
 			"([sound]) Returns the global amplitude [or, if provided, the amplitude of the given sound]");
 		interpreter->RegisterCallback("GetSoundDuration", &ScriptCallbacks::GetSoundDuration,
@@ -156,6 +160,8 @@ public:
 			"(world,object) Removes the given physics object from the given physics world");
 		interpreter->RegisterCallback("UpdatePhysicsWorld", &ScriptCallbacks::UpdatePhysicsWorld,
 			"(world,delta) Updates the given physics world by the given time delta");
+		interpreter->RegisterCallback("SetPhysicsConstants", &ScriptCallbacks::SetPhysicsConstants,
+			"(world,gravX,gravY,gravZ,drag) Sets the gravity and linear drag of the physics world");
 		interpreter->RegisterCallback("SetPhysicsPosition", &ScriptCallbacks::SetPhysicsPosition,
 			"(object,x,y,z[,local]) Sets the [local] position of the physics object");
 		interpreter->RegisterCallback("SetPhysicsRotation", &ScriptCallbacks::SetPhysicsRotation,
@@ -271,9 +277,12 @@ public:
 
 	static void LoadFile(ScriptInterpreter*);
 	static void PickFile(ScriptInterpreter*);
+	static void EncodeModel(ScriptInterpreter*);
 
 	static void PlaySound(ScriptInterpreter*);
 	static void PauseSound(ScriptInterpreter*);
+	static void SetSoundSpeed(ScriptInterpreter*);
+	static void SetSoundVolume(ScriptInterpreter*);
 	static void GetAmplitude(ScriptInterpreter*);
 	static void GetSoundDuration(ScriptInterpreter*);
 	static void GetSoundProgress(ScriptInterpreter*);
@@ -291,6 +300,7 @@ public:
 	static void UpdatePhysicsWorld(ScriptInterpreter*);
 	static void AddToPhysicsWorld(ScriptInterpreter*);
 	static void RemoveFromPhysicsWorld(ScriptInterpreter*);
+	static void SetPhysicsConstants(ScriptInterpreter*);
 	static void SetPhysicsPosition(ScriptInterpreter*);
 	static void SetPhysicsRotation(ScriptInterpreter*);
 	static void SetPhysicsScale(ScriptInterpreter*);

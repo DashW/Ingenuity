@@ -142,10 +142,13 @@ int AssetMgr::Load(Files::Directory * directory, const wchar_t * path, AssetType
 		loader = gpu->CreateGpuShaderLoader(files, directory, path);
 		break;
 	case WavefrontModelAsset:
-		loader = new WavefrontLoader(steppables, this, gpu, directory, path);
+		loader = new WavefrontLoader(steppables, this, gpu, directory, path, false, true);
 		break;
 	case ColladaModelAsset:
 		loader = new AssimpLoader(steppables, this, gpu, directory, path, type);
+		break;
+	case IngenuityModelAsset:
+		loader = new ModelEncoder::Loader(this, gpu, directory, path);
 		break;
 	case RawHeightMapAsset:
 		loader = new RawHeightLoader(gpu, files, directory, path);
