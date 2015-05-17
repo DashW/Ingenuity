@@ -31,6 +31,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 -- d = duration (total time)
 
 local pow = math.pow
+local log = math.log
 local sin = math.sin
 local cos = math.cos
 local pi = math.pi
@@ -49,7 +50,7 @@ end
 
 local function outQuad(t, b, c, d)
   t = t / d
-  return -c * t * (t - 2) + b
+  return (c * -1) * t * (t - 2) + b
 end
 
 local function inOutQuad(t, b, c, d)
@@ -207,6 +208,22 @@ local function outInExpo(t, b, c, d)
   else
     return inExpo((t * 2) - d, b + c / 2, c / 2, d)
   end
+end
+
+local function inLog(t, b, c, d)
+	return math.log(((b-1) * t) + 1) / math.log(b);
+end
+
+local function outLog(t, b, c, d)
+
+end
+
+local function inOutLog(t, b, c, d)
+
+end
+
+local function OutInLog(t, b, c, d)
+
 end
 
 local function inCirc(t, b, c, d)

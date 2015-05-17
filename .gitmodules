@@ -10,3 +10,6 @@
 [submodule "Third Party/assimp"]
 	path = Third Party/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "Third Party/Spout2"]
+	path = Third Party/Spout2
+	url = https://github.com/DashW/Spout2.git

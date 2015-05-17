@@ -64,21 +64,21 @@ definitions = {
 	{ "capsule", -1, 0.01, 0.04, 30.0,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.01,  PI_2,-PI_2, PI_1,-0.00, 0.10, 0.00,  0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,  0 }, --  0 - pelvis
 	{ "capsule",  0, 0.01, 0.04, 20.0,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.055, 0.00, 0.00, 0.00, 0.00, 0.00, 0.045, 0.00,-0.20, 0.20, 0.00,-PI_2, 0.00, 0.00,-PI_2, 0.00,  4 }, --  1 - spine0
 	
-	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06, -2.63,-0.00, 0.00, 0.00, 0.015,-0.008,1.20, 0.00, PI_6, 0.00,-PI_2, 0.00, PI_2,-PI_6,-PI_2, 12 }, --  2 - rthigh
-	{ "capsule",  2, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-2.62,-0.20, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 13 }, --  3 - rcalf
+	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06, -2.63,-0.00, 0.00, 0.00, 0.015,-0.008,1.40, 0.05 --[[0.8]] , 0.15, 0.00,-PI_2, 0.00, PI_2,-PI_6,-PI_2, 12 }, --  2 - rthigh
+	{ "capsule",  2, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-2.62,-0.50, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 13 }, --  3 - rcalf
 	{ "capsule",  3, 0.01, 0.05,  1.5,  PI_2, 0.00, 0.00, 0.02, 0.00, 0.01,  0.00, 0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-PI_4, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 14 }, --  4 - rfoot
-	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06,  2.69,-0.00, 0.00, 0.00,-0.015,-0.008,1.20,-PI_6, 0.00, 0.00,-PI_2, 0.00, PI_2,-PI_6, PI_2,  1 }, --  5 - lthigh
-	{ "capsule",  5, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00, 0.20, 2.62, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  2 }, --  6 - lcalf
+	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06,  2.69,-0.00, 0.00, 0.00,-0.015,-0.008,1.40,-0.15,-0.05 --[[-0.8]], 0.00,-PI_2, 0.00, PI_2,-PI_6, PI_2,  1 }, --  5 - lthigh
+	{ "capsule",  5, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00, 0.50, 2.62, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  2 }, --  6 - lcalf
 	{ "capsule",  6, 0.01, 0.05,  1.5,  PI_2, 0.00, 0.00, 0.02, 0.00, 0.01,  0.00, 0.00, 0.00, 0.00, 0.00, 0.105, 0.00, 0.00, PI_4, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  3 }, --  7 - lfoot
 	
 	{ "capsule",  1, 0.02, 0.02,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.035, 0.00, 0.00, 0.00, 0.00, 0.00, 0.075, 0.00, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 0.00,  8 }, --  8 - head
 	
-	{ "capsule",  1, 0.01, 0.07,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  1.57, 0.00, 3.15, 0.00, 0.03, 0.058, 1.40,-PI_6, PI_6, 0.00,-PI_2, 0.00, PI_2,-PI_6, PI_2,  5 }, --  9 - ruparm
+	{ "capsule",  1, 0.01, 0.07,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  1.57, 0.00, 3.15, 0.00, 0.03, 0.058, 1.40, 0.00, 0.00, 0.00,-PI_2, 0.00, PI_2,-PI_6, PI_2,  5 }, --  9 - ruparm
 	{ "capsule",  9, 0.01, 0.06,  3.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  0.00,-0.00, 0.00, 0.00, 0.00, 0.079, 0.00, 0.30, 2.62, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  6 }, -- 10 - rfrarm
-	{ "capsule", 10, 0.01, 0.02,  1.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.02,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.077, 0.00,-PI_4, PI_4, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  7 }, -- 11 - rhand
-	{ "capsule",  1, 0.01, 0.07,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03, -1.57, 0.00,-3.15, 0.00,-0.03, 0.058, 1.40,-PI_6, PI_6, 0.00,-PI_2, 0.00, PI_2,-PI_6,-PI_2,  9 }, -- 12 - luparm
+	{ "capsule", 10, 0.01, 0.02,  1.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.02,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.077, 0.00, 0.00, 0.00, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  7 }, -- 11 - rhand
+	{ "capsule",  1, 0.01, 0.07,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03, -1.57, 0.00,-3.15, 0.00,-0.03, 0.058, 1.40, 0.00, 0.00, 0.00,-PI_2, 0.00, PI_2,-PI_6,-PI_2,  9 }, -- 12 - luparm
 	{ "capsule", 12, 0.01, 0.06,  3.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  0.00,-0.00, 0.00, 0.00, 0.00, 0.079, 0.00,-2.62,-0.30, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 10 }, -- 13 - lfrarm
-	{ "capsule", 13, 0.01, 0.02,  1.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.02,  0.00, 0.00, PI_2, 0.00, 0.00, 0.077, 0.00,-PI_4, PI_4, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 11 }, -- 14 - lhand
+	{ "capsule", 13, 0.01, 0.02,  1.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.02,  0.00, 0.00, PI_2, 0.00, 0.00, 0.077, 0.00, 0.00, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 11 }, -- 14 - lhand
 };
 
 SPRING_BONE = 1;
@@ -120,7 +120,7 @@ end
 function armClosure(fingerIndex, offsetVector)
 	local scaleMatrix = CreateMatrix();
 	scaleMatrix[0] = CreateVector(1.5, 0,   0,   0); -- Scale by 1.5 in the X axis
-	scaleMatrix[1] = CreateVector(0,   2.0, 0,   0); -- Scale by 2 in the Y axis
+	scaleMatrix[1] = CreateVector(0,   4.5, 0,   0); -- Scale by 4.5 in the Y axis
 	scaleMatrix[2] = CreateVector(0,   0,   1.5, 0); -- Scale by 1.5 in the Z axis
 	return function()
 		local fX,fY,fZ = GetLeapBonePosition(leapHelper,fingerIndex);
@@ -129,12 +129,14 @@ function armClosure(fingerIndex, offsetVector)
 end
 
 springDefs = {
-	{ BONE_SPINE0, 45, CreateVector(   0.05, 0.0, 0.05, 1.0), 1000, 40, 0.24, 0.1, shoulderClosure(CreateVector( -0.1, 0.0,-0.1, 1.0 )) },
-	{ BONE_SPINE0, 45, CreateVector(  -0.05, 0.0, 0.05, 1.0), 1000, 40, 0.24, 0.1, shoulderClosure(CreateVector(  0.1, 0.0,-0.1, 1.0 )) },
-	--{ BONE_LTHIGH, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0), 1500, 40, 0.43, 0.1, legClosure(CreateVector(-0.1, 0.0, 0.55, 1.0 )) },
-	--{ BONE_RTHIGH, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0), 1500, 40, 0.43, 0.1, legClosure(CreateVector( 0.1, 0.0, 0.55, 1.0 )) },
-	{ BONE_RHAND,  42, CreateVector(   0.01, 0.0, 0.00, 1.0),  500, 20, 0.24, 0.1, armClosure(41, CreateVector( 0.0, 0.0, -0.05, 1.0 )) },
-	{ BONE_LHAND,  25, CreateVector(   0.01, 0.0, 0.00, 1.0),  500, 20, 0.24, 0.1, armClosure(25, CreateVector( 0.0, 0.0, -0.03, 1.0 )) }
+	{ BONE_SPINE0, 45, CreateVector(   0.05, 0.0, 0.05, 1.0), 1000, 100, 0.24, 0.1, shoulderClosure(CreateVector( -0.1, 0.0,-0.1, 1.0 )) },
+	{ BONE_SPINE0, 45, CreateVector(  -0.05, 0.0, 0.05, 1.0), 1000, 100, 0.24, 0.1, shoulderClosure(CreateVector(  0.1, 0.0,-0.1, 1.0 )) },
+	{ BONE_LTHIGH, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0), 1000, 100, 0.43, 0.1, legClosure(CreateVector(-0.1, 0.0, 0.55, 1.0 )) },
+	{ BONE_RTHIGH, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0), 1000, 100, 0.43, 0.1, legClosure(CreateVector( 0.1, 0.0, 0.55, 1.0 )) },
+	--{ BONE_LCALF, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0),  1000, 100, 0.50, 0.1, legClosure(CreateVector(-0.1, 0.0, 0.6, 1.0 )) },
+	--{ BONE_RCALF, 43, CreateVector(  -0.04, 0.0, 0.05, 1.0),  1000, 100, 0.50, 0.1, legClosure(CreateVector( 0.1, 0.0, 0.6, 1.0 )) },
+	{ BONE_RHAND,  42, CreateVector(   0.01, 0.0, 0.00, 1.0),  500, 40, 0.24, 0.1, armClosure(41, CreateVector( 0.0, -0.2, -0.05, 1.0 )) },
+	{ BONE_LHAND,  25, CreateVector(   0.01, 0.0, 0.00, 1.0),  500, 40, 0.24, 0.1, armClosure(25, CreateVector( 0.0, 0.0, -0.03, 1.0 )) }
 };
 springBoneAnchors = {};
 springLeapAnchors = {};
@@ -172,6 +174,7 @@ function CreateMarionette(physicsWorld)
 	jointMatrices = {};
 	initialInvMatrices = {};
 	debugModels = {};
+	prevArmMatrix = CreateMatrix();
 	local sphVtx, sphIdx = CreateSphere();
 	local cubVtx, cubIdx = CreateCube(false);
 	
@@ -212,11 +215,21 @@ function CreateMarionette(physicsWorld)
 			parent = definitions[parent+1][BONE_PARENT];
 		end
 		
+		local friction = math.pow(0.80,treeDepth);
+		
+		--if i == BONE_LCALF or i == BONE_RCALF then
+		--	friction = 0.95
+		--end
+		
+		if i == BONE_LTHIGH or i == BONE_RTHIGH then
+			friction = 0.1;
+		end
+		
 		AddPhysicsRagdollBone(physicsRagdoll,currentBone,definition[BONE_PARENT],
 			definition[JOINT_CONE],definition[JOINT_MIN],definition[JOINT_MAX],
 			definition[CHILD_PITCH],definition[CHILD_YAW],definition[CHILD_ROLL],
 			definition[PAREN_PITCH],definition[PAREN_YAW],definition[PAREN_ROLL],
-			math.pow(0.85,treeDepth)); -- 0.75); previously
+			friction);
 		numRagdollBones = numRagdollBones + 1;
 		ragdollBones[i] = currentBone;
 		
@@ -244,9 +257,8 @@ function CreateMarionette(physicsWorld)
 	armLocked = false;
 	
 	marionetteTicket = LoadAssets(
-		{"ProjectDir","MannaquinTexFace.dae","ColladaModel","Mannequin"},
-		{"ProjectDir","FaceNeutral.png","Texture","FaceNeutralTex"},
-		{"ProjectDir","FaceBlinking.png","Texture","FaceBlinkTex"}
+		{"ProjectDir","MannaquinFace.dae","ColladaModel","Mannequin"},
+		{"ProjectDir","MannaquinBlink.dae","ColladaModel","MannequinBlink"}
 	);
 	
 	jointModel = CreateModel("PosNor",CreateSphere());
@@ -287,7 +299,7 @@ function UpdateRagdoll()
 		SetModelMatrix(boneModels[i],boneMatrices[i]);
 		SetModelMatrix(debugModels[i],boneMatrices[i]);
 		
-		if i == BONE_HEAD and leapVisibilities[43] then
+		if i == BONE_HEAD and leapVisibilities[43] and armLocked then
 			local palmRotMatrix = GetLeapBoneMatrix(leapHelper, 43);
 			
 			local preMatrix = RotMatrix(0,0,-PI_2);
@@ -296,7 +308,7 @@ function UpdateRagdoll()
 			local postMatrix = RotMatrix(0,0,PI_2);
 			palmRotMatrix[3] = CreateVector(0,-definitions[i][BONE_Z],0,1); -- Shouldn't this be postMatrix and palmRotMatrix be 0?
 			
-			palmRotMatrix = postMatrix * palmRotMatrix * RotMatrix(0.5,0,0.1) * preMatrix;
+			palmRotMatrix = postMatrix * palmRotMatrix * RotMatrix(0.1,-0.5,0.1) * preMatrix;
 			boneMatrices[i] = boneMatrices[i] * palmRotMatrix;
 		end
 		
@@ -314,7 +326,7 @@ function UpdateSprings()
 		--print("PALM VISIBLE!");
 		
 		local walkBeamOffset = CreateMatrix();
-		walkBeamOffset[3] = CreateVector(0,0,0.55,1);
+		walkBeamOffset[3] = CreateVector(0,0.2,0.55,1);
 		local walkBeamMatrix = GetLeapBoneMatrix(leapHelper,45) * walkBeamOffset;
 		SetModelMatrix(walkBeamModel,walkBeamMatrix);
 		SetPhysicsMatrix(walkBeam,walkBeamMatrix);
@@ -343,7 +355,7 @@ function UpdateSprings()
 						spring.object.torqueDamping = springDef[SPRING_TORQUE_DAMPING];
 					end
 					spring.object.length = springDef[SPRING_LENGTH];
-					spring.object.compresses = false;
+					--spring.object.compresses = false;
 					table.insert(springs,spring);
 				end
 				
@@ -400,46 +412,50 @@ function UpdateMarionette(delta)
 	down,pressed,released = GetKeyState('h');
 	if pressed then
 		armLocked = not armLocked;
+		--if armLocked then
+		--	prevArmMatrix = armMatrix;
+		--end
 	end
 	
 	if marionetteTicket and IsLoaded(marionetteTicket) then
 		marionetteModel = GetAsset("Mannequin");
-		faceNeutralTex = GetAsset("FaceNeutralTex");
-		faceBlinkTex = GetAsset("FaceBlinkTex");
+		marionetteBlinkModel = GetAsset("MannequinBlink");
 		
 		SetModelScale(marionetteModel,0.03);
+		SetModelScale(marionetteBlinkModel,0.03);
 		
 		marionetteModels = DecomposeModel(marionetteModel);
+		marionetteBlinkModels = DecomposeModel(marionetteBlinkModel);
 		
 		marionetteTicket = nil;
 	end
 end
 
-function DrawMarionette(camera, surface, effect)
+function DrawMarionette(camera, lights, surface, effect)
 	if marionetteModel then
 		for i,model in pairs(marionetteModels) do
-			DrawComplexModel(model,camera,light,surface,nil,effect);
+			DrawComplexModel(model, camera, lights, surface, nil, effect);
 		end
 	end
 end
 
-function DrawSpring(spring, camera, surface, effect)
+function DrawSpring(spring, camera, lights, surface, effect)
 	local boneAnchor = GetPhysicsMatrix(ragdollBones[spring.boneNumber]) * spring.boneOffset;
 	local controlAnchorX, controlAnchorY, controlAnchorZ = GetPhysicsPosition(spring.controlObject);
 	
-	StretchModelBetween(spring.model, 0.01,
+	StretchModelBetween(spring.model, 0.005,
 						boneAnchor.x, boneAnchor.y, boneAnchor.z,
 						controlAnchorX, controlAnchorY, controlAnchorZ);
 	
-	DrawComplexModel(spring.model, camera, surface, nil, effect);
+	DrawComplexModel(spring.model, camera, lights, surface, nil, effect);
 end
 
-function DrawMarionetteWires(camera, surface, effect)	
+function DrawMarionetteWires(camera, lights, surface, effect)	
 	for i,spring in pairs(springs) do
-		DrawSpring(spring, camera, surface, effect);
+		DrawSpring(spring, camera, lights, surface, effect);
 	end
 	if walkBeamInWorld then
-		DrawComplexModel(walkBeamModel,camera,light,surface,nil,effect);
+		DrawComplexModel(walkBeamModel, camera, lights, surface, nil, effect);
 	end
 	for i,matrix in pairs(jointMatrices) do
 		SetModelMatrix(jointModel, matrix);

@@ -430,7 +430,14 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 			}
 		}
 
-		direct3Dcontext->UpdateSubresource(lightParamsBuffer, 0, 0, &lightConstData, 0, 0);
+		static unsigned setCount = 0;
+
+		setCount++;
+
+		direct3Dcontext->UpdateSubresource(lightParamsBuffer, 0, 0, &lightConstData, sizeof(LightConstants), sizeof(LightConstants));
+
+		setCount++;
+
 		direct3Dcontext->PSSetConstantBuffers(1, 1, &lightParamsBuffer);
 	}
 	else
@@ -448,10 +455,10 @@ bool DX11::ModelShader::SetParameters(ID3D11DeviceContext * direct3Dcontext, Gpu
 
 	// UPDATING CONSTANT BUFFERS - SIGNIFICANT COST - 17us //
 
-	direct3Dcontext->UpdateSubresource(pixelConstBuffer, 0, 0, &pixelConstData, 0, 0);
+	direct3Dcontext->UpdateSubresource(pixelConstBuffer, 0, 0, &pixelConstData, sizeof(PixelConstants), sizeof(PixelConstants));
 	direct3Dcontext->PSSetConstantBuffers(0, 1, &pixelConstBuffer);
 
-	direct3Dcontext->UpdateSubresource(vertexConstBuffer, 0, 0, &vertexConstData, 0, 0);
+	direct3Dcontext->UpdateSubresource(vertexConstBuffer, 0, 0, &vertexConstData, sizeof(VertexConstants), sizeof(VertexConstants));
 	direct3Dcontext->VSSetConstantBuffers(0, 1, &vertexConstBuffer);
 
 	// SETTING EXTRA PARAMS - VARIABLE COST //

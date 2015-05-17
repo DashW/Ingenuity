@@ -15,6 +15,8 @@ class PlatformApi : public Ingenuity::PlatformApi
 	std::map<std::wstring, __int64> timestampMap;
 	std::map<std::wstring, float> timestampTimes;
 
+	std::vector<std::string> commandLineArgs;
+
 	Window * mainWindow;
 	float secsPerCpuCount;
 
@@ -31,6 +33,8 @@ public:
 
 	virtual PlatformWindow * GetMainPlatformWindow() override;
 	virtual PlatformWindow * CreatePlatformWindow(Gpu::Api * gpu, unsigned width = 1024, unsigned height = 600) override;
+
+	virtual const std::vector<std::string> & GetCommandLineArgs() override { return commandLineArgs; }
 };
 
 } // namespace Win32

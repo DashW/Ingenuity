@@ -39,6 +39,20 @@ PlatformApi::PlatformApi(Window * mainWindow) :
 	__int64 countsPerSec = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
 	secsPerCpuCount = 1.0f / (float)countsPerSec;
+
+	int numArgs = 0;
+	wchar_t * commandLineChars = GetCommandLineW();
+	wchar_t ** commandLineArgChars = CommandLineToArgvW(commandLineChars, &numArgs);
+
+	for(int i = 0; i < numArgs; ++i)
+	{
+		size_t charsConverted = 0;
+		char argShortChars[256];
+		wcstombs_s(&charsConverted, argShortChars, commandLineArgChars[i], 255);
+		argShortChars[charsConverted] = '\0';
+
+		commandLineArgs.push_back(argShortChars);
+	}
 }
 
 void PlatformApi::BeginTimestamp(const wchar_t * name)

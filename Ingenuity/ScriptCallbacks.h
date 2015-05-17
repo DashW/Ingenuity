@@ -88,6 +88,8 @@ public:
 			"() Displays help information for all Ingenuity functions");
 		interpreter->RegisterCallback("Require", &ScriptCallbacks::Require,
 			"(directory,path) Loads and runs a dependent script file");
+		interpreter->RegisterCallback("GetCommandLineArgs", &ScriptCallbacks::GetCommandLineArgs,
+			"() Returns the command line arguments to this application instance");
 
 		// INPUT
 		interpreter->RegisterCallback("GetMousePosition", &ScriptCallbacks::GetMousePosition,
@@ -128,6 +130,8 @@ public:
 			"(sound) Pauses the given sound file");
 		interpreter->RegisterCallback("SetSoundSpeed", &ScriptCallbacks::SetSoundSpeed,
 			"(sound,speed) Sets the playback speed of the given sound");
+		interpreter->RegisterCallback("SetSoundVolume", &ScriptCallbacks::SetSoundVolume,
+			"(sound,volume) Sets the playback volume of the given sound");
 		interpreter->RegisterCallback("GetAmplitude", &ScriptCallbacks::GetAmplitude,
 			"([sound]) Returns the global amplitude [or, if provided, the amplitude of the given sound]");
 		interpreter->RegisterCallback("GetSoundDuration", &ScriptCallbacks::GetSoundDuration,
@@ -162,6 +166,8 @@ public:
 			"(world,delta) Updates the given physics world by the given time delta");
 		interpreter->RegisterCallback("SetPhysicsConstants", &ScriptCallbacks::SetPhysicsConstants,
 			"(world,gravX,gravY,gravZ,drag) Sets the gravity and linear drag of the physics world");
+		interpreter->RegisterCallback("SetPhysicsMaterialDefaults", &ScriptCallbacks::SetPhysicsMaterialDefaults,
+			"(world,sfriction,dfriction) Sets the default static and dynamic frictin for the given world");
 		interpreter->RegisterCallback("SetPhysicsPosition", &ScriptCallbacks::SetPhysicsPosition,
 			"(object,x,y,z[,local]) Sets the [local] position of the physics object");
 		interpreter->RegisterCallback("SetPhysicsRotation", &ScriptCallbacks::SetPhysicsRotation,
@@ -196,6 +202,24 @@ public:
 		interpreter->RegisterCallback("GetPhysicsDebugModel", &ScriptCallbacks::GetPhysicsDebugModel,
 			"(object) Returns a debug model for the given physics object");
 
+		//interpreter->RegisterCallback("CreateSocket", &ScriptCallbacks::CreateSocket,
+		//	"(port[,endpoint]) Creates a server [or client] socket with the given port [and endpoint URL]");
+		//interpreter->RegisterCallback("SocketAccept", &ScriptCallbacks::SocketAccept,
+		//	"(socket) If a client is trying to connect, returns a new direct communication socket with that client");
+		//interpreter->RegisterCallback("SocketSend", &ScriptCallbacks::SocketSend,
+		//	"(socket,string) Sends a string over the given socket");
+		//interpreter->RegisterCallback("SocketReceive", &ScriptCallbacks::SocketReceive,
+		//	"(socket) Receives a string (up to 255 charactets) from the given socket");
+
+		interpreter->RegisterCallback("CreateSpoutSender", &ScriptCallbacks::CreateSpoutSender,
+			"(name,width,height) Creates a new Spout sender to share a texture between processes");
+		interpreter->RegisterCallback("CreateSpoutReceiver", &ScriptCallbacks::CreateSpoutReceiver,
+			"([name]) Creates a new Spout receiver [for the given sender] or the first found sender");
+		interpreter->RegisterCallback("SpoutSendTexture", &ScriptCallbacks::SpoutSendTexture,
+			"(sender,texture) Sends a texture via Spout with the given sender (must be same size)");
+		interpreter->RegisterCallback("SpoutReceiveTexture", &ScriptCallbacks::SpoutReceiveTexture,
+			"(receiver,texture) Copies Spout receiver's texture into given texture (must be same size)");
+
 #ifdef USE_LEAPMOTION_HELPER
 
 		interpreter->RegisterCallback("CreateLeapHelper", &ScriptCallbacks::CreateLeapHelper,
@@ -216,6 +240,8 @@ public:
 			"(helper,index) Returns the transformation matrix of the indexed Leap Motion bone");
 		interpreter->RegisterCallback("GetLeapFinger", &ScriptCallbacks::GetLeapFinger,
 			"(helper,index) Returns the visibility and position of the given Leap Motion finger tip");
+		interpreter->RegisterCallback("GetLeapImage", &ScriptCallbacks::GetLeapImage,
+			"(helper[,left]) Returns an image [left or right] from the Leap Motion's IR cameras");
 
 #endif
 
@@ -233,6 +259,7 @@ public:
 	static void ClearConsole(ScriptInterpreter*);
 	static void Help(ScriptInterpreter*);
 	static void Require(ScriptInterpreter*);
+	static void GetCommandLineArgs(ScriptInterpreter*);
 
 	static void CreateWindow(ScriptInterpreter*);
 	static void GetMainWindow(ScriptInterpreter*);
@@ -301,6 +328,7 @@ public:
 	static void AddToPhysicsWorld(ScriptInterpreter*);
 	static void RemoveFromPhysicsWorld(ScriptInterpreter*);
 	static void SetPhysicsConstants(ScriptInterpreter*);
+	static void SetPhysicsMaterialDefaults(ScriptInterpreter*);
 	static void SetPhysicsPosition(ScriptInterpreter*);
 	static void SetPhysicsRotation(ScriptInterpreter*);
 	static void SetPhysicsScale(ScriptInterpreter*);
@@ -319,6 +347,16 @@ public:
 	static void PickPhysicsObject(ScriptInterpreter*);
 	static void GetPhysicsDebugModel(ScriptInterpreter*);
 
+	static void CreateSocket(ScriptInterpreter*);
+	static void SocketAccept(ScriptInterpreter*);
+	static void SocketSend(ScriptInterpreter*);
+	static void SocketReceive(ScriptInterpreter*);
+
+	static void CreateSpoutSender(ScriptInterpreter*);
+	static void CreateSpoutReceiver(ScriptInterpreter*);
+	static void SpoutSendTexture(ScriptInterpreter*);
+	static void SpoutReceiveTexture(ScriptInterpreter*);
+
 #ifdef USE_LEAPMOTION_HELPER
 
 	static void CreateLeapHelper(ScriptInterpreter*);
@@ -330,6 +368,7 @@ public:
 	static void SetLeapScale(ScriptInterpreter*);
 	static void GetLeapBoneMatrix(ScriptInterpreter*);
 	static void GetLeapFinger(ScriptInterpreter*);
+	static void GetLeapImage(ScriptInterpreter*);
 
 #endif
 };

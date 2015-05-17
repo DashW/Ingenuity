@@ -21,10 +21,6 @@
       <Configuration>Release DX9</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals" />
   <PropertyGroup Label="Globals">
@@ -50,13 +46,6 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -88,10 +77,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="PropertySheet.props" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="PropertySheet.props" />
@@ -107,10 +92,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'" />
@@ -204,25 +185,6 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <Message>Copying Shaders &amp; Fonts...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level2</WarningLevel>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>USE_DX9_GPUAPI;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck>true</SDLCheck>
-      <DisableSpecificWarnings>
-      </DisableSpecificWarnings>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">
     <ClCompile>
       <WarningLevel>Level2</WarningLevel>
@@ -256,7 +218,7 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_FREE_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX11_GPUAPI;USE_WIC_IMAGEAPI;USE_XAUDIO2_AUDIOAPI;USE_NEWTON_PHYSICSAPI;USE_LEAPMOTION_HELPER;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
@@ -377,7 +339,6 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Create</PrecompiledHeader>
     </ClCompile>
@@ -727,10 +688,26 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
     <FxCompile Include="Shaders\DX11\NoiseRevealPixPosNor.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\NoiseRevealPixPosNorTex.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\ParticleSystemInsertCS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">CSMAIN</EntryPointName>
@@ -932,6 +909,10 @@ copy "$(SolutionDir)..\Third Party\DirectXTK 2014-04\StandardFonts\*" "$(OutDir)
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DX11|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release DX9|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug DX9|Win32'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Shaders\DX11\TextureCopyPixPosTex.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug DX11|Win32'">5.0</ShaderModel>

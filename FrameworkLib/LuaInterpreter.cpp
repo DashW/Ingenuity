@@ -248,7 +248,6 @@ bool LuaInterpreter::LoadScript(const char * data, unsigned dataSize, const char
 	{
 		lua_setglobal(state, moduleName);
 	}
-	SetError(false);
 	SetInitialised();
 	return true;
 }

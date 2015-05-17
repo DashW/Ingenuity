@@ -124,6 +124,7 @@ public:
 	// and certainly shouldn't force the caller to reload the script to recover.
 	// Perhaps this could be removed from the interface and handled in Ingenuity Main?
 	bool IsInError() { return inError; }
+	void ResetError() { inError = false; }
 	bool IsInitialised() { return initialised && dependencies == 0; }
 
 	inline void PushParam(ScriptParam param)

@@ -865,7 +865,7 @@ Gpu::Texture * DX11::Api::CreateGpuTexture(char * data, unsigned dataSize, bool 
 
 	if(isDDS)
 	{
-		CreateDDSTextureFromMemory(direct3Ddevice, (const uint8_t*) data, dataSize, &resource, &shaderView);
+		CreateDDSTextureFromMemory(direct3Ddevice, (const uint8_t*)data, dataSize, &resource, &shaderView);
 	}
 	else
 	{
@@ -889,6 +889,55 @@ Gpu::Texture * DX11::Api::CreateGpuTexture(char * data, unsigned dataSize, bool 
 		}
 	}
 	if(shaderView) shaderView->Release();
+	return 0;
+}
+
+Gpu::Texture * DX11::Api::CreateGpuTexture(char * data, unsigned dataSize, unsigned width, unsigned height)
+{
+	ID3D11ShaderResourceView * shaderView = 0;
+	ID3D11Texture2D * texture = nullptr;
+
+	// Create texture
+	D3D11_TEXTURE2D_DESC desc;
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.CPUAccessFlags = 0;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = data;
+	initData.SysMemPitch = static_cast<UINT>((width * 32 + 7) / 8);
+	initData.SysMemSlicePitch = static_cast<UINT>(dataSize);
+
+	HRESULT hr = direct3Ddevice->CreateTexture2D(&desc, &initData, &texture);
+	if(SUCCEEDED(hr) && texture != 0)
+	{
+		D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+		memset(&SRVDesc, 0, sizeof(SRVDesc));
+		SRVDesc.Format = desc.Format;
+
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		SRVDesc.Texture2D.MipLevels = 1;
+
+		hr = direct3Ddevice->CreateShaderResourceView(texture, &SRVDesc, &shaderView);
+		if(FAILED(hr))
+		{
+			texture->Release();
+			return 0;
+		}
+
+		D3D11_TEXTURE2D_DESC desc;
+		texture->GetDesc(&desc);
+		return new DX11::Texture(texture, shaderView, desc);
+	}
+
 	return 0;
 }
 
@@ -1240,8 +1289,7 @@ Gpu::DrawSurface * DX11::Api::GetWindowDrawSurface(PlatformWindow * window)
 void DX11::Api::BeginTimestamp(const std::wstring name)
 {
 	ProfileData& profileData = profiles[name];
-	_ASSERT(profileData.queryStarted == FALSE);
-	_ASSERT(profileData.queryFinished == FALSE);
+	if(profileData.queryStarted || profileData.queryFinished) return;
 
 	if(profileData.disjointQuery[currFrame] == NULL)
 	{
@@ -1270,8 +1318,7 @@ void DX11::Api::BeginTimestamp(const std::wstring name)
 void DX11::Api::EndTimestamp(const std::wstring name)
 {
 	ProfileData& profileData = profiles[name];
-	_ASSERT(profileData.queryStarted == TRUE);
-	_ASSERT(profileData.queryFinished == FALSE);
+	if(!profileData.queryStarted || profileData.queryFinished) return;
 
 	// Insert the end timestamp    
 	direct3Dcontext->End(profileData.timestampEndQuery[currFrame]);
@@ -1288,7 +1335,8 @@ void DX11::Api::EndTimestamp(const std::wstring name)
 Gpu::TimestampData DX11::Api::GetTimestampData(const std::wstring name)
 {
 	ProfileData& profileData = profiles[name];
-	_ASSERT(profileData.queryStarted == FALSE);
+	if(profileData.queryStarted) return Gpu::TimestampData();
+	//_ASSERT(profileData.queryStarted == FALSE);
 	//_ASSERT(profileData.queryFinished == TRUE);
 
 	Gpu::TimestampData timestampData;

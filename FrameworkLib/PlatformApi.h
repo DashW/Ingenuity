@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 namespace Ingenuity {
 
 namespace Gpu
@@ -35,6 +38,8 @@ public:
 
 	virtual PlatformWindow * GetMainPlatformWindow() = 0;
 	virtual PlatformWindow * CreatePlatformWindow(Gpu::Api * gpu, unsigned width = 640, unsigned height = 480) = 0;
+
+	virtual const std::vector<std::string> & GetCommandLineArgs() = 0;
 };
 
 } // namespace Ingenuity

@@ -75,15 +75,65 @@ WIC::Api::~Api()
 //	return new WICImageBuffer(bitmap, lock, width, height);
 //}
 
-Image::Buffer * WIC::Api::CreateImage(unsigned w, unsigned h)
+static const GUID IMAGE_FORMAT_TO_WIC_GUID[Image::Format_Total] =
+{
+	GUID_WICPixelFormat32bppRGBA,
+	GUID_WICPixelFormat32bppBGRA,
+	GUID_WICPixelFormat24bppRGB,
+	GUID_WICPixelFormat8bppGray
+};
+
+static const unsigned IMAGE_FORMAT_TO_STRIDE[Image::Format_Total] = 
+{
+	4,
+	4,
+	3,
+	1
+};
+
+Image::Buffer * WIC::Api::CreateImage(char * data, unsigned dataSize, unsigned w, unsigned h, Image::Format format)
 {
 	IWICBitmap * bitmap = 0;
-	factory->CreateBitmap(w, h, GUID_WICPixelFormat32bppRGBA, WICBitmapCacheOnLoad, &bitmap);
+
+	factory->CreateBitmap(w, h, IMAGE_FORMAT_TO_WIC_GUID[format], WICBitmapCacheOnLoad, &bitmap);
 	if(!bitmap) return 0;
 
 	WICRect lockRect = { 0, 0, w, h };
 
 	IWICBitmapLock * lock = 0;
+	bitmap->Lock(&lockRect, WICBitmapLockWrite, &lock);
+	if(!lock)
+	{
+		bitmap->Release();
+		return 0;
+	}
+	
+	unsigned bufferSize = 0;
+	WICInProcPointer dataPointer = 0;
+	lock->GetDataPointer(&bufferSize, &dataPointer);
+
+	memcpy(dataPointer, data, dataSize);
+
+	lock->Release();
+	lock = 0;
+
+	if(format != Image::Format_4x8intRGBA)
+	{
+		IWICBitmapSource * convertedSource = 0;
+		WICConvertBitmapSource(GUID_WICPixelFormat32bppRGBA, bitmap, &convertedSource);
+		bitmap->Release();
+		bitmap = 0;
+		if(!convertedSource) return 0;
+
+		// Create the bitmap from the image frame.
+		factory->CreateBitmapFromSource(
+			convertedSource,         // Create a bitmap from the image frame
+			WICBitmapCacheOnDemand,  // Cache metadata when needed
+			&bitmap);                // Pointer to the bitmap
+		convertedSource->Release();
+		if(!bitmap) return 0;
+	}
+
 	bitmap->Lock(&lockRect, WICBitmapLockWrite, &lock);
 	if(!lock)
 	{
@@ -212,26 +262,37 @@ Image::Buffer * WIC::Api::CreateImage(char * buffer, unsigned bufferLength)
 //	wicImage->bitmap->Lock(&lockRect, WICBitmapLockWrite, &wicImage->lock);
 //}
 
-void WIC::Api::GetImageSize(Image::Buffer * image, unsigned & u, unsigned & v)
+void * WIC::Buffer::GetData()
 {
-	if(!image) return;
-	WIC::Buffer * wicImage = static_cast<WIC::Buffer*>(image);
-	u = wicImage->width;
-	v = wicImage->height;
+	UINT pcBufferSize = 0;
+	WICInProcPointer pcBufferData = 0;
+	lock->GetDataPointer(&pcBufferSize, &pcBufferData);
+	return pcBufferData;
 }
 
-Image::Color WIC::Api::GetPixelColor(Image::Buffer * image, unsigned u, unsigned v)
+unsigned WIC::Buffer::GetDataSize()
 {
-	if(!image) return Image::Color();
+	UINT pcBufferSize = 0;
+	WICInProcPointer pcBufferData = 0;
+	lock->GetDataPointer(&pcBufferSize, &pcBufferData);
+	return pcBufferSize;
+}
+
+void WIC::Buffer::GetImageSize(unsigned & u, unsigned & v)
+{
+	u = width;
+	v = height;
+}
+
+Image::Color WIC::Buffer::GetPixelColor(unsigned u, unsigned v)
+{
 	unsigned numBytes = 0;
 	BYTE * bytes = 0;
 
-	WIC::Buffer * wicImage = static_cast<WIC::Buffer*>(image);
-
-	wicImage->lock->GetDataPointer(&numBytes, &bytes);
+	lock->GetDataPointer(&numBytes, &bytes);
 	if(!bytes) return Image::Color();
 
-	unsigned index = ((v * wicImage->width) + u) * 4; // RGBA, Stride should be 4!
+	unsigned index = ((v * width) + u) * 4; // RGBA, Stride should be 4!
 
 	Image::Color color;
 
@@ -243,18 +304,15 @@ Image::Color WIC::Api::GetPixelColor(Image::Buffer * image, unsigned u, unsigned
 	return color;
 }
 
-void WIC::Api::SetPixelColor(Image::Buffer * image, unsigned u, unsigned v, Image::Color color)
+void WIC::Buffer::SetPixelColor(unsigned u, unsigned v, Image::Color color)
 {
-	if(!image) return;
-	WIC::Buffer * wicImage = static_cast<WIC::Buffer*>(image);
-
 	unsigned numBytes = 0;
 	BYTE * bytes = 0;
 
-	wicImage->lock->GetDataPointer(&numBytes, &bytes);
+	lock->GetDataPointer(&numBytes, &bytes);
 	if(!bytes) return;
 
-	unsigned index = ((v * wicImage->width) + u) * 4; // RGBA, Stride should be 4!
+	unsigned index = ((v * width) + u) * 4; // RGBA, Stride should be 4!
 
 	bytes[index] = BYTE(color.r * 255.f);
 	bytes[index + 1] = BYTE(color.g * 255.f);

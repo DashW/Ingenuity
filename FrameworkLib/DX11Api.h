@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef USE_DX11_GPUAPI
-
 #include "GpuApi.h"
 #include "DX11Samplers.h"
 #include "DX11Shaders.h"
@@ -299,6 +297,7 @@ public:
 
 	virtual Gpu::Font * CreateGpuFont(int height, LPCWSTR facename, Gpu::FontStyle style = Gpu::FontStyle_Regular) override;
 	virtual Gpu::Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) override;
+	virtual Gpu::Texture * CreateGpuTexture(char * data, unsigned dataSize, unsigned width, unsigned height) override;
 	virtual Gpu::CubeMap * CreateGpuCubeMap(char * data, unsigned dataSize) override;
 	virtual Gpu::VolumeTexture * CreateGpuVolumeTexture(char * data, unsigned dataSize) override;
 	virtual Gpu::ShaderLoader * CreateGpuShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path) override;
@@ -337,11 +336,11 @@ public:
 	virtual void SetBlendMode(Gpu::BlendMode blendMode) override;
 	virtual void SetDepthMode(Gpu::DepthMode depthMode) override;
 	virtual bool isDeviceLost() override;
+	ID3D11Device * GetDevice() { return direct3Ddevice; }
+	ID3D11DeviceContext * GetContext() { return direct3Dcontext; }
 
 	void ResetRenderTargets();
 };
 
 } // namespace DX11
 } // namespace Ingenuity
-
-#endif

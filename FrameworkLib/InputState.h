@@ -179,6 +179,11 @@ struct KeyState
 	static const unsigned char SPACE_CHAR = 0x20;
 	static const unsigned char CTRLBACK_CHAR = 0x7F;
 
+	static const unsigned char UP_CODE = 0x48;
+	static const unsigned char DOWN_CODE = 0x50;
+	static const unsigned char LEFT_CODE = 0x4b;
+	static const unsigned char RIGHT_CODE = 0x4d;
+
 	bool keys[MAX_KEYS];
 	bool upKeys[MAX_KEYS];
 	bool downKeys[MAX_KEYS];

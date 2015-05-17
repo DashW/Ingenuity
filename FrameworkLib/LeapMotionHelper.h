@@ -2,6 +2,8 @@
 
 #include "../Third Party/glm-0.9.5.4/glm/glm.hpp"
 
+#include "ImageApi.h"
+
 namespace Leap
 {
 class Controller;
@@ -28,6 +30,7 @@ public:
 	glm::mat4 GetBoneMatrix(unsigned index);
 	glm::vec3 GetFingerPosition(unsigned index);
 	glm::vec3 GetFingerDirection(unsigned index);
+	Image::Buffer * GetImage(Image::Api * images, bool left);
 
 	void SetPosition(glm::vec3 position) { this->position = position; }
 	void SetUniformScale(float uniformScale) { this->uniformScale = uniformScale; }

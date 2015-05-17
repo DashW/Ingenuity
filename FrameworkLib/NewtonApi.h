@@ -200,6 +200,7 @@ public:
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) override;
 	
 	virtual void SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float linearDrag) override;
+	virtual void SetMaterialDefaults(PhysicsWorld * world, float staticFriction = 0.9f, float dynamicFriction = 0.5f) override;
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) override;
 	virtual void SetLocalRotation(PhysicsObject * object, glm::vec3 rotation) override;
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) override;

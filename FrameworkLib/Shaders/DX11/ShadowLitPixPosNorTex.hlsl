@@ -79,7 +79,7 @@ PixelOut main(in VertexOutPosNorTex _vtx)
 	for(uint i = 0; i < _numLights; ++i)
 	{
 		float shadowFactor = (i == 0 ? CalcShadowFactor(shadowSampler, shadowMap, _vtx._ShadowPos) : 1.0f);
-		if(shadowFactor < 0.001f) break;
+		if(shadowFactor < 0.001f) continue;
 		float3 lightDirection = normalize(lightPositionSpecs[i].xyz - _vtx._WorldPos);
 		float  lightDistance = distance(lightPositionSpecs[i].xyz, _vtx._WorldPos);
 		float4 resultColor = inputColor;

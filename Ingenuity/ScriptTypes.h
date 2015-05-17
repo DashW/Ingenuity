@@ -36,7 +36,10 @@ enum ScriptPtrType
 	TypePhysicsMaterial,
 	TypePhysicsRagdoll,
 	TypePhysicsSpring,
+	TypeNetSocket,
 	TypeLeapHelper,
+	TypeSpoutSender,
+	TypeSpoutReceiver,
 
 	TypeCount
 };

@@ -228,8 +228,8 @@ void NewtonPhysicsObject::RemoveFromWorld()
 	newtonBody = 0;
 }
 
-NewtonApi::NewtonApi() :
-reentrantUpdate(false)
+NewtonApi::NewtonApi() 
+	: reentrantUpdate(false)
 {
 	//QueryPerformanceFrequency(&frequency);
 }
@@ -1096,6 +1096,13 @@ void NewtonApi::SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float
 	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(world);
 	physicsWorld->gravity = gravity;
 	physicsWorld->linearDrag = linearDrag;
+}
+
+void NewtonApi::SetMaterialDefaults(PhysicsWorld * world, float staticFriction, float dynamicFriction)
+{
+	NewtonPhysicsWorld * physicsWorld = static_cast<NewtonPhysicsWorld*>(world);
+	int defaultMaterialId = NewtonMaterialGetDefaultGroupID(physicsWorld->newtonWorld);
+	NewtonMaterialSetDefaultFriction(physicsWorld->newtonWorld, defaultMaterialId, defaultMaterialId, staticFriction, dynamicFriction);
 }
 
 void NewtonApi::SetLocalPosition(PhysicsObject * object, glm::vec3 position)

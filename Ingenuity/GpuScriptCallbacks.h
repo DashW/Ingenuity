@@ -149,6 +149,8 @@ public:
 		// (i.e. if we're not careful, a pointer could be deleted more than once!)
 		interpreter->RegisterCallback("GetSurfaceTexture", &GpuScriptCallbacks::GetSurfaceTexture,
 			"(surface) Gets the texture object from a draw surface");
+		interpreter->RegisterCallback("CreateImageTexture", &GpuScriptCallbacks::CreateImageTexture,
+			"(image) Creates a new texture from the given image object");
 
 		interpreter->RegisterCallback("CreateIsoSurface", &GpuScriptCallbacks::CreateIsoSurface,
 			"(length) Creates a cube IsoSurface with the given side length");
@@ -253,6 +255,7 @@ public:
 	static void DrawSurface(ScriptInterpreter*);
 	static void ClearSurface(ScriptInterpreter*);
 	static void GetSurfaceTexture(ScriptInterpreter*);
+	static void CreateImageTexture(ScriptInterpreter*);
 
 	static void CreateModel(ScriptInterpreter*);
 	static void CreateSpriteModel(ScriptInterpreter*);

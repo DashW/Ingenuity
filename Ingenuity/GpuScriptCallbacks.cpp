@@ -1194,6 +1194,7 @@ void GpuScriptCallbacks::CreateSurface(ScriptInterpreter * interpreter)
 {
 	static const char * surfaceTypeStrings[Gpu::DrawSurface::Format_Total] = {
 		"4x8i",
+		"4x8iBGRA",
 		"4x16f",
 		"3x10f",
 		"1x16f",
@@ -1308,6 +1309,20 @@ void GpuScriptCallbacks::GetSurfaceTexture(ScriptInterpreter * interpreter)
 
 	interpreter->ClearParams();
 	interpreter->PushParam(ScriptParam(new NonDeletingPtr(texture, ScriptTypes::GetHandle(TypeGpuTexture))));
+}
+
+void GpuScriptCallbacks::CreateImageTexture(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, image, TypeImageBuffer);
+	interpreter->ClearParams();
+
+	unsigned width, height;
+	Image::Buffer * imageBuf = image.GetPointer<Image::Buffer>();
+	imageBuf->GetImageSize(width, height);
+
+	Gpu::Texture * gpuTexture = interpreter->GetApp()->gpu->CreateGpuTexture((char*)imageBuf->GetData(), imageBuf->GetDataSize(), width, height);
+	
+	interpreter->PushParam(ScriptParam(gpuTexture, ScriptTypes::GetHandle(TypeGpuTexture)));
 }
 
 void GpuScriptCallbacks::CreateModel(ScriptInterpreter * interpreter)

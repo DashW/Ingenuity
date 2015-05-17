@@ -39,16 +39,16 @@ void ScriptConsole::ProcessInput(KeyState &keystate)
 		if(prevInputIndex < previousInputs.size())
 		{
 			prevInputIndex++;
+			inputString = previousInputs[previousInputs.size() - prevInputIndex];
 		}
-		inputString = previousInputs[previousInputs.size() - prevInputIndex];
 	}
 	if(keystate.downKeys[0x50]) // down
 	{
 		if(prevInputIndex > 0)
 		{
 			prevInputIndex--;
+			inputString = (prevInputIndex > 0 ? previousInputs[previousInputs.size() - prevInputIndex] : "");
 		}
-		inputString = (prevInputIndex > 0 ? previousInputs[previousInputs.size() - prevInputIndex] : "");
 	}
 	for(size_t i = 0; i < keystate.text.length(); i++)
 	{

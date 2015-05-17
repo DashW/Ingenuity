@@ -83,6 +83,7 @@ public:
 
 	virtual Font * CreateGpuFont(int height, const wchar_t * facename, FontStyle style = FontStyle_Regular) = 0; // DEPRECATE
 	virtual Texture * CreateGpuTexture(char * data, unsigned dataSize, bool isDDS = false) = 0;
+	virtual Texture * CreateGpuTexture(char * data, unsigned dataSize, unsigned width, unsigned height) = 0;
 	virtual CubeMap * CreateGpuCubeMap(char * data, unsigned dataSize) = 0;
 	virtual VolumeTexture * CreateGpuVolumeTexture(char * data, unsigned dataSize) = 0;
 	virtual ShaderLoader * CreateGpuShaderLoader(Files::Api * files, Files::Directory * directory, const wchar_t * path) = 0;

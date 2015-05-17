@@ -20,11 +20,9 @@ LocalMesh * LocalMesh::CombineWith(LocalMesh * other)
 {
 	if(other->vertexBuffer->GetVertexType() != vertexBuffer->GetVertexType()) return 0;
 
-	// Create the new vertex and index buffers
+	// Create the new vertex buffer
 
-	const unsigned newTriangleCount = numTriangles + other->numTriangles;
-	unsigned * newIndexBuffer = new unsigned[newTriangleCount * 3];
-	IVertexBuffer * newVertexBuffer;
+	IVertexBuffer * newVertexBuffer = 0;
 	switch(vertexBuffer->GetVertexType())
 	{
 	case VertexType_Pos:
@@ -45,6 +43,8 @@ LocalMesh * LocalMesh::CombineWith(LocalMesh * other)
 	case VertexType_PosNorTanTex:
 		newVertexBuffer = new VertexBuffer<Vertex_PosNorTanTex>(vertexBuffer->GetLength() + other->vertexBuffer->GetLength());
 		break;
+	default:
+		return 0;
 	}
 
 	// Copy the vertex buffers
@@ -55,6 +55,11 @@ LocalMesh * LocalMesh::CombineWith(LocalMesh * other)
 
 	memcpy(newData, vertexBuffer->GetData(), myDataLength);
 	memcpy(newData + myDataLength, other->vertexBuffer->GetData(), otherDataLength);
+
+	// Create the new index buffer
+
+	const unsigned newTriangleCount = numTriangles + other->numTriangles;
+	unsigned * newIndexBuffer = new unsigned[newTriangleCount * 3];
 
 	// Copy the index buffers
 

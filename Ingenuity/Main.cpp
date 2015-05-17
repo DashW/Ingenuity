@@ -19,6 +19,8 @@
 #include <tinyxml2.h>
 #include <string>
 
+#include <netlink/core.h>
+
 #define _X86_
 #include <debugapi.h>
 #undef _X86_
@@ -70,6 +72,7 @@ class Engine : public RealtimeApp
 
 			if(buffer)
 			{
+				parent->interpreter->ResetError();
 				parent->interpreter->LoadScript(buffer, bufferLength, filename.c_str());
 
 				// Need to delay the Begin() call until we've loaded all dependencies...
@@ -169,6 +172,8 @@ class Engine : public RealtimeApp
 
 	virtual void Begin() override
 	{
+		NL::init();
+
 		interpreterType = Lua;
 
 		// Create the interpreter here.
@@ -297,10 +302,10 @@ class Engine : public RealtimeApp
 			audioPaused = !audioPaused;
 		}
 
-		if(keyboard.downKeys[1]) //esc
-		{
-			running = false;
-		}
+		//if(keyboard.downKeys[1]) //esc
+		//{
+		//	running = false;
+		//}
 	}
 
 	virtual void Draw() override

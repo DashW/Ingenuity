@@ -69,6 +69,7 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 	static const DXGI_FORMAT SURFACE_FORMAT_TO_DXGI_FORMAT[Format_Total] =
 	{
 		DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_FORMAT_B8G8R8A8_UNORM,
 		DXGI_FORMAT_R16G16B16A16_FLOAT,
 		DXGI_FORMAT_R11G11B10_FLOAT,
 		DXGI_FORMAT_R16_FLOAT,
@@ -89,6 +90,7 @@ void DX11::TextureSurface::OnResetDevice(Gpu::Api * gpu)
 		1,
 		mipLevels, // MIP LEVELS - *MUST NEVER* BE GREATER THAN log2(width) OR log2(height)
 		bindFlag | D3D11_BIND_SHADER_RESOURCE);
+
 	device->CreateTexture2D(&textureDesc, 0, &texture2D);
 
 	if(typeless) dxgiFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;

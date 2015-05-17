@@ -83,7 +83,11 @@ function CreateStandardParams()
 	specTextBox.text = "12.0";
 	specTextBox.submit = function(textbox)
 		local textNumber = tonumber(textbox.text);
-		if textNumber and model then SetMeshSpecular(model,0,textNumber); end
+		if textNumber and model then 
+			for i=1,GetNumMeshes(model) do
+				SetMeshSpecular(model,i-1,textNumber); 
+			end
+		end
 	end
 	AddUIComponent(specTextBox);
 	

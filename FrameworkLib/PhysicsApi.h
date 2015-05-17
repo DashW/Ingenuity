@@ -117,6 +117,7 @@ public:
 	virtual PhysicsObject * GetRagdollObject(PhysicsRagdoll * ragdoll, unsigned index) = 0;
 
 	virtual void SetWorldConstants(PhysicsWorld * world, glm::vec3 gravity, float linearDrag) = 0;
+	virtual void SetMaterialDefaults(PhysicsWorld * world, float staticFriction = 0.9f, float dynamicFriction = 0.5f) = 0;
 	virtual void SetLocalPosition(PhysicsObject * object, glm::vec3 position) = 0;
 	virtual void SetLocalRotation(PhysicsObject * object, glm::vec3 rotation) = 0;
 	virtual void SetPosition(PhysicsObject * object, glm::vec3 position) = 0;

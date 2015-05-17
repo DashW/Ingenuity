@@ -192,7 +192,8 @@ LeapMotionHelper::LeapMotionHelper() : uniformScale(1.0f)
 {
 	listener = new InternalListener();
 	controller = new Leap::Controller(*listener);
-	controller->setPolicyFlags(Leap::Controller::POLICY_IMAGES);
+	controller->setPolicyFlags((Leap::Controller::PolicyFlag) 
+		(Leap::Controller::POLICY_BACKGROUND_FRAMES | Leap::Controller::POLICY_IMAGES));
 }
 
 LeapMotionHelper::~LeapMotionHelper()
@@ -260,6 +261,16 @@ glm::vec3 LeapMotionHelper::GetFingerDirection(unsigned index)
 {
 	if(index >= InternalListener::MAX_FINGERS) return glm::vec3();
 	return listener->fingers[index].direction;
+}
+
+Image::Buffer * LeapMotionHelper::GetImage(Image::Api * images, bool left)
+{
+	Leap::ImageList leapImageList = controller->frame().images();
+	if(leapImageList.count() < 2) return 0;
+
+	Leap::Image leapImage = leapImageList[left ? 0 : 1];
+
+	return images->CreateImage((char*)leapImage.data(), leapImage.width() * leapImage.height(), leapImage.width(), leapImage.height(), Image::Format_1x8intGrey);
 }
 
 } // end namespace Ingenuity

@@ -562,6 +562,16 @@ void ScriptCallbacks::Require(ScriptInterpreter * interpreter)
 	files->OpenAndRead(dir, wpath.c_str(), new RequireResponse(interpreter, wpath, hasModuleName ? modulename.svalue : 0));
 }
 
+void ScriptCallbacks::GetCommandLineArgs(ScriptInterpreter * interpreter)
+{
+	const std::vector<std::string> & commandLineArgs = interpreter->GetApp()->platform->GetCommandLineArgs();
+
+	for(unsigned i = 0; i < commandLineArgs.size(); ++i)
+	{
+		interpreter->PushParam(ScriptParam(ScriptParam::STRING, commandLineArgs[i].c_str()));
+	}
+}
+
 void ScriptCallbacks::CreateWindow(ScriptInterpreter * interpreter)
 {
 	ScriptParam width = interpreter->PopParam();
@@ -1217,10 +1227,9 @@ void ScriptCallbacks::GetImageSize(ScriptInterpreter * interpreter)
 	POP_PTRPARAM(1,image,TypeImageBuffer);
 
 	Image::Buffer * imageBuffer = image.GetPointer<Image::Buffer>();
-	Image::Api * imaging = interpreter->GetApp()->imaging;
 
 	unsigned w, h;
-	imaging->GetImageSize(imageBuffer,w,h);
+	imageBuffer->GetImageSize(w,h);
 
 	interpreter->ClearParams();
 	interpreter->PushParam(ScriptParam(ScriptParam::INT, double(w)));
@@ -1234,13 +1243,12 @@ void ScriptCallbacks::GetImagePixel(ScriptInterpreter * interpreter)
 	POP_NUMPARAM(3,v);
 
 	Image::Buffer * imageBuffer = image.GetPointer<Image::Buffer>();
-	Image::Api * imaging = interpreter->GetApp()->imaging;
 	
 	if(u.nvalue < 0.0f || v.nvalue < 0.0f) return;
 
 	unsigned uVal = unsigned(u.nvalue);
 	unsigned vVal = unsigned(v.nvalue);
-	Image::Color color = imaging->GetPixelColor(imageBuffer,uVal,vVal);
+	Image::Color color = imageBuffer->GetPixelColor(uVal,vVal);
 
 	interpreter->ClearParams();
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(color.r)));
@@ -1593,6 +1601,18 @@ void ScriptCallbacks::SetPhysicsConstants(ScriptInterpreter * interpreter)
 		glm::vec3(gravX.nvalue, gravY.nvalue, gravZ.nvalue), float(drag.nvalue));
 }
 
+void ScriptCallbacks::SetPhysicsMaterialDefaults(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, world, TypePhysicsWorld);
+	POP_NUMPARAM(2, sfriction);
+	POP_NUMPARAM(3, dfriction);
+	interpreter->ClearParams();
+
+	PhysicsWorld * physicsWorld = world.GetPointer<PhysicsWorld>();
+
+	interpreter->GetApp()->physics->SetMaterialDefaults(physicsWorld, float(sfriction.nvalue), float(dfriction.nvalue));
+}
+
 void ScriptCallbacks::SetPhysicsPosition(ScriptInterpreter * interpreter)
 {
 	POP_PTRPARAM(1, object, TypePhysicsObject);
@@ -1907,6 +1927,190 @@ void ScriptCallbacks::GetPhysicsDebugModel(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(complexModel, ScriptTypes::GetHandle(TypeGpuComplexModel)));
 }
 
+}
+
+// HACK: NOT ENCAPSULATED! RUSHED! MOVE THE FOLLOWING OUT OF THE SCRIPTCALLBACKS AND INTO INTERFACES!
+
+#include <netlink/netlink.h>
+#include <Spout.h>
+#include <DX11Api.h>
+
+namespace Ingenuity {
+
+void ScriptCallbacks::CreateSocket(ScriptInterpreter * interpreter)
+{
+	POP_NUMPARAM(1, port);
+	ScriptParam endpoint = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	NL::Socket * socket = 0;
+
+	try
+	{
+		if(endpoint.type == ScriptParam::STRING)
+		{
+			socket = new NL::Socket(endpoint.svalue, unsigned(port.nvalue));
+		}
+		else
+		{
+			socket = new NL::Socket(unsigned(port.nvalue));
+		}
+
+		interpreter->PushParam(ScriptParam(socket, ScriptTypes::GetHandle(TypeNetSocket)));
+	}
+	catch(NL::Exception e)
+	{
+		interpreter->ThrowError(e.what());
+
+		if(socket) delete socket;
+	}
+}
+
+void ScriptCallbacks::SocketAccept(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, socket, TypeNetSocket);
+	interpreter->ClearParams();
+
+	try
+	{
+		NL::Socket * clientSocket = socket.GetPointer<NL::Socket>()->accept();
+
+		interpreter->PushParam(ScriptParam(clientSocket, ScriptTypes::GetHandle(TypeNetSocket)));
+	}
+	catch(NL::Exception e)
+	{
+		interpreter->ThrowError(e.what());
+	}
+}
+
+void ScriptCallbacks::SocketSend(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, socket, TypeNetSocket);
+	POP_PARAM(2, string, STRING);
+	interpreter->ClearParams();
+
+	try
+	{
+		socket.GetPointer<NL::Socket>()->send(string.svalue, strlen(string.svalue));
+	}
+	catch(NL::Exception e)
+	{
+		interpreter->ThrowError(e.what());
+	}
+}
+
+void ScriptCallbacks::SocketReceive(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, socket, TypeNetSocket);
+	POP_PARAM(2, callback, FUNCTION);
+	interpreter->ClearParams();
+
+	try
+	{
+		char readBuf[256];
+		int readAmount = socket.GetPointer<NL::Socket>()->read(readBuf, 255);
+		readBuf[readAmount] = '\0';
+
+		interpreter->PushParam(ScriptParam(ScriptParam::STRING, readBuf));
+		interpreter->CallFunction(callback);
+	}
+	catch(NL::Exception e)
+	{
+		interpreter->ThrowError(e.what());
+	}
+}
+
+void ScriptCallbacks::CreateSpoutSender(ScriptInterpreter * interpreter)
+{
+	POP_PARAM(1, name, STRING);
+	POP_NUMPARAM(2, width);
+	POP_NUMPARAM(3, height);
+	interpreter->ClearParams();
+
+	char senderName[256];
+	strcpy_s(senderName, name.svalue);
+
+	SpoutSender * sender = new SpoutSender();
+
+	sender->SetDX11device( static_cast<DX11::Api*>( interpreter->GetApp()->gpu )->GetDevice() );
+
+	if(sender->CreateSender(senderName, unsigned(width.nvalue), unsigned(height.nvalue)))
+	{
+		interpreter->PushParam(ScriptParam(sender, ScriptTypes::GetHandle(TypeSpoutSender)));
+	}
+	else
+	{
+		delete sender;
+	}
+}
+
+void ScriptCallbacks::CreateSpoutReceiver(ScriptInterpreter * interpreter)
+{
+	ScriptParam name = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	char senderName[256];
+	if(name.type == ScriptParam::STRING)
+	{
+		strcpy_s(senderName, name.svalue);
+	}
+	else
+	{
+		senderName[0] = '\0';
+	}
+
+	SpoutReceiver * receiver = new SpoutReceiver();
+
+	receiver->SetDX11device(static_cast<DX11::Api*>(interpreter->GetApp()->gpu)->GetDevice());
+
+	unsigned width = 0, height = 0;
+	if(receiver->CreateReceiver(senderName, width, height))
+	{
+		interpreter->PushParam(ScriptParam(receiver, ScriptTypes::GetHandle(TypeSpoutReceiver)));
+		interpreter->PushParam(ScriptParam(ScriptParam::INT, int(width)));
+		interpreter->PushParam(ScriptParam(ScriptParam::INT, int(height)));
+	}
+	else
+	{
+		delete receiver;
+	}
+}
+
+void ScriptCallbacks::SpoutSendTexture(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, sender, TypeSpoutSender);
+	POP_PTRPARAM(2, texture, TypeGpuTexture);
+	interpreter->ClearParams();
+	
+	Gpu::Texture * gpuTexture = texture.GetPointer<Gpu::Texture>();
+	DX11::Texture * dx11Texture = static_cast<DX11::Texture*>(gpuTexture);
+	
+	bool success = sender.GetPointer<SpoutSender>()->SendTexture(&dx11Texture->texture);
+
+	interpreter->PushParam(ScriptParam(ScriptParam::BOOL, success));
+}
+
+void ScriptCallbacks::SpoutReceiveTexture(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, receiver, TypeSpoutReceiver);
+	POP_PTRPARAM(2, texture, TypeGpuTexture);
+	interpreter->ClearParams();
+
+	Gpu::Texture * gpuTexture = ScriptTypes::CheckPtrType(texture,TypeGpuTexture) ? texture.GetPointer<Gpu::Texture>() : 0;
+	DX11::Texture * dx11Texture = static_cast<DX11::Texture*>(gpuTexture);
+
+	SpoutReceiver * spoutReceiver = receiver.GetPointer<SpoutReceiver>();
+	
+	char senderName[256];
+	spoutReceiver->GetActiveSender(senderName);
+
+	ID3D11Texture2D * resultTex = 0;
+	unsigned width, height;
+	bool success = spoutReceiver->ReceiveTexture(senderName, width, height, dx11Texture ? &dx11Texture->texture : &resultTex);
+
+	interpreter->PushParam(ScriptParam(ScriptParam::BOOL, success));
+}
+
 #ifdef USE_LEAPMOTION_HELPER
 
 void ScriptCallbacks::CreateLeapHelper(ScriptInterpreter * interpreter)
@@ -2019,6 +2223,24 @@ void ScriptCallbacks::GetLeapFinger(ScriptInterpreter * interpreter)
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.x)));
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.y)));
 	interpreter->PushParam(ScriptParam(ScriptParam::DOUBLE, double(position.z)));
+}
+
+void ScriptCallbacks::GetLeapImage(ScriptInterpreter * interpreter)
+{
+	POP_PTRPARAM(1, helper, TypeLeapHelper);
+	ScriptParam left = interpreter->PopParam();
+	interpreter->ClearParams();
+
+	bool isLeft = true;
+	if((left.IsNumber() || left.type == ScriptParam::BOOL) && left.nvalue < 1.0)
+	{
+		isLeft = false;
+	}
+
+	LeapMotionHelper * leapHelper = helper.GetPointer<LeapMotionHelper>();
+	Image::Buffer * image = leapHelper->GetImage(interpreter->GetApp()->imaging, isLeft);
+
+	interpreter->PushParam(ScriptParam(image, ScriptTypes::GetHandle(TypeImageBuffer)));
 }
 
 #endif

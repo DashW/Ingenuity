@@ -59,7 +59,7 @@ function Begin()
 	
 	camera = CreateCamera();
 	SetCameraPosition(camera, 0.0, 2.0, 20.0);
-	SetupFlyCamera(camera,0.0,2.0,20.0,0.01,5);
+	SetupFlyCamera(camera,0.0,2.0,10.0,0.01,5);
 	flyCamYAngle = math.pi;
 	
 	light = CreateLight("point");
@@ -114,8 +114,8 @@ function Update(secs)
 		local dy = last[2] - prev[2];
 		local dz = last[3] - prev[3];
 		local distance = math.sqrt((dx*dx) + (dy*dy) + (dz*dz));
-		SetSoundSpeed(sparklerSound, 1.0 + distance/10);
-		SetSoundVolume(sparklerSound, 0.5 + distance/10);
+		--SetSoundSpeed(sparklerSound, 1.0 + distance/10);
+		--SetSoundVolume(sparklerSound, 0.5 + distance/10);
 		
 		particles.timeSinceParticleInsert = particles.timeSinceParticleInsert + secs;
 		while particles.particleInsertEffect and particles.timeSinceParticleInsert > particles.particleInsertInterval do

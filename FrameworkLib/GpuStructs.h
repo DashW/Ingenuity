@@ -301,6 +301,7 @@ struct DrawSurface
 	enum Format
 	{
 		Format_4x8int,
+		Format_4x8intBGRA,
 		Format_4x16float,
 		Format_3x10float,
 		Format_1x16float,
