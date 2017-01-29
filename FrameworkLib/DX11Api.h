@@ -187,6 +187,7 @@ class Api : public Gpu::Api
 	typedef std::map<PlatformWindow*, IDXGISwapChain*> WindowSwapChainMap;
 	typedef std::map<PlatformWindow*, DX11::BackbufferSurface*> WindowSurfaceMap;
 	std::vector<PlatformWindow*> destroyedWindows;
+	std::vector<PlatformWindow*> resizedWindows;
 	WindowSwapChainMap windowSwapChains;
 	WindowSurfaceMap windowDrawSurfaces;
 #else
@@ -275,6 +276,7 @@ class Api : public Gpu::Api
 	float clearColor[4];
 
 	bool SetDepthStencilState(DX11::DrawSurface * surface);
+	void ResizeWindowResources(PlatformWindow * window, unsigned width, unsigned height);
 
 public:
 	Api(PlatformWindow * window);

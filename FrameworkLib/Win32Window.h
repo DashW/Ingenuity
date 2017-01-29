@@ -68,6 +68,9 @@ public:
 	virtual void SetUndecorated(bool undecorated) override;
 	virtual void SetResizeable(bool resizeable) override;
 
+	virtual unsigned GetWidth() override { return width; }
+	virtual unsigned GetHeight() override { return height; }
+
 	// Window Events
 	WindowEventResponse * onDestroy;
 	WindowEventResponse * onResizing;

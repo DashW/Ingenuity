@@ -167,7 +167,7 @@ end
 
 function Draw()
 	
-	DrawLeapHand();
+	--DrawLeapHand();
 
 	--DrawComplexModel(fingerSphere, camera, 0, 0, pointInstBuf);
 	

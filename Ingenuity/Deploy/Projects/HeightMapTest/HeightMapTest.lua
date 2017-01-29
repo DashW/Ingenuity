@@ -35,6 +35,7 @@ function Begin()
 	camera = CreateCamera();
 	font = GetFont(40,"Arial");
 	light = CreateLight("directional");
+	SetClearColor(1,1,1);
 	print("Script Started");
 end
 

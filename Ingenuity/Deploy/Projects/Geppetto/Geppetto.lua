@@ -45,10 +45,10 @@ function UpdateLeapHand()
 	end
 end
 
-function DrawLeapHand(camera,lights)
+function DrawLeapHand(camera,lights,surface)
 	for i,leapModel in pairs(leapModels) do
 		if leapModel and leapVisibilities[i] then
-			DrawComplexModel(leapModel,camera,lights);
+			DrawComplexModel(leapModel,camera,lights,surface);
 		end
 	end
 end
@@ -97,7 +97,7 @@ function Begin()
 		{"ProjectDir","stonefloor.bmp","Texture","floortex"},
 		{"ProjectDir","Noise2D.dds","Texture","noiseTex"},
 		
-		{"ProjectDir","Models/room/roomModel.inm","IngenuityModel","roomModel"},
+		{"ProjectDir","Workshop Room/scenes/room.inm","IngenuityModel","roomModel"},
 		{"ProjectDir","Models/tools/toolsModel3.inm","IngenuityModel","toolsModel"},
 		{"ProjectDir","Models/car/carModel2.inm","IngenuityModel","carModel"},
 		{"ProjectDir","Models/domino/dominoModel.dae","ColladaModel","dominoModel"},
@@ -176,15 +176,16 @@ function Begin()
 	
 	performanceWidth, performanceHeight = 1280,720;
 	
-	performanceSurface = CreateSurface(performanceWidth,performanceHeight,nil,"4x8iBGRA");
+	performanceSurface = GetWindowSurface(GetMainWindow());
+	controlSurface = CreateSurface(performanceWidth,performanceHeight,nil,"4x8iBGRA");
 	spareSurface1 = CreateSurface(performanceWidth,performanceHeight);
 	spareSurface2 = CreateSurface(performanceWidth,performanceHeight);
 	
-	performanceQuad = CreateSpriteModel(GetSurfaceTexture(performanceSurface));
+	performanceQuad = CreateSpriteModel(GetSurfaceTexture(controlSurface));
 
 	quadHeight = 250;
 	local mainWidth, mainHeight = GetBackbufferSize();
-	SetMeshTexture(performanceQuad,0,GetSurfaceTexture(performanceSurface));
+	SetMeshTexture(performanceQuad,0,GetSurfaceTexture(controlSurface));
 	local quadWidth = (performanceWidth/performanceHeight) * quadHeight;
 	SetMeshScale(performanceQuad,0, quadWidth, quadHeight, 1);
 	SetModelPosition(performanceQuad,mainWidth - quadWidth,0,0);
@@ -332,11 +333,19 @@ function Update(delta)
 	end
 	down,pressed,released = GetKeyState(75); -- LEFT
 	if down then
-		armMotionMatrix = armMotionMatrix * RotMatrix(0,-delta,0);
+		local palmX,palmY,palmZ = GetLeapBonePosition(leapHelper, 43);
+		local offMatrix = CreateMatrix();
+		offMatrix[3] = CreateVector(palmX, 0, palmZ, 1);
+		local rotMatrix = RotMatrix(0,-delta,0);
+		armMotionMatrix = armMotionMatrix * (offMatrix * rotMatrix * InvMatrix(offMatrix));
 	end
 	down,pressed,released = GetKeyState(77); -- RIGHT
 	if down then
-		armMotionMatrix = armMotionMatrix * RotMatrix(0,delta,0);
+		local palmX,palmY,palmZ = GetLeapBonePosition(leapHelper, 43);
+		local offMatrix = CreateMatrix();
+		offMatrix[3] = CreateVector(palmX, 0, palmZ, 1);
+		local rotMatrix = RotMatrix(0,delta,0);
+		armMotionMatrix = armMotionMatrix * (offMatrix * rotMatrix * InvMatrix(offMatrix));
 	end
 	down,pressed,released = GetKeyState(' ');
 	if down then
@@ -393,14 +402,8 @@ function SyncCameras()
 	SetCameraTarget(performanceCamera,flyCamX+dirX,flyCamY+dirY,flyCamZ+dirZ);
 end
 
-function Draw()
-	
-	if PROFILING then BeginTimestamp("Draw",true,true) end
-	
-	-- This skybox looks crap, I might have to ditch it...
-	
-	-- Draw shadows to the shadow map
-	
+-- Draw shadows to the shadow map
+function DrawShadows()
 	if PROFILING then BeginTimestamp("DrawShadows",false,true) end
 	
 	ClearSurface(shadowSurface);
@@ -422,15 +425,16 @@ function Draw()
 		
 		if drawBall then
 			SetModelMatrix(ballModel,GetPhysicsMatrix(physicsBall));
-			DrawComplexModel(ballModel,performanceCamera,lights,performanceSurface,nil,shadowEffect);
+			DrawComplexModel(ballModel,shadowCamera,nil,shadowSurface);
 		end
 	end
 	DrawMarionette(shadowCamera,nil,shadowSurface,nil);
 	
 	if PROFILING then EndTimestamp("DrawShadows",false,true) end
-	
-	-- Draw objects to the performance surface
-	
+end
+
+-- Draw objects to the performance surface
+function DrawPerformance()
 	if PROFILING then BeginTimestamp("DrawPerformance",false,true) end
 	
 	if performanceSurface then
@@ -478,34 +482,19 @@ function Draw()
 			DrawComplexModel(carModel,performanceCamera,lights,performanceSurface,nil,revealEffect);
 		end
 	
-		if performanceSpout then
-			SpoutSendTexture(performanceSpout,GetSurfaceTexture(performanceSurface));
-		end
+		--if performanceSpout then
+		--	SpoutSendTexture(performanceSpout,GetSurfaceTexture(performanceSurface));
+		--end
 	end
 	
 	if PROFILING then EndTimestamp("DrawPerformance",false,true) end
-	
-	-- Draw objects to the main window
-	
+end
+
+-- Draw objects to the main window
+function DrawControls()
 	if PROFILING then BeginTimestamp("DrawControl",false,true) end
 	
-	-- First, draw the overlays
-	
-	local mainWidth, mainHeight = GetBackbufferSize();
-	local quadWidth = (performanceWidth/performanceHeight) * quadHeight;
-	
-	SetMeshScale(performanceQuad,0, quadWidth, quadHeight, 1);
-	
-	SetMeshTexture(performanceQuad,0,GetSurfaceTexture(performanceSurface));
-	SetModelPosition(performanceQuad,mainWidth - quadWidth,0,0);
-	DrawComplexModel(performanceQuad,spriteCamera);
-	
-	leapImage = GetLeapImage(leapHelper);
-	if leapImage then
-		SetMeshTexture(performanceQuad,0,CreateImageTexture(leapImage));
-		SetModelPosition(performanceQuad, mainWidth - quadWidth, mainHeight - quadHeight, 0);
-		--DrawComplexModel(performanceQuad,spriteCamera);
-	end
+	ClearSurface(controlSurface,0.2,0.2,0.2);
 	
 	-- Then, draw the control view
 	
@@ -515,35 +504,66 @@ function Draw()
 	--end
 	
 	if pickedObject then
-		DrawComplexModel(pickModel,camera,spot);
+		DrawComplexModel(pickModel,camera,spot,controlSurface);
 	end
 	
-	DrawLeapHand(camera,spot);
+	DrawLeapHand(camera,spot,controlSurface);
 	
-	DrawMarionette(camera,spot,nil,nil);
+	DrawMarionette(camera,spot,controlSurface);
 	
-	DrawMarionetteWires(camera,spot,nil,nil);
+	DrawMarionetteWires(camera,spot,controlSurface);
 	
 	if drawDebugSeat then
-		DrawComplexModel(baseDebugModel,camera,spot);
-		DrawComplexModel(backDebugModel,camera,spot);
+		DrawComplexModel(baseDebugModel,camera,spot,controlSurface);
+		DrawComplexModel(backDebugModel,camera,spot,controlSurface);
 	end
 	
 	for i,domino in pairs(physicsDominoes) do
 		SetModelMatrix(dominoDebugModel,GetPhysicsMatrix(domino));
 		--SetModelRotation(slideDebugModel, -math.sin(2 * PI_1 * ((i-0.5)/8)) * 0.53, PI_4, 0);
 		--SetModelPosition(slideDebugModel, 0.35 + (0.1 * i), -0.36 + (0.1 * (-math.sin(PI_2 + (2 * PI_1 * ((i-0.5)/8))))), -0.75 + (0.1 * i));
-		DrawComplexModel(dominoDebugModel,camera,spot);
+		DrawComplexModel(dominoDebugModel,camera,spot,controlSurface);
 	end
 	
 	if drawBall then
 		SetModelMatrix(ballDebugModel,GetPhysicsMatrix(physicsBall));
-		DrawComplexModel(ballDebugModel,camera,spot);
+		DrawComplexModel(ballDebugModel,camera,spot,controlSurface);
 	end
 	
-	DrawComplexModel(floorModel,camera,spot);
+	DrawComplexModel(floorModel,camera,spot,controlSurface);
+	
+	-- Draw the overlays
+	
+	local mainWidth, mainHeight = GetBackbufferSize();
+	local quadWidth = (performanceWidth/performanceHeight) * quadHeight;
+	
+	SetMeshScale(performanceQuad,0, quadWidth, quadHeight, 1);
+	
+	SetMeshTexture(performanceQuad,0,GetSurfaceTexture(controlSurface));
+	SetModelPosition(performanceQuad,mainWidth - quadWidth,0,0);
+	DrawComplexModel(performanceQuad,spriteCamera,nil,performanceSurface);
+	
+	leapImage = GetLeapImage(leapHelper);
+	if leapImage then
+		SetMeshTexture(performanceQuad,0,CreateImageTexture(leapImage));
+		SetModelPosition(performanceQuad, mainWidth - quadWidth, mainHeight - quadHeight, 0);
+		--DrawComplexModel(performanceQuad,spriteCamera,nil,performanceSurface);
+	end
 	
 	if PROFILING then EndTimestamp("DrawControl",false,true) end
+end
+
+function Draw()
+	
+	if PROFILING then BeginTimestamp("Draw",true,true) end
+	
+	-- This skybox looks crap, I might have to ditch it...
+	
+	DrawShadows();
+
+	DrawPerformance();
+	
+	DrawControls();
 		
 	if PROFILING then EndTimestamp("Draw",true,true) end
 	

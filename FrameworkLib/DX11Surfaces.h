@@ -55,8 +55,8 @@ struct BackbufferSurface : public DrawSurface
 	ID3D11RenderTargetView * renderTargetView;
 	ID3D11DepthStencilView * depthStencilView;
 	D3D11_VIEWPORT viewport;
-	const unsigned width;
-	const unsigned height;
+	unsigned width;
+	unsigned height;
 
 	BackbufferSurface(ID3D11Device * device, ID3D11DeviceContext * context, ID3D11Texture2D * texture, unsigned width, unsigned height);
 	virtual ~BackbufferSurface();
@@ -68,7 +68,11 @@ struct BackbufferSurface : public DrawSurface
 	virtual Gpu::Texture * GetTexture() override { return 0; }
 	virtual unsigned GetWidth() override { return width; }
 	virtual unsigned GetHeight() override { return height; }
+	
 	float GetAspect() { return float(width) / float(height); }
+
+	void Release();
+	void Resize(ID3D11Texture2D * texture, unsigned width, unsigned height);
 };
 
 // THIS MEANS YOU CAN'T DRAW TO THE STENCIL BUFFER OF A SECOND WINDOW!!! //

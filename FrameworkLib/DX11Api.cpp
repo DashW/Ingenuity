@@ -109,7 +109,7 @@ DX11::Api::Api(PlatformWindow * window) :
 
 	OnWindowCreated(window);
 
-	OnWindowResized(window, 0, 0);
+	ResizeWindowResources(window, 0, 0);
 
 	CD3D11_RASTERIZER_DESC rasterDesc(D3D11_FILL_SOLID, D3D11_CULL_NONE, false, 0, 0.0f, 0.0f, true, false, false, false);
 	direct3Ddevice->CreateRasterizerState(&rasterDesc, &defaultRasterState);
@@ -306,6 +306,55 @@ bool DX11::Api::SetDepthStencilState(DX11::DrawSurface * surface)
 	return true;
 }
 
+void DX11::Api::ResizeWindowResources(PlatformWindow * window, unsigned width, unsigned height)
+{
+	std::list<Gpu::IDeviceListener*>::iterator lostIt;
+	for (lostIt = deviceListeners.begin(); lostIt != deviceListeners.end(); ++lostIt)
+	{
+		(*lostIt)->OnLostDevice(this);
+	}
+
+	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
+	if (it != windowDrawSurfaces.end())
+	{
+		windowDrawSurfaces[window]->Release();
+	}
+
+	IDXGISwapChain * dxgiSwapChain = windowSwapChains[window];
+
+	// For future reference, ResizeBuffers will accept w/h of 0/0 and size automatically...
+
+	// Need to delete views (RenderTargetViews / DepthStencilViews) before requesting resize
+	// Need to eliminate dependencies
+	if (width > 0 && height > 0)
+		dxgiSwapChain->ResizeBuffers(2, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+
+	ID3D11Texture2D* backBuffer;
+	dxgiSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
+
+	D3D11_TEXTURE2D_DESC backBufferDesc;
+	backBuffer->GetDesc(&backBufferDesc);
+
+	if (it != windowDrawSurfaces.end())
+	{
+		windowDrawSurfaces[window]->Resize(backBuffer, backBufferDesc.Width, backBufferDesc.Height);
+	}
+	else
+	{
+		windowDrawSurfaces[window] = new BackbufferSurface(direct3Ddevice, direct3Dcontext, backBuffer, backBufferDesc.Width, backBufferDesc.Height);
+	}
+
+	if (!mainDrawSurface) mainDrawSurface = windowDrawSurfaces[window];
+
+	backBuffer->Release();
+
+	std::list<Gpu::IDeviceListener*>::iterator resetIt;
+	for (resetIt = deviceListeners.begin(); resetIt != deviceListeners.end(); ++resetIt)
+	{
+		(*resetIt)->OnResetDevice(this);
+	}
+}
+
 void DX11::Api::Initialize(AssetMgr * assets)
 {
 	// Load the default shaders
@@ -438,6 +487,14 @@ void DX11::Api::EndScene()
 		windowSwapChains.erase(swapIt);
 	}
 	destroyedWindows.clear();
+
+	// Resize the resources of any windows resized this frame
+	for (unsigned i = 0; i < resizedWindows.size(); ++i)
+	{
+		PlatformWindow * window = resizedWindows[i];
+		ResizeWindowResources(window, window->GetWidth(), window->GetHeight());
+	}
+	resizedWindows.clear();
 }
 void DX11::Api::Present()
 {
@@ -1372,9 +1429,7 @@ void DX11::Api::OnWindowCreated(PlatformWindow * window)
 		OnResizeResponse(Gpu::Api * gpu) : gpu(gpu) {}
 		void Respond(Win32::Window * window, WPARAM wparam, LPARAM lparam) override
 		{
-			RECT windowRect;
-			GetClientRect(window->GetHandle(), &windowRect);
-			gpu->OnWindowResized(window, windowRect.right, windowRect.bottom);
+			gpu->OnWindowResized(window, window->GetWidth(), window->GetHeight());
 		}
 	};
 
@@ -1465,47 +1520,21 @@ void DX11::Api::OnWindowCreated(PlatformWindow * window)
 
 void DX11::Api::OnWindowResized(PlatformWindow * window, unsigned width, unsigned height) 
 {
-	std::list<Gpu::IDeviceListener*>::iterator lostIt;
-	for(lostIt = deviceListeners.begin(); lostIt != deviceListeners.end(); ++lostIt)
-	{
-		(*lostIt)->OnLostDevice(this);
-	}
-
-	WindowSurfaceMap::iterator it = windowDrawSurfaces.find(window);
-	if(it != windowDrawSurfaces.end())
-	{
-		if(it->second == mainDrawSurface) mainDrawSurface = 0;
-		delete it->second;
-	}
-
-	IDXGISwapChain * dxgiSwapChain = windowSwapChains[window];
-
-	// For future reference, ResizeBuffers will accept w/h of 0/0 and size automatically...
-	if(width > 0 && height > 0)
-		dxgiSwapChain->ResizeBuffers(2,width,height,DXGI_FORMAT_R8G8B8A8_UNORM,0);
-
-	ID3D11Texture2D* backBuffer;
-	dxgiSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-
-	D3D11_TEXTURE2D_DESC backBufferDesc;
-	backBuffer->GetDesc(&backBufferDesc);
-
-	windowDrawSurfaces[window] = new BackbufferSurface(direct3Ddevice, direct3Dcontext, backBuffer, backBufferDesc.Width, backBufferDesc.Height);
-
-	if(!mainDrawSurface) mainDrawSurface = windowDrawSurfaces[window];
-
-	backBuffer->Release();
-
-	std::list<Gpu::IDeviceListener*>::iterator resetIt;
-	for(resetIt = deviceListeners.begin(); resetIt != deviceListeners.end(); ++resetIt)
-	{
-		(*resetIt)->OnResetDevice(this);
-	}
+	resizedWindows.push_back(window);
 }
 
 void DX11::Api::OnWindowDestroyed(PlatformWindow * window)
 {
 	destroyedWindows.push_back(window);
+
+	std::vector<PlatformWindow*>::iterator it = resizedWindows.begin();
+	for (; it != resizedWindows.end(); ++it)
+	{
+		if ((*it) == window)
+		{
+			it = resizedWindows.erase(it);
+		}
+	}
 }
 
 void DX11::Api::GetBackbufferSize(unsigned & width, unsigned & height, PlatformWindow * window)

@@ -34,6 +34,14 @@ LRESULT CALLBACK Win32::Window::WndProc(HWND handle, UINT message, WPARAM wparam
 			break;
 
 		case WM_SIZE:
+
+			{
+				RECT windowRect;
+				GetClientRect(window->GetHandle(), &windowRect);
+				window->width = (unsigned)windowRect.right;
+				window->height = (unsigned)windowRect.bottom;
+			}
+
 			switch(wparam)
 			{
 			case SIZE_RESTORED:

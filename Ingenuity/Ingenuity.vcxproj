@@ -210,7 +210,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <IgnoreSpecificDefaultLibraries>LIBCMT;LIBCMTD</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
       <AdditionalLibraryDirectories>$(SolutionDir)..\Third Party\netLink_v1.0.0_pre_6\Debug;$(SolutionDir)..\Third Party\Spout2\SpoutSDK\Source\VS2013\Win32\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>NetLink.lib;Spout.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>

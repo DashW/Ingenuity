@@ -39,6 +39,9 @@ XAudio2::Api::Api() :
 
 	xAudioEngine->CreateMasteringVoice(&xAudioMasteringVoice, XAUDIO2_DEFAULT_CHANNELS, 48000);
 
+	XAUDIO2_VOICE_DETAILS masteringVoiceDetails;
+	xAudioMasteringVoice->GetVoiceDetails(&masteringVoiceDetails);
+
 	// Create volume meter effect
 	IUnknown * volumeMeter;
 	XAudio2CreateVolumeMeter(&volumeMeter);
@@ -46,7 +49,7 @@ XAudio2::Api::Api() :
 	XAUDIO2_EFFECT_DESCRIPTOR effectDescriptor;
 	effectDescriptor.pEffect = volumeMeter;
 	effectDescriptor.InitialState = true;
-	effectDescriptor.OutputChannels = 2;
+	effectDescriptor.OutputChannels = masteringVoiceDetails.InputChannels;
 
 	XAUDIO2_EFFECT_CHAIN effectChain;
 	effectChain.EffectCount = 1;

@@ -19,6 +19,9 @@ public:
 	virtual void SetUndecorated(bool undecorated) = 0;
 	virtual void SetResizeable(bool resizeable) = 0;
 
+	virtual unsigned GetWidth() = 0;
+	virtual unsigned GetHeight() = 0;
+
 protected:
 	PlatformWindow() {}
 };

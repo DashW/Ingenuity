@@ -162,9 +162,51 @@ Gpu::DrawSurface::Type DX11::TextureSurface::GetSurfaceType()
 DX11::BackbufferSurface::BackbufferSurface(ID3D11Device * device, ID3D11DeviceContext * context,
 	ID3D11Texture2D * texture, unsigned width, unsigned height) : 
 	DrawSurface(device, context),
+	renderTargetView(0),
+	depthStencilView(0),
+	viewport({0}),
 	width(width),
 	height(height)
 {
+	Resize(texture, width, height);
+}
+
+DX11::BackbufferSurface::~BackbufferSurface()
+{
+	Release();
+}
+
+void DX11::BackbufferSurface::Begin()
+{
+	context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+	context->RSSetViewports(1, &viewport);
+}
+
+void DX11::BackbufferSurface::End()
+{
+	
+}
+
+void DX11::BackbufferSurface::Clear(glm::vec4 & color)
+{
+	// Clear the back buffer.
+	context->ClearRenderTargetView(renderTargetView, (float*)&color);
+
+	// Clear the depth buffer.
+	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
+
+void DX11::BackbufferSurface::Release()
+{
+	if (renderTargetView) renderTargetView->Release(); renderTargetView = 0;
+	if (depthStencilView) depthStencilView->Release(); depthStencilView = 0;
+}
+
+void DX11::BackbufferSurface::Resize(ID3D11Texture2D * texture, unsigned width, unsigned height)
+{
+	this->width = width;
+	this->height = height;
+
 	device->CreateRenderTargetView(texture, 0, &renderTargetView);
 
 	CD3D11_TEXTURE2D_DESC depthStencilTextureDesc(
@@ -193,32 +235,6 @@ DX11::BackbufferSurface::BackbufferSurface(ID3D11Device * device, ID3D11DeviceCo
 		0.0f,
 		static_cast<float>(width),
 		static_cast<float>(height));
-}
-
-DX11::BackbufferSurface::~BackbufferSurface()
-{
-	if(renderTargetView) renderTargetView->Release(); renderTargetView = 0;
-	if(depthStencilView) depthStencilView->Release(); depthStencilView = 0;
-}
-
-void DX11::BackbufferSurface::Begin()
-{
-	context->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
-	context->RSSetViewports(1, &viewport);
-}
-
-void DX11::BackbufferSurface::End()
-{
-	
-}
-
-void DX11::BackbufferSurface::Clear(glm::vec4 & color)
-{
-	// Clear the back buffer.
-	context->ClearRenderTargetView(renderTargetView, (float*)&color);
-
-	// Clear the depth buffer.
-	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
 //void DX11::StencilSurface::Begin()
