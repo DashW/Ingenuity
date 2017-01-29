@@ -323,9 +323,6 @@ void DX11::Api::ResizeWindowResources(PlatformWindow * window, unsigned width, u
 	IDXGISwapChain * dxgiSwapChain = windowSwapChains[window];
 
 	// For future reference, ResizeBuffers will accept w/h of 0/0 and size automatically...
-
-	// Need to delete views (RenderTargetViews / DepthStencilViews) before requesting resize
-	// Need to eliminate dependencies
 	if (width > 0 && height > 0)
 		dxgiSwapChain->ResizeBuffers(2, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 
