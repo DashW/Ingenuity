@@ -1,7 +1,12 @@
 
--- Latest issue - noticed that the right leg has a tendency to turn 180
--- According to the leg definition, that shouldn't be possible, it's constrained to 30 degrees
--- Also noticed that the little finger can't lift as high as the thumb, maybe some compensation needed
+-- Noticed that the little finger can't lift as high as the thumb, maybe some more compensation needed
+
+-- TODO:
+-- Blinking
+-- Correction of movement - centred about the palm
+-- Ability to detach the marionette at will
+-- Landing face-up
+-- Improved arm control
 
 BONE_TYPE   = 1;
 BONE_PARENT = 2;
@@ -64,14 +69,14 @@ definitions = {
 	{ "capsule", -1, 0.01, 0.04, 30.0,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.01,  PI_2,-PI_2, PI_1,-0.00, 0.10, 0.00,  0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,  0 }, --  0 - pelvis
 	{ "capsule",  0, 0.01, 0.04, 20.0,  0.00, 0.00,-PI_2, 0.00, 0.00, 0.055, 0.00, 0.00, 0.00, 0.00, 0.00, 0.045, 0.00,-0.20, 0.20, 0.00,-PI_2, 0.00, 0.00,-PI_2, 0.00,  4 }, --  1 - spine0
 	
-	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06, -3.11,-0.00, 0.00, 0.00, 0.015,-0.008,0.00, 0.05, 1.15, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 11 }, --  2 - rthigh
-	{ "capsule",  2, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-2.62,-0.50, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 12 }, --  3 - rcalf
-	{ "capsule",  3, 0.01, 0.05,  1.5,  PI_2, 0.00, 0.00, 0.02, 0.00, 0.01,  0.00, 0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-PI_4, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 13 }, --  4 - rfoot
+	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06, -3.11,-0.00, 0.00, 0.00, 0.015,-0.008,0.00, 0.05, 1.15, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 12 }, --  2 - rthigh
+	{ "capsule",  2, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-2.62,-0.50, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 13 }, --  3 - rcalf
+	{ "capsule",  3, 0.01, 0.05,  1.5,  PI_2, 0.00, 0.00, 0.02, 0.00, 0.01,  0.00, 0.00, 0.00, 0.00, 0.00, 0.105, 0.00,-PI_4, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 14 }, --  4 - rfoot
 	{ "capsule",  0, 0.01, 0.08,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.06,  3.11,-0.00, 0.00, 0.00,-0.015,-0.008,0.00,-1.15,-0.05, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  1 }, --  5 - lthigh
 	{ "capsule",  5, 0.01, 0.09,  2.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.05,  0.00,-0.00, 0.00, 0.00, 0.00, 0.105, 0.00, 0.50, 2.62, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  2 }, --  6 - lcalf
 	{ "capsule",  6, 0.01, 0.05,  1.5,  PI_2, 0.00, 0.00, 0.02, 0.00, 0.01,  0.00, 0.00, 0.00, 0.00, 0.00, 0.105, 0.00, 0.00, PI_4, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  3 }, --  7 - lfoot
 	
-	{ "capsule",  1, 0.02, 0.02,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.035, 0.00, 0.00, 0.00, 0.00, 0.00, 0.075, 0.00, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 0.00, 14 }, --  8 - head
+	{ "capsule",  1, 0.02, 0.02,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.035, 0.00, 0.00, 0.00, 0.00, 0.00, 0.075, 0.00, 0.00, 0.00, 0.00,-PI_2, 0.00, 0.00,-PI_2, 0.00, 11 }, --  8 - head
 	
 	{ "capsule",  1, 0.01, 0.07,  5.0,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  1.57, 0.00, 3.15, 0.00, 0.03, 0.058, 1.40, 0.00, 0.00, 0.00,-PI_2, 0.00, PI_2,-PI_6, PI_2,  8 }, --  9 - ruparm
 	{ "capsule",  9, 0.01, 0.06,  3.5,  0.00, PI_2, 0.00, 0.00, 0.00, 0.03,  0.00,-0.00, 0.00, 0.00, 0.00, 0.079, 0.00, 0.30, 2.62, 0.00, 0.00, PI_2, 0.00, 0.00, PI_2,  9 }, -- 10 - rfrarm
@@ -204,10 +209,15 @@ function CreateMarionette(physicsWorld)
 		
 		SetPhysicsMass(currentBone,definition[BONE_MASS]);
 		AddToPhysicsWorld(physicsWorld,currentBone);
+		
+		-- Set local position/rotation
 		SetPhysicsPosition(currentBone,definition[BONE_X],definition[BONE_Y],definition[BONE_Z],true);
 		SetPhysicsRotation(currentBone,definition[BONE_PITCH],definition[BONE_YAW],definition[BONE_ROLL],true);
+		
+		-- Set world position/rotation
 		SetPhysicsPosition(currentBone,definition[BODY_X],definition[BODY_Y],definition[BODY_Z],false);
 		SetPhysicsRotation(currentBone,definition[BODY_PITCH],definition[BODY_YAW],definition[BODY_ROLL],false);
+		
 		debugModels[i] = GetPhysicsDebugModel(currentBone);
 		
 		local treeDepth = 0;
@@ -261,8 +271,9 @@ function CreateMarionette(physicsWorld)
 	armLocked = false;
 	
 	marionetteTicket = LoadAssets(
-		{"ProjectDir","MannaquinFace4.dae","ColladaModel","Mannequin"},
-		{"ProjectDir","MannaquinBlink.dae","ColladaModel","MannequinBlink"}
+		{"ProjectDir","Mannaquin2.dae","ColladaModel","Marionette"},
+		{"ProjectDir","MarionetteFace.dae","ColladaModel","MarionetteFace"},
+		{"ProjectDir","MarionetteBlink.dae","ColladaModel","MarionetteBlink"}
 	);
 	
 	jointModel = CreateModel("PosNor",CreateSphere());
@@ -277,7 +288,7 @@ function CreateMarionette(physicsWorld)
 	-- This is where a state machine might come in handy...
 	blinkMinInterval = 0.8;
 	blinkMaxInterval = 6;
-	blinkDuration = 0.2;
+	blinkDuration = 0.14;
 	timeToNextBlink = 6;
 	blinking = false;
 end
@@ -303,22 +314,28 @@ function UpdateRagdoll()
 		SetModelMatrix(boneModels[i],boneMatrices[i]);
 		SetModelMatrix(debugModels[i],boneMatrices[i]);
 		
-		if i == BONE_HEAD and leapVisibilities[43] and armLocked then
-			local palmRotMatrix = GetLeapBoneMatrix(leapHelper, 43);
+		if i == BONE_HEAD then
+			if leapVisibilities[43] and armLocked then
+				local palmRotMatrix = GetLeapBoneMatrix(leapHelper, 43);
+				
+				local preMatrix = RotMatrix(0,0,-PI_2);
+				preMatrix[3] = CreateVector(0,definitions[i][BONE_Z],0,1)
+				
+				local postMatrix = RotMatrix(0,0,PI_2);
+				palmRotMatrix[3] = CreateVector(0,-definitions[i][BONE_Z],0,1); -- Shouldn't this be postMatrix and palmRotMatrix be 0?
+				
+				palmRotMatrix = postMatrix * palmRotMatrix * RotMatrix(0.1,-0.5,0.1) * preMatrix;
+				boneMatrices[i] = boneMatrices[i] * palmRotMatrix;
+			end
 			
-			local preMatrix = RotMatrix(0,0,-PI_2);
-			preMatrix[3] = CreateVector(0,definitions[i][BONE_Z],0,1)
-			
-			local postMatrix = RotMatrix(0,0,PI_2);
-			palmRotMatrix[3] = CreateVector(0,-definitions[i][BONE_Z],0,1); -- Shouldn't this be postMatrix and palmRotMatrix be 0?
-			
-			palmRotMatrix = postMatrix * palmRotMatrix * RotMatrix(0.1,-0.5,0.1) * preMatrix;
-			boneMatrices[i] = boneMatrices[i] * palmRotMatrix;
+			if marionetteFaceModel then
+				SetModelMatrix(marionetteFaceModel, boneMatrices[i] * initialInvMatrices[i]);
+			end
 		end
 		
-		local marionetteMesh = definitions[i][MODEL_MESH];
-		if marionetteModel and marionetteMesh > -1 then
-			SetModelMatrix(marionetteModels[marionetteMesh],boneMatrices[i] * initialInvMatrices[i]);
+		local modelIndex = definitions[i][MODEL_MESH];
+		if marionetteModel and modelIndex > -1 then
+			SetModelMatrix(marionetteModels[modelIndex], boneMatrices[i] * initialInvMatrices[i]);
 		end
 	end
 end
@@ -326,8 +343,7 @@ end
 function UpdateSprings()
 	springVisible = false;
 	
-	if leapVisibilities[43] then
-		--print("PALM VISIBLE!");
+	if leapVisibilities[43] then -- PALM
 		
 		local walkBeamOffset = CreateMatrix();
 		walkBeamOffset[3] = CreateVector(0,0.2,0.55,1);
@@ -390,24 +406,24 @@ end
 
 function UpdateMarionette(delta)
 	
-	UpdateRagdoll();
-	
-	UpdateSprings();
-	
-	if faceBlinkTex then
+	if marionetteBlinkModel and leapVisibilities[43] then
 		timeToNextBlink = timeToNextBlink - delta;
 		if timeToNextBlink <= 0 then
 			if blinking then
-				SetMeshTexture(marionetteModels[BONE_HEAD],0,faceNeutralTex);
-				timeToNextBlink = blinkMinInterval + (math.random() * (blinkMaxInterval - blinkMinInterval));
+				marionetteFaceModel = marionetteBlinkModel;
+				timeToNextBlink = blinkDuration;
 				blinking = false;
 			else
-				SetMeshTexture(marionetteModels[BONE_HEAD],0,faceBlinkTex);
-				timeToNextBlink = blinkDuration;
+				marionetteFaceModel = marionetteNeutralModel
+				timeToNextBlink = blinkMinInterval + (math.random() * (blinkMaxInterval - blinkMinInterval));
 				blinking = true;
 			end
 		end
 	end
+	
+	UpdateRagdoll();
+	
+	UpdateSprings();
 	
 	down,pressed,released = GetKeyState('g');
 	if pressed then
@@ -422,14 +438,18 @@ function UpdateMarionette(delta)
 	end
 	
 	if marionetteTicket and IsLoaded(marionetteTicket) then
-		marionetteModel = GetAsset("Mannequin");
-		marionetteBlinkModel = GetAsset("MannequinBlink");
+		print("Marionette Loaded");
+		marionetteModel = GetAsset("Marionette");
+		marionetteNeutralModel = GetAsset("MarionetteFace");
+		marionetteBlinkModel = GetAsset("MarionetteBlink");
 		
 		SetModelScale(marionetteModel,0.03);
-		SetModelScale(marionetteBlinkModel,0.03);
+		
+		for i=1,GetNumMeshes(marionetteNeutralModel) do SetMeshScale(marionetteNeutralModel,i-1,0.03) end
+		for i=1,GetNumMeshes(marionetteBlinkModel) do SetMeshScale(marionetteBlinkModel,i-1,0.03) end
 		
 		marionetteModels = DecomposeModel(marionetteModel);
-		marionetteBlinkModels = DecomposeModel(marionetteBlinkModel);
+		marionetteFaceModel = marionetteNeutralModel
 		
 		marionetteTicket = nil;
 	end
@@ -443,6 +463,9 @@ function DrawMarionette(camera, lights, surface, effect)
 			DrawComplexModel(model, camera, lights, surface, nil, effect);
 			--if i == definitions[DEBUGMODEL][MODEL_MESH] then DrawComplexModel(model, camera, lights, surface, nil, effect); end
 		end
+	end
+	if marionetteFaceModel then
+		DrawComplexModel(marionetteFaceModel, camera, lights, surface, nil, effect);
 	end
 end
 

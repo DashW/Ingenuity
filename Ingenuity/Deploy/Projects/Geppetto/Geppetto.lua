@@ -97,7 +97,7 @@ function Begin()
 		{"ProjectDir","stonefloor.bmp","Texture","floortex"},
 		{"ProjectDir","Noise2D.dds","Texture","noiseTex"},
 		
-		{"ProjectDir","Workshop Room/scenes/room.inm","IngenuityModel","roomModel"},
+		{"ProjectDir","Models/room/roomModel2.inm","IngenuityModel","roomModel"},
 		{"ProjectDir","Models/tools/toolsModel3.inm","IngenuityModel","toolsModel"},
 		{"ProjectDir","Models/car/carModel2.inm","IngenuityModel","carModel"},
 		{"ProjectDir","Models/domino/dominoModel.dae","ColladaModel","dominoModel"},
@@ -543,12 +543,12 @@ function DrawControls()
 	SetModelPosition(performanceQuad,mainWidth - quadWidth,0,0);
 	DrawComplexModel(performanceQuad,spriteCamera,nil,performanceSurface);
 	
-	leapImage = GetLeapImage(leapHelper);
-	if leapImage then
-		SetMeshTexture(performanceQuad,0,CreateImageTexture(leapImage));
-		SetModelPosition(performanceQuad, mainWidth - quadWidth, mainHeight - quadHeight, 0);
-		--DrawComplexModel(performanceQuad,spriteCamera,nil,performanceSurface);
-	end
+	-- leapImage = GetLeapImage(leapHelper);
+	-- if leapImage then
+	-- 	SetMeshTexture(performanceQuad,0,CreateImageTexture(leapImage));
+	-- 	SetModelPosition(performanceQuad, mainWidth - quadWidth, mainHeight - quadHeight, 0);
+	-- 	--DrawComplexModel(performanceQuad,spriteCamera,nil,performanceSurface);
+	-- end
 	
 	if PROFILING then EndTimestamp("DrawControl",false,true) end
 end
